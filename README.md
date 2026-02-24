@@ -1,10 +1,16 @@
-PetCall
-<p align="center"> Smart companion pet automation for World of Warcraft. </p> <p align="center">
+# PetCall
 
-<img width="78" height="20" alt="image" src="https://github.com/user-attachments/assets/18a0f4f6-ec1b-4a7e-9dcd-39a6667af2f3" />
-
+<p align="center">
+Smart companion pet automation for World of Warcraft.
 </p>
-Overview
+
+<p align="center">
+<img width="78" height="20" alt="badge" src="https://github.com/user-attachments/assets/18a0f4f6-ec1b-4a7e-9dcd-39a6667af2f3" />
+</p>
+
+---
+
+## Overview
 
 PetCall automatically summons companion pets based on configurable rules, gameplay context, and character state.
 
@@ -12,87 +18,85 @@ Instead of manually selecting pets, PetCall evaluates your current situation —
 
 PetCall is designed as a flexible automation framework for companion pets.
 
-✨ Features
+---
 
-Automatic companion pet summoning
+## ✨ Features
 
-Rule-based trigger system (zone, instance, activity, state)
+- Automatic companion pet summoning
+- Rule-based trigger system (zone, instance, activity, state)
+- Pet sets with priority and logical conditions
+- Advanced filtering and smart selection
+- Context-aware pet switching
+- 3D pet preview in configuration UI
+- Minimap + DataBroker integration
+- Event-driven architecture (performance focused)
+- Ace3 configuration panel
 
-Pet sets with priority and logical conditions
+---
 
-Advanced filtering and smart selection
-
-Context-aware pet switching
-
-3D pet preview in configuration UI
-
-Minimap + DataBroker integration
-
-Event-driven architecture (performance focused)
-
-Ace3 configuration panel
-
-🧠 Why PetCall
+## 🧠 Why PetCall
 
 PetCall focuses on automation.
 
 It allows you to create predictable, context-aware pet behavior with flexible rule logic.
 
-⚙️ Installation
-CurseForge (recommended)
+---
+
+## ⚙️ Installation
+
+### CurseForge (recommended)
 
 Install via CurseForge client.
 
-Manual
+### Manual
 
-Download latest release
+1. Download the latest release  
+2. Extract into:
+World of Warcraft/retail/Interface/AddOns/
+3. Ensure folder name is `PetCall`.
 
-Extract into:
+---
 
-World of Warcraft/_retail_/Interface/AddOns/
-
-Ensure folder name is PetCall
-
-🚀 Usage
+## 🚀 Usage
 
 Open configuration:
 
-Interface → AddOns → PetCall
+- Interface → AddOns → PetCall
+- Minimap button
+- DataBroker launcher
 
-Minimap button
-
-DataBroker launcher
-
-Create pet sets and define triggers.
+Create pet sets and define triggers.  
 PetCall handles the rest.
 
-🧩 Technical Details
+---
 
-SavedVariables: PetCall3DB
+## 🧩 Technical Details
 
-Framework: Ace3
+- SavedVariables: `PetCall3DB`
+- Framework: Ace3
+- Pet data: LibPetJournal
+- Event-driven evaluation
+- Localization ready
 
-Pet data: LibPetJournal
+---
 
-Event-driven evaluation
-
-Localization ready
-
-🤝 Contributing
+## 🤝 Contributing
 
 Contributions, ideas, and feedback are welcome.
 
-Open an issue
+- Open an issue
+- Submit a PR
+- Suggest features
 
-Submit a PR
+---
 
-Suggest features
-
-📜 License
+## 📜 License
 
 MIT
 
-⭐ Project Philosophy
+---
+
+## ⭐ Project Philosophy
 
 PetCall treats companion pets as a system, not a button.
 
