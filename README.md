@@ -1,14 +1,7 @@
 PetCall
 <p align="center"> Smart companion pet automation for World of Warcraft. </p> <p align="center">
 
-
-
-
-
-
-
-
-
+<img width="78" height="20" alt="image" src="https://github.com/user-attachments/assets/18a0f4f6-ec1b-4a7e-9dcd-39a6667af2f3" />
 
 </p>
 Overview
