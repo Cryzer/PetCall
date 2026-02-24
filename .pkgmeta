@@ -1,0 +1,6 @@
+package-as: PetCall
+
+enable-nolib-creation: yes
+
+manual-changelog: CHANGES.md
+changelog-markup: markdown
