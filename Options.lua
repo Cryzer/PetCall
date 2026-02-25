@@ -290,6 +290,12 @@ local options_slashcmd = {
             name = "Debug State",
             hidden = true,
             func = function(info) addon:DumpDebugState() end
+        },
+        migrate = {
+            type = "execute",
+            name = "Import PetLeash",
+            hidden = true,
+            func = function(info) addon:ManualMigratePrompt() end
         }
     },
 }

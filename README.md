@@ -55,6 +55,39 @@ World of Warcraft/retail/Interface/AddOns/
 
 ---
 
+## 🔄 Migrating from PetLeash
+
+PetCall is the continuation of PetLeash. Your existing profiles, pet sets, and triggers are fully compatible and can be imported automatically.
+
+### Automatic migration
+
+1. Install PetCall while PetLeash is still installed
+2. Log in — a dialog will appear asking whether to import your PetLeash data
+3. Click **Yes** — the UI reloads once and all your sets are available in PetCall
+4. You can now uninstall PetLeash
+
+### Manual migration (PetLeash already uninstalled)
+
+If you have already removed PetLeash but still have its SavedVariables file:
+
+> **World of Warcraft must be closed** before editing SavedVariables files. WoW overwrites them on logout, so any changes made while the game is running will be lost.
+
+1. Close World of Warcraft completely
+2. Locate `WTF\Account\<AccountName>\SavedVariables\PetLeash.lua`
+3. Open it in a text editor and change the first line from `PetLeash3DB` to `PetCall3DB`
+4. Save the file as `PetCall.lua` in the same folder
+5. Log in — PetCall will load your data
+
+### Manual import at any time
+
+If PetLeash data is present but you skipped the prompt:
+
+```
+/pcall migrate
+```
+
+---
+
 ## 🚀 Usage
 
 Open configuration:

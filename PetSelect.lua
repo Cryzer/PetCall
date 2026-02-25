@@ -217,6 +217,7 @@ do
 
     local modelPreviewAngle = 0
     local MODEL_ROT_SPEED = math.pi / 4  -- 45 deg/sec = full rotation in 8s
+    local modelPreviewHideScheduled = false
 
     -- Creature IDs whose skeleton root is significantly offset from their visual centre.
     -- SetFacing() rotates around the skeleton root, so these appear to orbit rather than
@@ -295,12 +296,13 @@ do
 
             if creatureID and creatureID ~= 0 then
                 local preview = GetOrCreateModelPreview()
+                modelPreviewHideScheduled = false
                 preview.currentCreatureID = creatureID
                 modelPreviewAngle = 0
-                preview.model:SetCreature(creatureID)   -- async; OnModelLoaded sets isStatic + facing
                 preview:ClearAllPoints()
                 preview:SetPoint("LEFT", frame, "RIGHT", 5, 0)
                 preview:Show()
+                preview.model:SetCreature(creatureID)   -- async; OnModelLoaded sets isStatic + facing
             end
         end
     end
@@ -310,7 +312,13 @@ do
             GameTooltip:Hide()
         end
         if modelPreview then
-            modelPreview:Hide()
+            modelPreviewHideScheduled = true
+            C_Timer.After(0, function()
+                if modelPreviewHideScheduled and modelPreview then
+                    modelPreview:Hide()
+                    modelPreviewHideScheduled = false
+                end
+            end)
         end
     end
 

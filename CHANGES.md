@@ -2,6 +2,13 @@
 Changelog
 =========
 
+v1.0.2 (2026-02-25)
+------------------
+
+- Added automatic PetLeash profile migration. On first login with both addons installed, PetCall prompts to import all sets, triggers, and settings from PetLeash. The UI reloads once to apply the data cleanly.
+- Added /pcall migrate slash command to trigger the import dialog manually.
+- Fixed 3D pet preview not updating when quickly moving the mouse between pets in the pet list and broker panel.
+
 v1.0.1 (2026-02-24)
 ------------------
 

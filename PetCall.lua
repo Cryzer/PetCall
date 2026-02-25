@@ -91,6 +91,8 @@ local default_ignore_override = {
 function addon:OnInitialize()
     self.setCache = {}
 
+    self:CheckForPetLeash()
+
     self.db = LibStub("AceDB-3.0"):New("PetCall3DB", defaults, true)
 
     self.db.RegisterCallback(self, "OnProfileChanged", "OnProfileChange")
@@ -104,6 +106,7 @@ end
 
 function addon:OnEnable()
     self:ReloadSets()
+    self:ShowMigratePromptIfNeeded()
 end
 
 function addon:OnProfileChange()

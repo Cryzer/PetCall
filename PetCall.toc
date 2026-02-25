@@ -1,6 +1,6 @@
 ## Interface: 120001
 ## Title: PetCall
-## Version: 1.0.1
+## Version: 1.0.2
 ## Notes: Automatically summons your companion pet based on configurable triggers and conditions.
 ## Author: End
 ## X-Email: end@cornhooves.org
@@ -12,6 +12,7 @@
 embeds.xml
 locales.xml
 PetCall.lua
+Migrate.lua
 PetSelect.lua
 Options.lua
 Filters.lua

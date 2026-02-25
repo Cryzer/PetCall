@@ -18,9 +18,18 @@ local sort = table.sort
 local brokerPreview
 local brokerPreviewAngle = 0
 local BROKER_ROT_SPEED = math.pi / 4  -- 45 deg/sec = full rotation in 8s
+local brokerPreviewHideScheduled = false
 
 local function RightRow_OnLeave()
-    if brokerPreview then brokerPreview:Hide() end
+    if brokerPreview then
+        brokerPreviewHideScheduled = true
+        C_Timer.After(0, function()
+            if brokerPreviewHideScheduled and brokerPreview then
+                brokerPreview:Hide()
+                brokerPreviewHideScheduled = false
+            end
+        end)
+    end
 end
 
 local function GetBrokerModelPreview()
@@ -363,12 +372,13 @@ function module:FillRightPane()
             row:SetScript("OnEnter", function(rowFrame)
                 if rowFrame.creatureID and rowFrame.creatureID ~= 0 then
                     local preview = GetBrokerModelPreview()
-                    preview.model:SetCreature(rowFrame.creatureID)
-                    preview.model:SetPosition(0, 0, 0)
+                    brokerPreviewHideScheduled = false
                     brokerPreviewAngle = 0
                     preview:ClearAllPoints()
                     preview:SetPoint("RIGHT", self.bp, "LEFT", -5, 0)
                     preview:Show()
+                    preview.model:SetCreature(rowFrame.creatureID)
+                    preview.model:SetPosition(0, 0, 0)
                 end
             end)
             row:SetScript("OnLeave", RightRow_OnLeave)
