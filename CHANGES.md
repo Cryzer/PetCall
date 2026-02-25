@@ -1,6 +1,10 @@
 
 # Changelog
 
+## v1.0.7 (2026-02-25)
+
+- Fixed release notes showing full changelog instead of current version only.
+
 ## v1.0.6 (2026-02-25)
 
 - Fixed release notes showing full changelog instead of current version only (set markup-type: markdown in .pkgmeta).
