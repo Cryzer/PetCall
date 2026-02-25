@@ -1,4 +1,4 @@
-name: Release
+name: Release WoW Addon
 
 on:
   push:
@@ -15,7 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create zip
+        run: |
+          mkdir build
+          zip -r build/PetCall.zip PetCall
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          files: build/PetCall.zip
           generate_release_notes: true
