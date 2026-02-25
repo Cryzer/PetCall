@@ -18,9 +18,12 @@ jobs:
       - name: Create zip
         run: |
           mkdir build
-          mkdir -p package/PetCall
-          rsync -av --exclude '.git' --exclude '.github' ./ package/PetCall/
-          zip -r build/PetCall.zip package/PetCall
+          rsync -av \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'build' \
+          ./ PetCall/
+          zip -r build/PetCall.zip PetCall
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
