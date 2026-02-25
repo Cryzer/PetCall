@@ -123,7 +123,6 @@ Contributions, ideas, and feedback are welcome.
 
 - [Open an issue](https://github.com/Cryzer/PetCall/issues)
 - Submit a pull request
-- Help with translations on [CurseForge](https://www.curseforge.com/wow/addons/petcall) or [Wago.io](https://addons.wago.io/addons/petcall)
 
 ---
 
