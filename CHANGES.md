@@ -2,39 +2,35 @@
 Changelog
 =========
 
-1.0.1 (2026-02-24)
+v1.0.1 (2026-02-24)
 ------------------
 
-- Change slash command alias from /pl (PetLeash legacy) to /pcall.
-- Performance: fix pet weight table being rebuilt on every summon attempt instead of only when dirty.
-- Performance: combine filter iteration into a single pass over the pet journal (was N+1 passes).
-- Performance: reduce FrequentCheck polling timer from 10 Hz to 2 Hz.
-- Performance: detect flying state via PLAYER_MOUNT_DISPLAY_CHANGED event instead of polling.
-- Performance: cache pet names before sort in broker panel (was O(N log N) API calls, now O(N)).
-- Performance: extract static OnLeave handler in broker panel to avoid per-row closure allocation.
-- Performance: eliminate closure allocation in macro trigger timer.
-- Fix 3D preview orbit for pets with off-center skeleton root (e.g. Murkastrasza) via per-creature static preview list.
-- Add hover tooltips to all General and Auto Switch tab options for clarity.
-- Clean up locale file: remove legacy keys, remove duplicate entries, sort alphabetically.
-- Clean up code comments: replace empty separators with descriptive section headers; update stale XXX notes.
+- New slash command: /pcall (replaces legacy /pl).
+- Improved overall performance and reduced CPU usage during auto-summon checks.
+- Faster pet filtering and selection.
+- Reduced background polling frequency.
+- Improved broker panel responsiveness.
+- Fixed 3D preview orbit for certain pets (e.g. Murkastrasza).
+- Added hover tooltips across General and Auto Switch settings.
+- Various internal optimizations and cleanup.
 
-1.0.0 (2026-02-24)
+v1.0.0 (2026-02-24)
 ------------------
 
-- Renamed to PetCall; based on PetLeash 3.1.5 by End (abandoned 2018).
+- PetCall: continuation of PetLeash (3.1.5).
 - Full compatibility update for WoW 12.0 (Midnight).
-- Fix options panel not appearing in the AddOns list on login.
-- Fix broker minimap button right-click pet menu.
-- Fix broker minimap button tooltip not updating after left-click.
-- Add 3D pet model preview on hover in Pet Selection settings.
-- Replace broker right-click context menu with a custom panel showing alphabetical pages and 3D pet model preview on hover.
-- Fix pet selection filter showing wrong pets when switching between Selected/Unselected modes; add All option.
-- Fix addon attempting to summon a pet while sitting on furniture or a bench.
-- Fix readiness checks breaking when entering combat.
-- Fix pet triggers not updating when resting state changes.
-- Improve Pet Triggers UX: empty-state guidance, per-set trigger/pet summary, help text on Triggers/Filters tabs, Priority and Immediate explanations, (And)/(Or) descriptions, and visible error message on invalid set name.
-- Add About panel refactor credits.
-- Update all embedded libraries to current versions.
+- Added 3D pet model preview on hover in Pet Selection.
+- Replaced broker right-click menu with a custom pet selection panel with alphabetical pages and 3D preview.
+- Fixed options panel not appearing in AddOns list on login.
+- Fixed broker minimap right-click pet menu.
+- Fixed broker tooltip not updating after left-click.
+- Fixed incorrect pets shown when switching Selected / Unselected filters; added All option.
+- Fixed addon attempting to summon pets while sitting on furniture.
+- Fixed readiness checks breaking in combat.
+- Fixed pet triggers not updating when resting state changes.
+- Improved Pet Triggers UX (guidance, summaries, help text, clearer explanations).
+- Updated embedded libraries.
+- Added credits in About panel.
 
 3.1.5 (2018-07-18)
 ------------------
