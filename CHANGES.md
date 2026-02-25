@@ -1,6 +1,12 @@
 
 # Changelog
 
+## v1.0.8 (2026-02-25)
+
+- Added Import/Export for trigger sets. Use the Export button next to any set to get a shareable string, and Import Set to load one from another player.
+- Added AceSerializer-3.0 library for reliable set serialization.
+- Added Luacheck CI — static analysis runs on every push to main.
+
 ## v1.0.7 (2026-02-25)
 
 - Fixed release notes showing full changelog instead of current version only.

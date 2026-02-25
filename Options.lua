@@ -505,13 +505,7 @@ function module:SetupOptions()
             div(y - 6); y = y - 24
             head("What's New — " .. ver, y); y = y - LINE_MD
 
-            local changes = {
-                "Automatic PetLeash data migration — import all your sets and triggers on first login.",
-                "New |cffcccccc/pcall migrate|r command to trigger the PetLeash import at any time.",
-                "Fix: 3D pet preview now updates correctly when moving the mouse quickly between pets.",
-                "Locale improvements for German, Russian, French, Chinese, and Korean.",
-                "Now available on CurseForge and Wago.io.",
-            }
+            local changes = addon.releaseNotes or {}
             for _, line in ipairs(changes) do
                 body("|cff667766•|r  " .. line, y, INDENT)
                 y = y - LINE_SM
@@ -648,6 +642,15 @@ do
             addNew:SetUserData("mainPage", frame)
             frame:AddChild(addNew)
 
+            local importButton = AceGUI:Create("Button")
+            importButton:SetText("Import Set")
+            importButton:SetCallback("OnClick", function()
+                addon:ShowImportDialog(function()
+                    mainPage_FillList(frame)
+                end)
+            end)
+            frame:AddChild(importButton)
+
             local scroll = AceGUI:Create("ScrollFrame")
             scroll:SetLayout("Flow")
             scroll:SetFullWidth(true)
@@ -704,6 +707,14 @@ do
                 deleteButton:SetUserData("mainPage", frame)
                 deleteButton:SetCallback("OnClick", setDeleteButton_OnClick)
                 group:AddChild(deleteButton)
+
+                local exportButton = AceGUI:Create("Button")
+                exportButton:SetText("Export")
+                exportButton:SetUserData("setName", setName)
+                exportButton:SetCallback("OnClick", function(btn)
+                    addon:ShowExportDialog(btn:GetUserData("setName"))
+                end)
+                group:AddChild(exportButton)
 
                 scroll:AddChild(group)
             end
