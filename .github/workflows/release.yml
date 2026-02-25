@@ -1,7 +1,6 @@
 name: Release WoW Addon
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - "v*"
