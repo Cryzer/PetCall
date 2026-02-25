@@ -61,12 +61,11 @@ Ensure the folder is named `PetCall`.
 Open configuration:
 
 - **Interface → AddOns → PetCall**
-- Minimap button — **Ctrl+Click** to open options
-- Addon bar button (TitanPanel, ElvUI data texts, etc.)
+- Minimap button — **Ctrl+Click**
 
-The minimap button also lets you interact with your pet directly:
+The minimap button also gives quick access to your pet:
 
-- **Left-click** — summon or dismiss your current pet
+- **Left-click** — toggle PetCall on or off (enables/disables auto-summoning and dismisses or resummons your pet)
 - **Right-click** — open the pet selection panel
 
 ### Pet Triggers tab
