@@ -1,22 +1,23 @@
 
-Changelog
-=========
+# Changelog
 
-v1.0.3 (2026-02-25)
-------------------
+## v1.0.4 (2026-02-25)
+
+- Fixed CurseForge build error caused by invalid .pkgmeta keys (curse-project-id, wago-project-id moved to TOC headers).
+- Fixed CHANGES.md format to use Markdown headers, enabling per-version release notes extraction.
+
+## v1.0.3 (2026-02-25)
 
 - Fixed translation errors in German, Russian, French, Chinese, and Korean locales. Added missing v1.0.2 strings (migration prompts, summoning message) to all locales.
 - Now published on CurseForge and Wago.io with community localization support.
 
-v1.0.2 (2026-02-25)
-------------------
+## v1.0.2 (2026-02-25)
 
 - Added automatic PetLeash profile migration. On first login with both addons installed, PetCall prompts to import all sets, triggers, and settings from PetLeash. The UI reloads once to apply the data cleanly.
 - Added /pcall migrate slash command to trigger the import dialog manually.
 - Fixed 3D pet preview not updating when quickly moving the mouse between pets in the pet list and broker panel.
 
-v1.0.1 (2026-02-24)
-------------------
+## v1.0.1 (2026-02-24)
 
 - New slash command: /pcall (replaces legacy /pl).
 - Improved overall performance and reduced CPU usage during auto-summon checks.
@@ -27,8 +28,7 @@ v1.0.1 (2026-02-24)
 - Added hover tooltips across General and Auto Switch settings.
 - Various internal optimizations and cleanup.
 
-v1.0.0 (2026-02-24)
-------------------
+## v1.0.0 (2026-02-24)
 
 - PetCall: continuation of PetLeash (3.1.5).
 - Full compatibility update for WoW 12.0 (Midnight).
@@ -45,38 +45,32 @@ v1.0.0 (2026-02-24)
 - Updated embedded libraries.
 - Added credits in About panel.
 
-3.1.5 (2018-07-18)
-------------------
+## 3.1.5 (2018-07-18)
 
 - Fix readiness checks to work with 8.0 client patch.
 - Fix food triggered sitting readiness check.
 
-3.1.4 (2017-09-05)
-------------------
+## 3.1.4 (2017-09-05)
 
 - Fix pet selection to work with 7.3 client patch.
 
-3.1.3 (2017-03-29)
-------------------
+## 3.1.3 (2017-03-29)
 
 - Fix options screen creation to not break with 7.2 client patch.
 
-3.1.2 (2016-11-26)
-------------------
+## 3.1.2 (2016-11-26)
 
 - Allow setting of class in the Class Specialization trigger.  Only
   checking specialization and not class was confusing when the profile
   was not set to be specific to class.
 
-3.1.1
------
+## 3.1.1
 
 - Don't overflow scroll frame for pet triggers.
 - Don't disable ready for haunted momento.
 - Update localizations (deDE)
 
-3.1
----
+## 3.1
 
 - Provide the DataBroker plugin as a minimap button, which is disabled
   by default.
@@ -86,21 +80,18 @@ v1.0.0 (2026-02-24)
 - Detect going afk or eating food as the sitting state, which lasts
   until the player moves.
 
-3.0.17
-------
+## 3.0.17
 
 - Update localizations (deDE)
 
-3.0.16
-------
+## 3.0.16
 
 - Add support for 7.0 client:
     - Update summonable pets to check for "needs fanfare", which seems
       to be a pet unwrapping animation.
     - Update readiness checks for changed spell ids.
 
-3.0.15
-------
+## 3.0.15
 
 - Fix luacode example trigger.
 - Fix luacode trigger handling.
@@ -108,88 +99,72 @@ v1.0.0 (2026-02-24)
   the player.
 - Add another Nagrand quest for checking readiness.
 
-3.0.14
-------
+## 3.0.14
 
 - Update localizations (ruRU)
 
-3.0.13
-------
+## 3.0.13
 
 - Update localizations
 
-3.0.12
-------
+## 3.0.12
 
 - Default to enabled in PVE instances.
 
-3.0.11
-------
+## 3.0.11
 
 - Add enabled/dismiss option for PVE instances.
 
-3.0.10
-------
+## 3.0.10
 
 - Add tooltip to pet selection, to help distinguish between different
   pets with the same species.
 - Make pet selection sorting consistent.
 
-3.0.9
------
+## 3.0.9
 
 - Update spell ids for eating readiness check.
 - Don't try to dismiss a pet while flying.
 - Allow summoning pets while mounted.
 
-3.0.8
------
+## 3.0.8
 
 - Be more chatty when summoning a pet, to help users detect problems
   with readiness checks.
 - Update spell ids for eating readiness check.
 
-
-3.0.7
------
+## 3.0.7
 
 - Minor bugfixes.
 
-3.0.6
------
+## 3.0.6
 
 - Dismiss pets when in Camouflage and Feign Death, as they no longer
   break when a pet is dismissed.
 
-3.0.5
------
+## 3.0.5
 
 - Disable readiness when the Oshu'gun quest is active.  It is doing
   something weird with pets.
 
-3.0.4
------
+## 3.0.4
 
 - When in autoswitch mode, don't try to summon a pet if we get extra
   zoning events.
 
-3.0.3
------
+## 3.0.3
 
 - Minor option bugfixes.
 
-3.0.2
------
+## 3.0.2
 
 - Fix search box "Search" string handling.
 
-3.0.1
------
+## 3.0.1
 
 - Update spell ids for camouflage readiness check.
 
-3.0
----
+## 3.0
 
 - Add new triggers and filters functionality to dynamically select
   pets or conditions to summon pets on.

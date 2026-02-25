@@ -1,8 +1,5 @@
 package-as: PetCall
 
-curse-project-id: 1470918
-wago-project-id: b6XegOKp
-
 enable-nolib-creation: yes
 
 manual-changelog: CHANGES.md
