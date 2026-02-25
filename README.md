@@ -61,8 +61,13 @@ Ensure the folder is named `PetCall`.
 Open configuration:
 
 - **Interface → AddOns → PetCall**
-- Minimap button (right-click to open options)
-- DataBroker launcher
+- Minimap button — **Ctrl+Click** to open options
+- Addon bar button (TitanPanel, ElvUI data texts, etc.)
+
+The minimap button also lets you interact with your pet directly:
+
+- **Left-click** — summon or dismiss your current pet
+- **Right-click** — open the pet selection panel
 
 ### Pet Triggers tab
 
