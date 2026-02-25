@@ -14,6 +14,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Extract version from tag (v1.2.3 -> 1.2.3)
       - name: Extract version
@@ -33,6 +35,10 @@ jobs:
             --exclude '.git' \
             --exclude '.github' \
             --exclude 'build' \
+            --exclude '.gitignore' \
+            --exclude '.pkgmeta' \
+            --exclude 'README.md' \
+            --exclude 'CHANGES.md' \
             ./ PetCall/
           zip -r build/PetCall.zip PetCall
           
@@ -40,7 +46,13 @@ jobs:
         id: changelog
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          awk "/^$VERSION /,/^$/" CHANGES.md > RELEASE_NOTES.md || true
+          
+          awk -v ver="$VERSION" '
+            $0 ~ "^v"ver" " {flag=1}
+            flag && $0 ~ "^v[0-9]" && $0 !~ "^v"ver" " {exit}
+            flag {print}
+          ' CHANGES.md > RELEASE_NOTES.md
+
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           cat RELEASE_NOTES.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
