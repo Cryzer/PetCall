@@ -1,7 +1,7 @@
 
 # Changelog
 
-## v1.0.9 (2026-02-25)
+## v1.0.9 (2026-02-26)
 
 - Redesigned Pet Triggers layout: sets displayed in a two-column grid with equal-size Edit/Delete/Export buttons side by side.
 - Set labels now use a larger, more readable font (GameFontNormal). Sets with zero triggers are highlighted in orange as a reminder.
@@ -15,6 +15,7 @@
 - Added "Create" button next to the "Add New Set" field; "Okay" button on that field is also hidden.
 - Fixed Export button crash (AceSerializer:Serialize returns one value, not two).
 - Export dialog now auto-selects all text on open for easy copying.
+- Pet selection panel now auto-closes 0.75 seconds after the cursor leaves it.
 
 ## v1.0.8 (2026-02-25)
 
