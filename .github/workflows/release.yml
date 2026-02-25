@@ -35,11 +35,19 @@ jobs:
             --exclude 'build' \
             ./ PetCall/
           zip -r build/PetCall.zip PetCall
-
-      # Create GitHub Release
+          
+      - name: Extract changelog for version
+        id: changelog
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          awk "/^$VERSION /,/^$/" CHANGES.md > RELEASE_NOTES.md || true
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat RELEASE_NOTES.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+    
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.notes }}
           files: build/PetCall.zip
-          generate_release_notes: true
