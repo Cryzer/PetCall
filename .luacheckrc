@@ -3,9 +3,9 @@ max_line_length = false
 
 -- 211/212/213: unused var/arg/loop var
 -- 411: variable re-defined in same scope
--- 421/431/432/433/443: shadowing upvalue / arg / definition / loop var
+-- 421/422/431/432/433/443: shadowing upvalue / arg / definition / loop var
 -- 611/612/613/614: trailing whitespace / whitespace-only line / whitespace in string or comment
-ignore = { "211", "212", "213", "411", "421", "431", "432", "433", "443", "611", "612", "613", "614" }
+ignore = { "211", "212", "213", "411", "421", "422", "431", "432", "433", "443", "611", "612", "613", "614" }
 
 -- Locales are auto-generated from CurseForge and may contain Lua 5.3 \uXXXX escapes.
 -- Libs are vendored third-party libraries; not our code to lint.
