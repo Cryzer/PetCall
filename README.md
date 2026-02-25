@@ -16,26 +16,24 @@ Smart companion pet automation for World of Warcraft.
 
 ## Overview
 
-PetCall automatically summons companion pets based on configurable rules, gameplay context, and character state.
+PetCall automatically summons companion pets based on configurable rules and your current situation in the game.
 
-Instead of manually selecting pets, PetCall evaluates your current situation — such as location, activity, or state — and summons the most appropriate companion pet.
-
-PetCall is designed as a flexible automation framework for companion pets.
+Instead of manually picking a pet every time, PetCall checks where you are, what you're doing, and what class or spec you're playing — then summons the right companion automatically.
 
 ---
 
 ## Features
 
-- Automatic companion pet summoning based on your current context
-- Rule-based trigger system (zone, instance, activity, state, class, specialization, and more)
-- Pet sets with configurable priority and enable/disable toggle
-- Multiple pets per set — PetCall picks one at random from the pool
-- Advanced filters (favorites, pet type, level, etc.)
-- Import and export pet sets as shareable strings
-- 3D pet preview in the configuration UI
-- Minimap button and DataBroker launcher
-- Event-driven architecture for minimal performance impact
-- Ace3 configuration panel with full localization support
+- Automatically summons a companion pet based on your current situation
+- Trigger conditions: zone, instance type, activity, resting, class, specialization, and more
+- Multiple pet sets with priority — the highest-priority active set wins
+- Add multiple pets to a set — PetCall picks one at random
+- Filter pets by favorites, type, level, and more
+- Import and export pet sets as shareable strings — easy to share with friends
+- 3D pet preview when browsing pets in the options panel
+- Minimap button for quick access
+- Lightweight — has minimal impact on game performance
+- Available in multiple languages
 
 ---
 
@@ -65,7 +63,7 @@ Open configuration:
 
 The minimap button also gives quick access to your pet:
 
-- **Left-click** — toggle PetCall on or off (enables/disables auto-summoning and dismisses or resummons your pet)
+- **Left-click** — toggle PetCall on or off (dismisses or resummons your pet)
 - **Right-click** — open the pet selection panel
 
 ### Pet Triggers tab
@@ -73,15 +71,15 @@ The minimap button also gives quick access to your pet:
 Create one or more **pet sets**. Each set defines:
 
 - A **pet pool** — which companions can be summoned by this set
-- One or more **trigger conditions** — when this set is active
-- **Priority** — higher-priority sets take precedence
-- **Default value** — whether to summon or dismiss when no trigger matches
+- One or more **trigger conditions** — when this set should be active
+- **Priority** — higher-priority sets take precedence over lower ones
+- **Default behavior** — what happens when none of the trigger conditions are met (summon or dismiss)
 
-Sets are evaluated in priority order. The first active set wins.
+Sets are checked in priority order. The first active set wins.
 
 ### Import / Export
 
-Share your pet set configuration with other players using the **Export** button on any set. Send the resulting string to a friend; they paste it into **Import Set** and choose a name.
+Share your pet set configuration with other players using the **Export** button on any set. Send the resulting string to a friend — they paste it into **Import Set** and choose a name for it.
 
 ### Slash commands
 
@@ -116,16 +114,6 @@ If you have already removed PetLeash but still have its SavedVariables file:
 5. Log in — PetCall will load your data
 
 If PetLeash data is present but you skipped the prompt, run `/pcall migrate` at any time.
-
----
-
-## Technical Details
-
-- SavedVariables: `PetCall3DB`
-- Framework: Ace3 (AceAddon, AceDB, AceGUI, AceConfig, AceConsole, AceEvent, AceSerializer)
-- Pet data: LibPetJournal-2.0
-- Broker: LibDataBroker, LibDBIcon
-- Static analysis: Luacheck CI on every push
 
 ---
 
