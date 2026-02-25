@@ -293,9 +293,27 @@ function module:CreateBrokerPanel()
         self:FillRightPane()
     end)
 
+    -- Auto-close when the cursor leaves the panel
+    local hideDelay = 0
+    local HIDE_AFTER = 0.75  -- seconds
+
+    panel:SetScript("OnShow", function() hideDelay = 0 end)
+
+    panel:SetScript("OnUpdate", function(self, elapsed)
+        if self:IsMouseOver() then
+            hideDelay = 0
+        else
+            hideDelay = hideDelay + elapsed
+            if hideDelay >= HIDE_AFTER then
+                self:Hide()
+            end
+        end
+    end)
+
     -- Cleanup on hide
     panel:SetScript("OnHide", function()
         catcher:Hide()
+        hideDelay = 0
         if brokerPreview then brokerPreview:Hide() end
     end)
 
