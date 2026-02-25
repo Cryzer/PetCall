@@ -1,6 +1,10 @@
 
 # Changelog
 
+## v1.0.5 (2026-02-25)
+
+- Fixed CurseForge build error caused by unsupported localizations key in .pkgmeta.
+
 ## v1.0.4 (2026-02-25)
 
 - Fixed CurseForge build error caused by invalid .pkgmeta keys (curse-project-id, wago-project-id moved to TOC headers).

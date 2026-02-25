@@ -1,6 +1,6 @@
 ## Interface: 120001
 ## Title: PetCall
-## Version: 1.0.4
+## Version: 1.0.5
 ## Notes: Automatically summons your companion pet based on configurable triggers and conditions.
 ## Author: End
 ## X-Email: end@cornhooves.org
