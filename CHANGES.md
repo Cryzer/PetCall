@@ -1,6 +1,10 @@
 
 # Changelog
 
+## v1.0.6 (2026-02-25)
+
+- Fixed release notes showing full changelog instead of current version only (set markup-type: markdown in .pkgmeta).
+
 ## v1.0.5 (2026-02-25)
 
 - Fixed CurseForge build error caused by unsupported localizations key in .pkgmeta.
