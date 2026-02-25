@@ -17,6 +17,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Extract version changelog
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          awk -v tag="## ${TAG} " 'BEGIN{f=0} index($0,tag)==1{f=1;next} f && /^## /{exit} f{print}' CHANGES.md > /tmp/vc.md
+          cp /tmp/vc.md CHANGES.md
+
       - uses: BigWigsMods/packager@v2
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
