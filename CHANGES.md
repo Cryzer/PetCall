@@ -1,6 +1,21 @@
 
 # Changelog
 
+## v1.0.9 (2026-02-25)
+
+- Redesigned Pet Triggers layout: sets displayed in a two-column grid with equal-size Edit/Delete/Export buttons side by side.
+- Set labels now use a larger, more readable font (GameFontNormal). Sets with zero triggers are highlighted in orange as a reminder.
+- Disabled sets are now shown with a gray title and "(disabled)" indicator.
+- Delete now asks for confirmation before removing a set.
+- Export redesigned: the export string no longer contains the set name. The importer chooses their own name, with duplicate detection.
+- Import dialog now auto-closes after a successful import.
+- Fixed false "already exists" error when creating a set whose name matched a default wildcard in the database.
+- Fixed unicode artifact characters appearing in import error messages.
+- Fixed "Okay" button on the import name field triggering an unintended import; button is now hidden.
+- Added "Create" button next to the "Add New Set" field; "Okay" button on that field is also hidden.
+- Fixed Export button crash (AceSerializer:Serialize returns one value, not two).
+- Export dialog now auto-selects all text on open for easy copying.
+
 ## v1.0.8 (2026-02-25)
 
 - Added Import/Export for trigger sets. Use the Export button next to any set to get a shareable string, and Import Set to load one from another player.

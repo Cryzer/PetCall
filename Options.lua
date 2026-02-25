@@ -618,10 +618,28 @@ do
                                      frame:GetUserData("setName"))
         end
 
+        StaticPopupDialogs["PETCALL_DELETE_SET"] = {
+            text = "Delete \"%s\"?\nThis cannot be undone.",
+            button1 = DELETE,
+            button2 = CANCEL,
+            OnAccept = function(self, data)
+                local set = addon:GetSetByName(data.setName)
+                if set then set:Delete() end
+                data.onDeleted()
+            end,
+            timeout = 0,
+            whileDead = true,
+            hideOnEscape = true,
+            preferredIndex = 3,
+        }
+
         local function setDeleteButton_OnClick(frame, event)
-            local set = addon:GetSetByName(frame:GetUserData("setName"))
-            if set then set:Delete() end
-            mainPage_FillList(frame:GetUserData("mainPage"))
+            StaticPopup_Show("PETCALL_DELETE_SET",
+                frame:GetUserData("setName"), nil,
+                { setName  = frame:GetUserData("setName"),
+                  onDeleted = function()
+                      mainPage_FillList(frame:GetUserData("mainPage"))
+                  end })
         end
 
         local setsTmp = {}
@@ -632,18 +650,30 @@ do
             frame:SetTitle(L["Pet Triggers"])
 
             local desc = AceGUI:Create("Label")
-            desc:SetText("Pet Trigger Sets define when and which pets to summon.  Create a named set, then use Edit to configure its trigger conditions and pet pool.")
+            desc:SetText("Each set defines when and which companion to summon. Use Edit to configure its trigger conditions and pet pool.")
             desc:SetFullWidth(true)
+            desc.label:SetFontObject(GameFontNormal)
             frame:AddChild(desc)
 
             local addNew = AceGUI:Create("EditBox")
             addNew:SetLabel("Add New Set")
+            addNew:SetRelativeWidth(0.50)
+            addNew:DisableButton(true)
             addNew:SetCallback("OnEnterPressed", newSet_onEnterPressed)
             addNew:SetUserData("mainPage", frame)
             frame:AddChild(addNew)
 
+            local createButton = AceGUI:Create("Button")
+            createButton:SetText("Create")
+            createButton:SetRelativeWidth(0.23)
+            createButton:SetCallback("OnClick", function()
+                newSet_onEnterPressed(addNew, nil, addNew:GetText())
+            end)
+            frame:AddChild(createButton)
+
             local importButton = AceGUI:Create("Button")
             importButton:SetText("Import Set")
+            importButton:SetRelativeWidth(0.25)
             importButton:SetCallback("OnClick", function()
                 addon:ShowImportDialog(function()
                     mainPage_FillList(frame)
@@ -676,9 +706,16 @@ do
 
             for _,setName in pairs(setsTmp) do
                 local setData = setDB[setName]
+                -- Two-column layout: each card is ~half the scroll width.
+                -- Card title: gray + "(disabled)" when the set is off.
+                local titleStr = setData.name or setName
+                if setData.enabled == false then
+                    titleStr = "|cffaaaaad" .. titleStr .. " (disabled)|r"
+                end
                 local group = AceGUI:Create("InlineGroup")
-                group:SetTitle(setData.name or setName)
-                group:SetFullWidth(true)
+                group:SetTitle(titleStr)
+                group:SetRelativeWidth(0.49)
+                group:SetLayout("Flow")
 
                 local trigCount = #(setData.trigger or {})
                 local petCount = 0
@@ -687,15 +724,22 @@ do
                         if type(w) == "number" and w > 0 then petCount = petCount + 1 end
                     end
                 end
+                -- Orange text when set has no triggers (won't activate).
+                local summaryFmt = trigCount == 0
+                    and "|cffff9933%d trigger%s \194\183 %d pet%s selected|r"
+                    or  "%d trigger%s \194\183 %d pet%s selected"
                 local summary = AceGUI:Create("Label")
-                summary:SetText(string.format("|cffaaaaad%d trigger%s, %d pet%s selected|r",
+                summary:SetText(string.format(summaryFmt,
                     trigCount, trigCount == 1 and "" or "s",
                     petCount,  petCount  == 1 and "" or "s"))
                 summary:SetFullWidth(true)
+                summary.label:SetFontObject(GameFontNormal)
                 group:AddChild(summary)
 
+                -- Three equal-width buttons.
                 local editButton = AceGUI:Create("Button")
                 editButton:SetText(L["Edit"])
+                editButton:SetRelativeWidth(0.30)
                 editButton:SetUserData("setName", setName)
                 editButton:SetUserData("mainPage", frame)
                 editButton:SetCallback("OnClick", setEditButton_OnClick)
@@ -703,6 +747,7 @@ do
 
                 local deleteButton = AceGUI:Create("Button")
                 deleteButton:SetText(DELETE)
+                deleteButton:SetRelativeWidth(0.30)
                 deleteButton:SetUserData("setName", setName)
                 deleteButton:SetUserData("mainPage", frame)
                 deleteButton:SetCallback("OnClick", setDeleteButton_OnClick)
@@ -710,6 +755,7 @@ do
 
                 local exportButton = AceGUI:Create("Button")
                 exportButton:SetText("Export")
+                exportButton:SetRelativeWidth(0.30)
                 exportButton:SetUserData("setName", setName)
                 exportButton:SetCallback("OnClick", function(btn)
                     addon:ShowExportDialog(btn:GetUserData("setName"))
