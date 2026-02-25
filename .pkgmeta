@@ -3,29 +3,3 @@ package-as: PetCall
 enable-nolib-creation: yes
 
 manual-changelog: CHANGES.md
-
-localizations:
-  - localization-id: 1470918
-    locale: enUS
-    filename: Locales/enUS.lua
-    namespace: PetCall
-  - localization-id: 1470918
-    locale: deDE
-    filename: Locales/deDE.lua
-    namespace: PetCall
-  - localization-id: 1470918
-    locale: frFR
-    filename: Locales/frFR.lua
-    namespace: PetCall
-  - localization-id: 1470918
-    locale: ruRU
-    filename: Locales/ruRU.lua
-    namespace: PetCall
-  - localization-id: 1470918
-    locale: zhCN
-    filename: Locales/zhCN.lua
-    namespace: PetCall
-  - localization-id: 1470918
-    locale: koKR
-    filename: Locales/koKR.lua
-    namespace: PetCall
