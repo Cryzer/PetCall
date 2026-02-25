@@ -23,9 +23,9 @@ jobs:
           awk -v tag="## ${TAG} " 'BEGIN{f=0} index($0,tag)==1{f=1;next} f && /^## /{exit} f{print}' CHANGES.md > /tmp/vc.md
           cp /tmp/vc.md CHANGES.md
           {
-            printf '-- Auto-generated from CHANGES.md at release time.\n'
-            printf 'local addon_name, addon = ...\n'
-            printf 'addon.releaseNotes = {\n'
+            printf '%s\n' '-- Auto-generated from CHANGES.md at release time.'
+            printf '%s\n' 'local addon_name, addon = ...'
+            printf '%s\n' 'addon.releaseNotes = {'
             grep '^- ' /tmp/vc.md | sed 's/^- //' | while IFS= read -r line; do
               escaped=$(printf '%s' "$line" | sed 's/\\/\\\\/g; s/"/\\"/g')
               printf '    "%s",\n' "$escaped"
