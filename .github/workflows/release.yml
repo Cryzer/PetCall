@@ -13,66 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Get version from tag
-        id: version
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      # Update TOC version
-      - name: Update TOC version
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          VERSION="${VERSION#v}"
-          sed -i "s/^## Version:.*/## Version: $VERSION/" PetCall.toc || true
-
-      - name: Create addon zip
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-
-          mkdir -p build/PetCall
-
-          rsync -av . build/PetCall/ \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='build' \
-            --exclude='.gitignore' \
-            --exclude='.pkgmeta' \
-            --exclude='README.md' \
-            --exclude='CHANGES.md'
-
-          cd build
-          zip -r ../PetCall-${VERSION}.zip PetCall
-
-      - name: Extract changelog for release
-        id: changelog
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          VERSION="${VERSION#v}"
-
-          if [ -f CHANGES.md ]; then
-            NOTES=$(awk -v ver="$VERSION" '
-              $0 ~ "^v"ver" " {flag=1}
-              flag && $0 ~ "^v[0-9]" && $0 !~ "^v"ver" " {exit}
-              flag {print}
-            ' CHANGES.md)
-
-            if [ -z "$NOTES" ]; then
-              NOTES="Release v$VERSION"
-            fi
-          else
-            NOTES="Release v$VERSION"
-          fi
-
-          echo "$NOTES" > release_notes.txt
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: PetCall-${{ steps.version.outputs.version }}.zip
-          body_path: release_notes.txt
-          draft: false
-          prerelease: false
+      - uses: BigWigsMods/packager@v2
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}

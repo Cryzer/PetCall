@@ -2,6 +2,12 @@
 Changelog
 =========
 
+v1.0.3 (2026-02-25)
+------------------
+
+- Fixed translation errors in German, Russian, French, Chinese, and Korean locales. Added missing v1.0.2 strings (migration prompts, summoning message) to all locales.
+- Now published on CurseForge and Wago.io with community localization support.
+
 v1.0.2 (2026-02-25)
 ------------------
 

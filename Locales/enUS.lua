@@ -1,7 +1,7 @@
 
 --[[
 
-Translations are maintained at http://wow.curseforge.com/projects/petleash/localization/
+Translations are maintained at http://wow.curseforge.com/projects/petcall/localization/
 
 This is the master import file for the localization system.  All changes to this
 file need to be updated in the localization system.

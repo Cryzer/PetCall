@@ -506,14 +506,11 @@ function module:SetupOptions()
             head("What's New — " .. ver, y); y = y - LINE_MD
 
             local changes = {
-                "Slash command alias changed from |cffcccccc/pl|r to |cffcccccc/pcall|r.",
-                "Fix 3D pet preview orbit for models with an off-center skeleton root (e.g. Murkastrasza).",
-                "Add hover tooltips to all General and Auto Switch options.",
-                "7 performance improvements: single-pass filtering, reduced polling rate, cached name sorts.",
-                "Fix pet selection filter showing wrong pets (Selected / Unselected / All).",
-                "Fix broker minimap right-click pet menu and tooltip.",
-                "Fix summoning blocked while sitting on furniture or a bench.",
-                "Fix readiness checks breaking on combat entry.",
+                "Automatic PetLeash data migration — import all your sets and triggers on first login.",
+                "New |cffcccccc/pcall migrate|r command to trigger the PetLeash import at any time.",
+                "Fix: 3D pet preview now updates correctly when moving the mouse quickly between pets.",
+                "Locale improvements for German, Russian, French, Chinese, and Korean.",
+                "Now available on CurseForge and Wago.io.",
             }
             for _, line in ipairs(changes) do
                 body("|cff667766•|r  " .. line, y, INDENT)
@@ -530,6 +527,7 @@ function module:SetupOptions()
                 { "|cff77cc77/petcall dismiss|r",                "Dismiss current pet; disable summoning" },
                 { "|cff77cc77/petcall togglePet|r",              "Toggle pet on / off without changing enable state" },
                 { "|cff77cc77/petcall enable|r",                 "Toggle auto-summon on / off" },
+                { "|cff77cc77/petcall migrate|r",                "Import PetLeash profile data" },
             }
             for _, row in ipairs(cmds) do
                 twoCol(row[1], row[2], y, 210)
