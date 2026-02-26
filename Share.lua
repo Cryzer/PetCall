@@ -1,9 +1,11 @@
 
 local addon_name, addon = ...
 
-local AceGUI      = LibStub("AceGUI-3.0")
+local AceGUI        = LibStub("AceGUI-3.0")
 local AceSerializer = LibStub("AceSerializer-3.0")
+local LibPetJournal = LibStub("LibPetJournal-2.0")
 
+local C_PetJournal = C_PetJournal
 local type, strfind, tinsert = type, strfind, tinsert
 
 local EXPORT_PREFIX = "PetCall:1:"
@@ -20,12 +22,27 @@ function addon:ExportSet(setName)
         return nil, "Set not found: " .. tostring(setName)
     end
 
+    -- Convert pets from {petGUID → weight} to {speciesID → weight} so the
+    -- export string is portable across different accounts.
+    local exportPets = {}
+    for petGUID, weight in pairs(setData.pets) do
+        if type(weight) == "number" then
+            local speciesID = C_PetJournal.GetPetInfoByPetID(petGUID)
+            if speciesID and speciesID > 0 then
+                local cur = exportPets[speciesID]
+                if cur == nil or weight > cur then
+                    exportPets[speciesID] = weight
+                end
+            end
+        end
+    end
+
     local export = {
         enabled      = setData.enabled,
         priority     = setData.priority,
         defaultValue = setData.defaultValue,
         immediate    = setData.immediate,
-        pets         = setData.pets,
+        pets         = exportPets,
         filter       = setData.filter,
         trigger      = setData.trigger,
     }
@@ -64,6 +81,18 @@ function addon:ImportSet(str, newName)
         return nil, "A set named \"" .. newName .. "\" already exists"
     end
 
+    -- Convert pets from {speciesID → weight} to {petGUID → weight} using
+    -- the importer's own pet collection. Pets whose species aren't owned
+    -- are simply omitted.
+    local importedPets = type(data.pets) == "table" and data.pets or {}
+    local convertedPets = {}
+    for _, petGUID in LibPetJournal:IteratePetIDs() do
+        local speciesID = C_PetJournal.GetPetInfoByPetID(petGUID)
+        if speciesID and importedPets[speciesID] ~= nil then
+            convertedPets[petGUID] = importedPets[speciesID]
+        end
+    end
+
     -- Write validated data to DB.
     addon.db.profile.sets[newName] = {
         name         = newName,
@@ -71,7 +100,7 @@ function addon:ImportSet(str, newName)
         priority     = type(data.priority)     == "number" and data.priority     or 1,
         defaultValue = type(data.defaultValue) == "number" and data.defaultValue or 0,
         immediate    = data.immediate or false,
-        pets         = type(data.pets)    == "table" and data.pets    or {},
+        pets         = convertedPets,
         filter       = type(data.filter)  == "table" and data.filter  or {},
         trigger      = type(data.trigger) == "table" and data.trigger or {},
     }
