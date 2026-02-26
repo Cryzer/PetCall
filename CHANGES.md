@@ -1,6 +1,10 @@
 
 # Changelog
 
+## v1.0.10 (2026-02-26)
+
+- Fixed import not selecting any pets when importing a set from another player. Pet GUIDs are account-specific; exports now use species IDs so the importer's matching pets are selected automatically.
+
 ## v1.0.9 (2026-02-26)
 
 - Redesigned Pet Triggers layout: sets displayed in a two-column grid with equal-size Edit/Delete/Export buttons side by side.
