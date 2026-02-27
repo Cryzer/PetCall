@@ -1,0 +1,28 @@
+## Interface: 120001
+## Title: PetCall
+## Version: 1.0.11
+## Notes: Automatically summons your companion pet based on configurable triggers and conditions.
+## Author: End
+## X-Email: end@cornhooves.org
+## X-Credits: Various Translators
+## X-Category: Miscellaneous
+## X-Curse-Project-ID: 1470918
+## X-Wago-ID: b6XegOKp
+## SavedVariables: PetCall3DB
+## OptionalDeps: Ace3, LibPetJournal-2.0, LibDBIcon-1.0
+## IconTexture: Interface\AddOns\PetCall\Media\icon
+embeds.xml
+locales.xml
+PetCall.lua
+ModelPreview.lua
+Migrate.lua
+Share.lua
+ReleaseNotes.lua
+PetSelect.lua
+Options.lua
+Filters.lua
+Triggers.lua
+Ready.lua
+SwitchTimer.lua
+SpecialItems.lua
+Broker.lua

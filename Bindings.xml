@@ -1,0 +1,14 @@
+<Bindings>
+    <Binding name="PETCALL_SUMMON" category="PetCall">
+        PetCall:ResummonPet()
+    </Binding>
+    <Binding name="PETCALL_DESUMMON" category="PetCall">
+        PetCall:DismissPet()
+    </Binding>
+    <Binding name="PETCALL_TOGGLE" category="PetCall">
+        PetCall:TogglePet()
+    </Binding>
+    <Binding name="PETCALL_CONFIG" category="PetCall">
+        PetCall:OpenOptions()
+    </Binding>
+</Bindings>
