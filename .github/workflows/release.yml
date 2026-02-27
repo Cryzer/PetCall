@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version changelog and generate ReleaseNotes.lua
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          awk -v tag="## ${TAG} " 'BEGIN{f=0} index($0,tag)==1{f=1;next} f && /^## /{exit} f{print}' CHANGES.md > /tmp/vc.md
+          cp /tmp/vc.md CHANGES.md
+          {
+            printf '%s\n' '-- Auto-generated from CHANGES.md at release time.'
+            printf '%s\n' 'local addon_name, addon = ...'
+            printf '%s\n' 'addon.releaseNotes = {'
+            grep '^- ' /tmp/vc.md | sed 's/^- //' | while IFS= read -r line; do
+              escaped=$(printf '%s' "$line" | sed 's/\\/\\\\/g; s/"/\\"/g')
+              printf '    "%s",\n' "$escaped"
+            done
+            printf '}\n'
+          } > ReleaseNotes.lua
+
+      - uses: BigWigsMods/packager@v2
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
