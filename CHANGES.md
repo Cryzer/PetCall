@@ -1,6 +1,10 @@
 
 # Changelog
 
+## v1.0.12 (2026-03-15)
+
+- Updated TOC interface version to 120005.
+
 ## v1.0.11 (2026-02-27)
 
 - Fixed the 3D pet preview getting stuck or going blank when quickly moving the mouse between pets — it would sometimes show the wrong pet or show nothing at all until you moved your mouse away and back in.
