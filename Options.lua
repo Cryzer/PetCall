@@ -259,14 +259,14 @@ local options_slashcmd = {
         resummon = {
             type = "execute",
             name = L["Summon Another Pet"],
-            desc = L["Dismiss your current pet and summon another pet.  Enable summoning if needed."],
+            desc = L["Dismiss your current pet and summon another pet. Enable summoning if needed."],
             order = 20,
             func = function(info) addon:ResummonPet(true, true) end
         },
         dismiss = {
             type = "execute",
             name = L["Dismiss Pet"],
-            desc = L["Dismiss your currently summoned pet.  Disable summoning."],
+            desc = L["Dismiss your currently summoned pet. Disable summoning."],
             order = 21,
             func = function(info) addon:DismissPet(true) end
         },

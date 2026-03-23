@@ -1,6 +1,12 @@
 
 # Changelog
 
+## v1.0.13 (2026-03-23)
+
+- Locale files now pull translations automatically from CurseForge at release time via the BigWigs packager.
+- Fixed double spaces in two localisation phrase keys that caused duplicate entries on CurseForge.
+- Full Simplified Chinese (zhCN) translation — thanks XingDvD!
+
 ## v1.0.12 (2026-03-15)
 
 - Updated TOC interface version to 120005.
