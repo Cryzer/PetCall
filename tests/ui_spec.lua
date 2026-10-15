@@ -368,4 +368,24 @@ describe("UI smoke", function()
         assert.is_true(U.modelLoads <= 2, "model loads: " .. U.modelLoads)
         assert.equal(5130, ns.UI.Preview:GetPanel().model:GetModelFileID())
     end)
+    it("a freshly loaded model faces front and holds still before it turns", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local model = ns.UI.Preview:GetPanel().model
+        local function tick(sec)
+            for _ = 1, sec * 10 do W.advance(0.1) model._scripts.OnUpdate(model, 0.1) end
+        end
+        ns.UI.Preview:SetSelected("a")
+        tick(3)
+        assert.is_true(model._facing > 0.3, "turning after a while")
+        ns.UI.Preview:SetSelected("b")                -- new model: no jump from the old angle
+        if model._scripts.OnModelLoaded then model._scripts.OnModelLoaded(model) end
+        tick(0.3)
+        assert.equal(0, model._facing)
+        tick(2)
+        assert.is_true(model._facing > 0)
+    end)
 end)

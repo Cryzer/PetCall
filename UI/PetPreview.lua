@@ -10,6 +10,14 @@ local panel, model, set, hoverID, selectedID
 local shownID, syncing
 local loadModel        -- assigned above Preview:ShowPet
 local angle, dragging, lastX = 0, false, nil
+-- after a (re)load the model faces front, holds still, then eases into the idle turn
+local HOLD, EASE, TURN_SPEED = 0.8, 1.0, 0.3
+local holdUntil = 0
+
+local function faceFront()
+    angle, holdUntil = 0, GetTime() + HOLD
+    if model then model:SetFacing(0) end
+end
 
 -- a selected pet stays in the panel; hovering only previews while nothing is selected
 local function petToShow()
@@ -40,11 +48,16 @@ function Preview:Attach(parent)
             local x = GetCursorPosition()
             angle = angle + (x - lastX) * 0.02
             lastX = x
+            holdUntil = 0                       -- the player took over
         else
-            angle = angle + elapsed * 0.3       -- slow idle rotation
+            local t = GetTime() - holdUntil
+            if t < 0 then return end
+            angle = angle + elapsed * TURN_SPEED * math.min(1, t / EASE)
         end
         self:SetFacing(angle)
     end)
+    -- loads finish later than they are requested; restart the hold when the model appears
+    model:SetScript("OnModelLoaded", faceFront)
 
     panel.name = ns.Widgets.Label(panel, "", "GameFontNormalLarge")
     panel.name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 4, -6)
@@ -110,6 +123,7 @@ function loadModel(info, fromHover)
         pendingLoad = nil
         if model.creatureID ~= info.creatureID then return end   -- moved on meanwhile
         model:ClearModel()
+        faceFront()
         local displayID = select(12, C_PetJournal.GetPetInfoBySpeciesID(info.speciesID))
         if displayID and displayID > 0 then model:SetDisplayInfo(displayID) else model:SetCreature(info.creatureID) end
     end
@@ -130,7 +144,6 @@ function Preview:ShowPet(petID, forSet)
     end
     -- (re)load when the pet changed or the client dropped the previous load
     if model.creatureID ~= info.creatureID or not model:GetModelFileID() then
-        if model.creatureID ~= info.creatureID then angle = 0 end
         model.creatureID = info.creatureID
         loadModel(info, petID ~= selectedID)
     end
