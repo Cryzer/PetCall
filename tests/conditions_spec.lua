@@ -151,4 +151,16 @@ describe("Conditions", function()
         W.fire("ZONE_CHANGED_NEW_AREA")
         assert.equal(1, n)
     end)
+    it("1.x direct-expression Lua code is evaluated on every check", function()
+        local e = { "luacode", code = 'self:RegisterEvent("PLAYER_UPDATE_RESTING") return IsResting()' }
+        W.world.resting = true
+        assert.is_true(eval(e))
+        W.world.resting = false
+        assert.is_false(eval(e))
+        local _, _, c = C.Compile(e)
+        assert.same({ "PLAYER_UPDATE_RESTING" }, c.events)
+        local ok, res = C.CheckLua("return 1 + 1 == 2")
+        assert.is_true(ok)
+        assert.is_true(res)
+    end)
 end)

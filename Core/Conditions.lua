@@ -210,11 +210,18 @@ local function compile(entry)
     if not chunk then c.err = err return c end
     local okSetup, setup = pcall(chunk)
     if not okSetup then c.err = setup return c end
-    c.obj = { RegisterEvent = function(_, event) c.events[#c.events + 1] = event end }
+    local seen = {}
+    c.obj = { RegisterEvent = function(_, event)
+        if not seen[event] then seen[event] = true c.events[#c.events + 1] = event end
+    end }
     local okFn, fn = pcall(setup, c.obj)
     if not okFn then c.err = fn return c end
-    if type(fn) ~= "function" then c.err = L["Lua code must return a function."] return c end
-    c.fn = fn
+    if type(fn) == "function" then
+        c.fn = fn
+    else
+        -- 1.x style: the code itself is the check and runs on every evaluation
+        c.fn = setup
+    end
     return c
 end
 

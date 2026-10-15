@@ -124,7 +124,6 @@ L["Loading"] = true
 L["Using %s"] = true
 L["Unknown condition"] = true
 L["No code"] = true
-L["Lua code must return a function."] = true
 L["Place"] = true
 L["You are in: %s"] = true
 L["City or rest area"] = true
