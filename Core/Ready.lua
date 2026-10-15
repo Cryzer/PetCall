@@ -255,7 +255,12 @@ function Ready:PLAYER_ENTERING_WORLD()
     end
 end
 
-function Ready:COMPANION_UPDATE(_, ctype) if ctype == "CRITTER" then self:_CheckSummon() end end
+function Ready:COMPANION_UPDATE(_, ctype)
+    if ctype == "CRITTER" then
+        ns:Fire("SummonedPetChanged")
+        self:_CheckSummon()
+    end
+end
 function Ready:BARBER_SHOP_OPEN() self:SetReady("barbar", false) end
 function Ready:BARBER_SHOP_CLOSE() self:SetReady("barbar", true) end
 function Ready:LOOT_OPENED() self:SetReady("looting", false) end

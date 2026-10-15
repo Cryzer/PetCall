@@ -43,3 +43,6 @@ UI\PetGridModel.lua
 UI\PetPreview.lua
 UI\PetsTab.lua
 UI\AutoRulesBar.lua
+UI\SetList.lua
+UI\StatusBar.lua
+UI\SetSettingsTab.lua

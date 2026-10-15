@@ -87,6 +87,8 @@ function U.install()
         local f = universal()
         f._shown = true
         f._template = template
+        -- template child keys our code reads
+        if template and template:find("CheckButton") then f.text = universal() end
         if name then rawset(_G, name, f) end
         W.track(f)
         return f
