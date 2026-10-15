@@ -1,6 +1,10 @@
 
 # Changelog
 
+## v1.0.15 (2026-10-15)
+
+- Fixed a Lua error that could appear when opening the pet list in the PetCall settings.
+
 ## v1.0.14 (2026-10-15)
 
 - Updated for WoW 12.1.5 (interface 120105).

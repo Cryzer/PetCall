@@ -461,9 +461,17 @@ do
         end
     end
 
-    local function updateScroll(self)
+    local updateScroll
+
+    -- OnUpdate passes the ScrollFrame itself, not the widget; the widget is frame.obj
+    local function scrollFrame_OnUpdate(scrollFrame)
+        updateScroll(scrollFrame.obj)
+    end
+
+    function updateScroll(self)
         if not self.offset or not self.pageHeight then
-            self.scrollFrame:SetScript("OnUpdate", updateScroll)
+            -- size not known yet; retry on the next frame
+            self.scrollFrame:SetScript("OnUpdate", scrollFrame_OnUpdate)
             return
         end
         self.scrollFrame:SetScript("OnUpdate", nil)
