@@ -35,4 +35,20 @@ describe("UI smoke", function()
             ns.UI.Preview:SetHover(nil)
         end)
     end)
+    it("auto rule chips render, open the editor and edit", function()
+        assert.has_no_error(function()
+            ns.UI.Main:Show()
+            ns.UI.Main:SelectTab("pets")
+            local set = ns.Sets:Get("$Default")
+            set.settings.filter = { { "favorites", 64 }, { "AND", items = { { "OR", items = { { "favorites" } } } }, 1 } }
+            ns.UI.AutoRulesBar:Refresh(set)
+            local chips = ns.UI.AutoRulesBar._chips
+            assert.is_true(chips[1]:IsShown())
+            chips[1]:Click()      -- editor for a simple chip
+            chips[2]:Click()      -- editor for a legacy chip
+            chips[1]:Click()
+            chips[1].remove:Click()
+            assert.equal(1, #set.settings.filter)
+        end)
+    end)
 end)

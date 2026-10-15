@@ -37,3 +37,4 @@ UI\MainWindow.lua
 UI\PetGridModel.lua
 UI\PetPreview.lua
 UI\PetsTab.lua
+UI\AutoRulesBar.lua

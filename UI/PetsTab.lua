@@ -235,6 +235,8 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     page.rulesBar:SetPoint("TOPLEFT", search, "BOTTOMLEFT", -4, -6)
     page.rulesBar:SetPoint("RIGHT", -6, 0)
     page.rulesBar:SetHeight(24)
+    page.rulesBar:SetClipsChildren(true)
+    ns.UI.PetsTabRulesBar = page.rulesBar
 
     local previewPanel = ns.UI.Preview:Attach(page)
     previewPanel:SetPoint("TOPRIGHT", page.rulesBar, "BOTTOMRIGHT", 0, -6)
