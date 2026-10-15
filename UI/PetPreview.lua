@@ -21,6 +21,7 @@ function Preview:Attach(parent)
     ns.Skin:Apply("Panel", panel, { inset = true })
 
     model = CreateFrame("PlayerModel", nil, panel)
+    panel.model = model
     model:SetPoint("TOPLEFT", 4, -4)
     model:SetPoint("TOPRIGHT", -4, -4)
     model:SetHeight(220)
@@ -105,6 +106,7 @@ function Preview:ShowPet(petID, forSet)
         panel.name:SetText(L["No pet selected"])
         panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("") panel.weight:SetText("")
         model:ClearModel()
+        model.creatureID = nil      -- forget it, or the same pet would not be loaded again
         return
     end
     if model.creatureID ~= info.creatureID then

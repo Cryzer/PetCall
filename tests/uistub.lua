@@ -111,6 +111,8 @@ function Universal:SetDataProvider(dp)
         self._rowFrames[#self._rowFrames + 1] = row
     end
 end
+function Universal:SetCreature(id) self._creature = id end
+function Universal:ClearModel() self._creature = nil end
 function Universal:Click(button)
     if self._scripts.OnClick then self._scripts.OnClick(self, button or "LeftButton") end
 end

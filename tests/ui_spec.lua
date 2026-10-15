@@ -329,4 +329,15 @@ describe("UI smoke", function()
         rail:Click("LeftButton")
         assert.is_false(ns.UI.SetList:IsCollapsed())
     end)
+    it("the preview reloads the model after the grid clears it", function()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        ns.UI.Preview:SetSelected("a")
+        local model = ns.UI.Preview:GetPanel().model
+        assert.equal(1001, model._creature)
+        ns.Sets:Get("$Default"):SetPetWeight("a", 8)      -- grid rebuild clears and redraws the preview
+        W.advance(1)
+        assert.equal(1001, model._creature)
+    end)
 end)
