@@ -39,6 +39,7 @@ function ns:CreateModelPreview(frameName)
     local container = CreateFrame("Frame", frameName, UIParent, "BackdropTemplate")
     container:SetSize(200, 200)
     container:SetFrameStrata("TOOLTIP")
+    container:SetClampedToScreen(true)
     container:SetBackdrop({
         bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
