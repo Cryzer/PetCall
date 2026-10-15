@@ -10,8 +10,9 @@ local panel, model, set, hoverID, selectedID
 local shownID, syncing
 local angle, dragging, lastX = 0, false, nil
 
+-- a selected pet stays in the panel; hovering only previews while nothing is selected
 local function petToShow()
-    return hoverID or selectedID or C_PetJournal.GetSummonedPetGUID()
+    return selectedID or hoverID or C_PetJournal.GetSummonedPetGUID()
 end
 
 function Preview:Attach(parent)
@@ -145,3 +146,5 @@ function Preview:SetHover(petID) hoverID = petID self:ShowPet(petToShow()) end
 function Preview:SetSelected(petID) selectedID = petID self:ShowPet(petToShow()) end
 function Preview:Refresh() self:ShowPet(petToShow()) end
 function Preview:GetPanel() return panel end
+function Preview:GetSelected() return selectedID end
+function Preview:GetShown() return shownID end

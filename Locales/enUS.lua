@@ -275,3 +275,5 @@ L["No other pet to choose from in %s."] = true
 L["A pet will be summoned when this ends: %s."] = true
 L["%s is on cooldown."] = true
 L["%s cannot be summoned right now."] = true
+L["Include in this set"] = true
+L["Unchecked pets are never summoned by this set."] = true

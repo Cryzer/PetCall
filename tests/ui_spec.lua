@@ -201,26 +201,57 @@ describe("UI smoke", function()
         ns.UI.Main:SelectSet("Town")
         assert.is_true(tabs[3]._points.LEFT.rel == tabs[2], "settings tab follows When")
     end)
-    it("grid tiles render, and a click sets every copy of the pet", function()
-        W.world.pets.a2 = { species = 1, name = "A", level = 25 }
-        W.world.pets.b = { species = 2, name = "B" }
-        ns.PetCache:Rescan()
-        ns.UI.Main:Show()
-        ns.UI.Main:SelectTab("pets")
-        local set = ns.Sets:Get("$Default")
+    local function gridTiles()
         local box
         for _, f in ipairs(U.created) do if f._template == "WowScrollBoxList" then box = f end end
         local tiles = {}
         for _, row in ipairs(box._rowFrames or {}) do
             for _, t in ipairs(row.tiles or {}) do if t.petID then tiles[t.petID] = t end end
         end
+        return tiles
+    end
+
+    it("grid tiles render; the tile checkbox includes or excludes every copy", function()
+        W.world.pets.a2 = { species = 1, name = "A", level = 25 }
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local set = ns.Sets:Get("$Default")
+        local tiles = gridTiles()
         assert.is_not_nil(tiles.a2)              -- the level-25 copy stands for "A"
         assert.is_nil(tiles.a)
-        tiles.a2:Click("LeftButton")
+        tiles.a2.check:Click("LeftButton")
         assert.equal(0, set:GetPetWeight("a"))
         assert.equal(0, set:GetPetWeight("a2"))
-        assert.has_no_error(function() tiles.b:Click("RightButton") end)
+        gridTiles().a2.check:Click("LeftButton")
+        assert.equal(1, set:GetPetWeight("a"))
+        assert.has_no_error(function() gridTiles().b:Click("RightButton") end)
     end)
+
+    it("clicking a tile selects it and pins the preview; hovering others does not move it", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        W.world.pets.c = { species = 3, name = "C" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end   -- wide: preview panel, not the floating one
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local set = ns.Sets:Get("$Default")
+        local tiles = gridTiles()
+        tiles.b:Click("LeftButton")
+        assert.equal(1, set:GetPetWeight("b"))          -- a click no longer changes weights
+        assert.equal("b", ns.UI.Preview:GetShown())
+        tiles = gridTiles()
+        assert.is_true(tiles.b.selected:IsShown())
+        tiles.c._scripts.OnEnter(tiles.c)
+        assert.equal("b", ns.UI.Preview:GetShown())
+        tiles.c._scripts.OnLeave(tiles.c)
+        gridTiles().b:Click("LeftButton")                -- second click releases the pin
+        tiles = gridTiles()
+        tiles.c._scripts.OnEnter(tiles.c)
+        assert.equal("c", ns.UI.Preview:GetShown())
+    end)
+
     it("the minimap menu is not owned by the minimap button", function()
         -- EllesmereUI hides its button flyout on any click outside it; a menu owned by a
         -- button inside that flyout closes before the click on a menu item lands

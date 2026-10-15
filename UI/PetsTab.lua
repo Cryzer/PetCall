@@ -30,6 +30,14 @@ local function weightMenu(owner, root, petID)
     end)
 end
 
+local allTiles = {}
+
+local function paintSelection()
+    local selected = ns.UI.Preview:GetSelected()
+    for _, t in ipairs(allTiles) do t.selected:SetShown(t.petID ~= nil and t.petID == selected) end
+end
+
+-- click selects the pet (and pins the preview); a second click releases it
 local function tile_OnClick(self, button)
     local id = self.petID
     if not id then return end
@@ -37,10 +45,18 @@ local function tile_OnClick(self, button)
         MenuUtil.CreateContextMenu(self, function(owner, root) weightMenu(owner, root, id) end)
         return
     end
-    local w = set:GetPetWeight(id)
-    set:SetPetWeights(ns.PetCache:GetCopies(id), w == 0 and ns.Weights.NORMAL or ns.Weights.NEVER)
-    PlaySound(w == 0 and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
-    ns.UI.Preview:SetSelected(id)
+    ns.UI.Preview:SetSelected(ns.UI.Preview:GetSelected() ~= id and id or nil)
+    PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    paintSelection()
+end
+
+-- the checkbox includes the pet (all copies) at Normal or excludes it (Never)
+local function check_OnClick(self)
+    local id = self:GetParent().petID
+    if not id then return end
+    local included = set:GetPetWeight(id) > 0
+    set:SetPetWeights(ns.PetCache:GetCopies(id), included and ns.Weights.NEVER or ns.Weights.NORMAL)
+    PlaySound(included and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 end
 
 local function tile_OnEnter(self)
@@ -70,6 +86,10 @@ local function createTile(parent)
     t.bg = t:CreateTexture(nil, "BACKGROUND")
     t.bg:SetAllPoints()
     t.bg:SetAtlas("PetList-ButtonBackground")
+    t.selected = t:CreateTexture(nil, "ARTWORK", nil, -1)
+    t.selected:SetAllPoints()
+    t.selected:SetAtlas("PetList-ButtonSelect")
+    t.selected:Hide()
     t.icon = t:CreateTexture(nil, "ARTWORK")
     t.icon:SetSize(36, 36)
     t.icon:SetPoint("LEFT", 4, 0)
@@ -78,7 +98,7 @@ local function createTile(parent)
     t.border:SetAllPoints(t.icon)
     t.name = t:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     t.name:SetPoint("TOPLEFT", t.icon, "TOPRIGHT", 6, -2)
-    t.name:SetPoint("RIGHT", -6, 0)
+    t.name:SetPoint("RIGHT", -28, 0)
     t.name:SetJustifyH("LEFT")
     t.name:SetWordWrap(false)
     t.sub = t:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -88,6 +108,13 @@ local function createTile(parent)
     t.sub:SetWordWrap(false)
     t.badge = t:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     t.badge:SetPoint("BOTTOMRIGHT", -6, 6)
+    t.check = CreateFrame("CheckButton", nil, t, "UICheckButtonTemplate")
+    t.check:SetSize(22, 22)
+    t.check:SetPoint("TOPRIGHT", -2, -2)
+    t.check:SetScript("OnClick", check_OnClick)
+    ns.Widgets.Tooltip(t.check, L["Include in this set"], L["Unchecked pets are never summoned by this set."])
+    ns.Skin:Apply("Checkbox", t.check)
+    allTiles[#allTiles + 1] = t
     t:SetScript("OnClick", tile_OnClick)
     t:SetScript("OnEnter", tile_OnEnter)
     t:SetScript("OnLeave", tile_OnLeave)
@@ -116,6 +143,8 @@ local function setupTile(t, petID)
     local text, kind = ns.PetGridModel.Badge(set, petID)
     t.badge:SetText(text or "")
     if kind then t.badge:SetTextColor(unpack(BADGE_COLORS[kind])) end
+    t.check:SetChecked(set:GetPetWeight(petID) > 0)
+    t.selected:SetShown(petID == ns.UI.Preview:GetSelected())
     t:SetAlpha(kind == "never" and 0.45 or 1)
     t.icon:SetDesaturated(kind == "never")
 end
