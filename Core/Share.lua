@@ -40,23 +40,50 @@ local function decode(str)
     return nil, L["This is not a PetCall export string."]
 end
 
-local function sanitize(list, isKnown, info)
+-- Imported data is untrusted: every field must have the type the code expects.
+local FIELDS = {
+    negate = "boolean", disabledByImport = "boolean", party = "boolean", raid = "boolean", solo = "boolean",
+    zoneName = "string", loc = "string", class = "string", name = "string", macro = "string", code = "string",
+    operator = "string", petType = "scalar", level = "scalar", spec = "number", from = "number", to = "number",
+    zoneNames = "strings", locs = "strings", mapIDs = "numbers", petTypes = "numbers",
+}
+
+local function isNumber(v) return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge end
+
+local function validList(v, itemOk)
+    if type(v) ~= "table" then return nil end
+    local out = {}
+    for _, x in ipairs(v) do if itemOk(x) then out[#out + 1] = x end end
+    return out
+end
+
+local function cleanField(kind, v)
+    if kind == "boolean" then return type(v) == "boolean" and v or nil end
+    if kind == "string" then return type(v) == "string" and v or nil end
+    if kind == "number" then return isNumber(v) and v or nil end
+    if kind == "scalar" then return (type(v) == "string" or isNumber(v)) and v or nil end
+    if kind == "strings" then return validList(v, function(x) return type(x) == "string" end) end
+    if kind == "numbers" then return validList(v, isNumber) end
+end
+
+-- weighted: top-level filter chips carry their weight in [2]
+local function sanitize(list, isKnown, info, weighted)
     local out = {}
     if type(list) ~= "table" then return out end
     for _, e in ipairs(list) do
-        if type(e) == "table" and type(e[1]) == "string" then
-            if e[1] == "AND" or e[1] == "OR" then
-                e.items = sanitize(e.items, isKnown, info)
-                out[#out + 1] = e
-            elseif isKnown(e[1]) then
-                if e[1] == "luacode" then
-                    e.disabledByImport = true
-                    info.hasLuaCode = true
-                end
-                out[#out + 1] = e
-            else
-                info.dropped = info.dropped + 1
+        if type(e) == "table" and type(e[1]) == "string" and (e[1] == "AND" or e[1] == "OR" or isKnown(e[1])) then
+            local clean = { e[1] }
+            for k, v in pairs(e) do
+                if type(k) == "string" and FIELDS[k] then clean[k] = cleanField(FIELDS[k], v) end
             end
+            if e[1] == "AND" or e[1] == "OR" then
+                clean.items = sanitize(e.items, isKnown, info, false)
+            elseif e[1] == "luacode" then
+                clean.disabledByImport = true
+                info.hasLuaCode = true
+            end
+            if weighted then clean[2] = (isNumber(e[2]) and e[2] > 0) and e[2] or ns.Weights.NORMAL end
+            out[#out + 1] = clean
         else
             info.dropped = info.dropped + 1
         end
@@ -79,10 +106,11 @@ function Share:Import(str, name)
     local set = ns.Sets:Create(name)
     local st = set.settings
     st.enabled = data.enabled ~= false
-    st.priority = type(data.priority) == "number" and data.priority or 1
-    st.defaultValue = type(data.defaultValue) == "number" and data.defaultValue or 0
+    -- an exported default set has priority -1 and would never win as a normal set
+    st.priority = (isNumber(data.priority) and data.priority > 0) and data.priority or 1
+    st.defaultValue = (isNumber(data.defaultValue) and data.defaultValue >= 0) and data.defaultValue or 0
     st.immediate = data.immediate and true or nil
-    st.filter = sanitize(data.filter, knownFilter, info)
+    st.filter = sanitize(data.filter, knownFilter, info, true)
     -- fill the existing trigger table in place: the set's watcher holds a reference to it
     local trigger = sanitize(data.trigger, knownCondition, info)
     wipe(st.trigger)
@@ -92,7 +120,7 @@ function Share:Import(str, name)
     if type(data.pets) == "table" then
         for _, petID in ns.PetCache:IteratePetIDs() do
             local w = data.pets[ns.PetCache:GetSpeciesID(petID)]
-            if type(w) == "number" then st.pets[petID] = w end
+            if isNumber(w) and w >= 0 then st.pets[petID] = w end
         end
     end
     set:ConditionsChanged()

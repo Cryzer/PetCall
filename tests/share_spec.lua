@@ -61,6 +61,32 @@ describe("Share", function()
         assert.is_false((ns.Share:Import(V1, "Taken")))
     end)
 
+    it("drops fields of the wrong type so damaged strings cannot break the addon", function()
+        local data = {
+            enabled = true, priority = -1, defaultValue = "x",
+            pets = { [39] = "big", [40] = 8 },
+            filter = { { "favorites", "x" }, { "petType", petTypes = 5, 8 }, { "level", operator = ">=", level = 25, -3 } },
+            trigger = { { "zone", mapIDs = "a", zoneNames = { "Dornogal", 7 } }, { "specialLocation", locs = { "city", false } } },
+        }
+        local str = "PetCall:2:" .. C_EncodingUtil.EncodeBase64(C_EncodingUtil.CompressString(C_EncodingUtil.SerializeCBOR(data)))
+        local ok = ns.Share:Import(str, "Damaged")
+        assert.is_true(ok)
+        local s = ns.Sets:Get("Damaged")
+        assert.equal(1, s.settings.priority)            -- an imported Default (-1) would never win
+        assert.equal(0, s.settings.defaultValue)
+        assert.is_false(s:HasManualWeight("a"))
+        assert.equal(8, s:GetPetWeight("b"))
+        assert.has_no_error(function()
+            s:GetWeightTable()
+            ns.Sets:Update()
+            W.fire("ZONE_CHANGED_NEW_AREA")
+        end)
+        for _, e in ipairs(s.settings.filter) do assert.is_true(type(e[2]) == "number" and e[2] > 0) end
+        assert.is_nil(s.settings.filter[2] and s.settings.filter[2].petTypes ~= nil and type(s.settings.filter[2].petTypes) ~= "table" or nil)
+        assert.same({ "Dornogal" }, s.settings.trigger[1].zoneNames)
+        assert.is_nil(s.settings.trigger[1].mapIDs)
+    end)
+
     it("never executes imported code during import", function()
         _G.PC_IMPORT_RAN = false
         local evil = V1:gsub("return~`function%(%)~`return~`true~`end", "PC_IMPORT_RAN=true~`return~`function()~`return~`true~`end")
