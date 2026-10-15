@@ -59,4 +59,25 @@ describe("Ready", function()
         for _, b in ipairs(ns.Ready:GetBlockers()) do if b.key == "have_pets" then found = true end end
         assert.is_true(found)
     end)
+    it("profile switch applies the new profile's auto-summon setting", function()
+        PetCall3DB.profiles.Off = { enable = false }
+        ns.DB:Set("Off")
+        assert.is_true(ns.Ready.is_false.addon_enabled)
+        ns.DB:Set("Default")
+        assert.is_nil(ns.Ready.is_false.addon_enabled)
+    end)
+
+    it("ignores other players' flag changes", function()
+        ns.Ready.afk_message = "brb"
+        W.fire("PLAYER_FLAGS_CHANGED", "raid7")
+        assert.equal("brb", ns.Ready.afk_message)
+        local n = 0
+        local w = ns.Conditions.NewWatcher({ { "specialLocation", locs = { "city" } } }, function() end)
+        w.Refresh = function() n = n + 1 end
+        W.fire("PLAYER_FLAGS_CHANGED", "raid7")
+        assert.equal(0, n)
+        W.fire("PLAYER_FLAGS_CHANGED", "player")
+        assert.equal(1, n)
+        w:Free()
+    end)
 end)

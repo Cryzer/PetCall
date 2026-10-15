@@ -6,6 +6,11 @@ ns.SwitchTimer = SwitchTimer
 function SwitchTimer:OnInitialize()
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    -- the new profile may have a different (or no) timer
+    ns:RegisterCallback(self, "ProfileChanged", function()
+        SwitchTimer:Stop()
+        if ns:GetCurrentPet() then SwitchTimer:Start() end
+    end)
 end
 
 function SwitchTimer:Start(noRestart)

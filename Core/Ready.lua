@@ -64,7 +64,10 @@ function Ready:OnInitialize()
     self:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
 
     self:UpdateChecks()
-    ns:RegisterCallback(self, "ProfileChanged", function() Ready:UpdateChecks() end)
+    ns:RegisterCallback(self, "ProfileChanged", function()
+        Ready:UpdateChecks()
+        Ready:SetReady("addon_enabled", ns.db.profile.enable)
+    end)
     ns:RegisterCallback(self, "PetsChanged", function() Ready:PetListUpdated() end)
     ns:RegisterCallback(self, "AutoSummonChanged", function(_, v) Ready:SetReady("addon_enabled", v) end)
 end
@@ -311,7 +314,8 @@ function Ready:UI_ERROR_MESSAGE(_, _, message)
     end
 end
 
-function Ready:PLAYER_FLAGS_CHANGED()
+function Ready:PLAYER_FLAGS_CHANGED(_, unit)
+    if unit and unit ~= "player" then return end
     self:SetReady("resting", IsResting())
     if UnitIsAFK("player") and self.afk_message == nil then self:SetReady("sitting", false) end
     self.afk_message = nil

@@ -295,7 +295,11 @@ function Watcher:Rebuild()
         end
     end
     for ev in pairs(events) do
-        ns.Events.Register(self, ev, function() self:Refresh() end)
+        ns.Events.Register(self, ev, function(_, _, unit)
+            -- fires for every group member; only our own flags matter
+            if ev == "PLAYER_FLAGS_CHANGED" and unit ~= "player" then return end
+            self:Refresh()
+        end)
     end
     self:Refresh(true)
 end
