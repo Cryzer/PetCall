@@ -46,3 +46,4 @@ UI\AutoRulesBar.lua
 UI\SetList.lua
 UI\StatusBar.lua
 UI\SetSettingsTab.lua
+UI\WhenTab.lua

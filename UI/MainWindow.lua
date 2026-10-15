@@ -158,6 +158,7 @@ function Main:SelectSet(name)
 end
 
 function Main:GetSelectedSet() return selectedSet end
+function Main:GetSelectedTab() return selectedTab end
 function Main:GetFrame() self:Build() return frame end
 function Main:GetContentWidth() return frame and frame.content:GetWidth() or 0 end
 
