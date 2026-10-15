@@ -279,7 +279,8 @@ function Watcher:Rebuild()
         if def then
             for _, ev in ipairs(def.events or {}) do events[ev] = true end
             if def.tick then subscribeTick(self, def.tick) end
-            if e[1] == "luacode" then
+            -- compiling runs the code's setup part; imported code must not run before review
+            if e[1] == "luacode" and not e.disabledByImport then
                 local _, _, c = C.Compile(e)
                 for _, ev in ipairs(c.events) do events[ev] = true end
             end

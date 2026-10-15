@@ -35,6 +35,8 @@ Core\Ready.lua
 Core\Summon.lua
 Core\SwitchTimer.lua
 Core\SpecialItems.lua
+Core\LegacyDeserialize.lua
+Core\Share.lua
 Core\Commands.lua
 UI\ModelPreview.lua
 UI\Skin.lua
@@ -48,3 +50,4 @@ UI\SetList.lua
 UI\StatusBar.lua
 UI\SetSettingsTab.lua
 UI\WhenTab.lua
+UI\ShareDialog.lua

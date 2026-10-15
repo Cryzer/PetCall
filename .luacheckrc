@@ -31,6 +31,7 @@ globals = {
 
 read_globals = {
     -- PetCall 2.0
+    "ButtonFrameTemplate_HidePortrait",
     "NONE", "DELETE",
     "IsInRaid",
     "ERR_MUST_BE_STANDING", "SPELL_FAILED_NOT_STANDING",
