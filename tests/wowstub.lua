@@ -226,6 +226,7 @@ function W.reset()
         DecodeBase64 = function(s) return s:match("^B(.*)$") end,
     }
     PetCall3DB, PetLeash3DB, PetCall = nil, nil, nil
+    LibStub = nil   -- libraries register afresh on every load
 end
 
 function W.advance(seconds)
@@ -258,6 +259,7 @@ function W.tocFiles(opts)
         line = line:gsub("\r", "")
         if line ~= "" and not line:match("^#") then
             local path = line:gsub("\\", "/")
+            -- the minimap/LDB libraries need real UI frames; tests/uistub.lua registers stand-ins
             local skip = path:match("^Libs/LibDBIcon") or path:match("^Libs/LibDataBroker")
                 or (path:match("^UI/") and not uiAllowed[path])
                 or (path:match("^Locales/") and path ~= "Locales/enUS.lua")

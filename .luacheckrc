@@ -27,10 +27,12 @@ globals = {
     -- WoW tables we write into (e.g. StaticPopupDialogs["PETCALL_..."] = {...})
     "StaticPopupDialogs",
     "SLASH_PETCALL1", "SLASH_PETCALL2", "SlashCmdList",
+    "PetCall_OnAddonCompartmentClick", "PetCall_OnAddonCompartmentEnter", "PetCall_OnAddonCompartmentLeave",
 }
 
 read_globals = {
     -- PetCall 2.0
+    "AddonCompartmentFrame", "IsControlKeyDown",
     "SettingsPanel",
     "ButtonFrameTemplate_HidePortrait",
     "NONE", "DELETE",

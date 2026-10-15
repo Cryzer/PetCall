@@ -75,6 +75,11 @@ function Universal:SetShown(v) if v then self:Show() else self:Hide() end end
 function Universal:SetText(t) self._text = t end
 function Universal:GetChecked() return self._checked or false end
 function Universal:SetChecked(v) self._checked = v end
+function Universal:GetParent() return self._parent end
+function Universal:SetParent(p) self._parent = p end
+function Universal:CreateTexture() local t = universal() t._parent = self t._shown = true return t end
+function Universal:CreateFontString() local t = universal() t._parent = self t._shown = true return t end
+function Universal:CreateAnimationGroup() local t = universal() t._parent = self return t end
 function Universal:Click(button)
     if self._scripts.OnClick then self._scripts.OnClick(self, button or "LeftButton") end
 end
@@ -82,13 +87,14 @@ end
 U.universal = universal
 
 -- Globals that must stay nil (optional addons) even though they are capitalized.
-local ABSENT = { EllesmereUI = true, ElvUI = true }
+local ABSENT = { EllesmereUI = true, ElvUI = true, LibStub = true }
 
 function U.install()
     local createFrame = function(_, name, parent, template)
         local f = universal()
         f._shown = true
         f._template = template
+        f._parent = parent
         -- template child keys our code reads
         if template and template:find("CheckButton") then f.text = universal() end
         if name then rawset(_G, name, f) end
@@ -122,9 +128,34 @@ function U.uiFiles()
     return list
 end
 
+-- Stand-ins for LibDataBroker-1.1 and LibDBIcon-1.0 that record what the addon asks for.
+local function registerLibStandIns()
+    assert(loadfile("Libs/LibStub/LibStub.lua"))()
+    local ldb = LibStub:NewLibrary("LibDataBroker-1.1", 999)
+    ldb.objects = {}
+    function ldb:NewDataObject(name, obj)
+        if self.objects[name] then return nil end
+        self.objects[name] = obj
+        return obj
+    end
+    local icon = LibStub:NewLibrary("LibDBIcon-1.0", 999)
+    icon.registered, icon.shown = {}, {}
+    function icon:Register(name, obj, db)
+        assert(obj and obj.icon, "LibDBIcon needs an object with an icon")
+        assert(not self.registered[name], "already registered: " .. name)
+        self.registered[name] = db
+        self.shown[name] = not (db and db.hide)
+    end
+    function icon:Show(name) self.shown[name] = true end
+    function icon:Hide(name) self.shown[name] = false end
+    function icon:Refresh(name, db) self.registered[name] = db self.shown[name] = not (db and db.hide) end
+    U.ldb, U.icon = ldb, icon
+end
+
 function U.load()
     W.reset()
     U.install()
+    registerLibStandIns()
     return W.load({ ui = U.uiFiles() })
 end
 

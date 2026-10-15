@@ -10,6 +10,9 @@
 ## SavedVariables: PetCall3DB
 ## OptionalDeps: EllesmereUI
 ## IconTexture: Interface\AddOns\PetCall\Media\icon
+## AddonCompartmentFunc: PetCall_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: PetCall_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: PetCall_OnAddonCompartmentLeave
 
 Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
@@ -54,4 +57,6 @@ UI\WhenTab.lua
 UI\ShareDialog.lua
 UI\Settings.lua
 UI\Profiles.lua
+UI\Menu.lua
+UI\Broker.lua
 ReleaseNotes.lua
