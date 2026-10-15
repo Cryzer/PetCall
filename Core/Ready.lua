@@ -207,6 +207,7 @@ function Ready:_CheckSummon(waitFinished)
         return
     end
     self.wait_counter = 0
+    if self.wait_timer then self.wait_timer:Cancel() end   -- a forced check may arrive while one is waiting
     self.wait_timer = ns:NewTicker(0.5, function() Ready:WaitTimerProgress() end)
 end
 
@@ -345,4 +346,18 @@ function Ready:DumpDebugState()
     sort(ready) sort(notReady)
     ns:Printf("Ready: %s", tconcat(ready, " "))
     ns:Printf("Not Ready: %s", tconcat(notReady, " "))
+    -- every step "Summon another" goes through, for bug reports
+    local set = ns.Sets:GetCurrent()
+    local tbl = set and set:GetWeightTable()
+    ns:Printf("Set: %s, draw entries %d, total %s", set and set.name or "none", tbl and #tbl / 2 or 0, tbl and tostring(tbl.total) or "-")
+    local cur = ns:GetCurrentPet()
+    local pick = set and set:PickPet(cur)
+    ns:Printf("Pet out: %s, next pick: %s", tostring(cur), tostring(pick))
+    if pick then
+        local start, duration = C_PetJournal.GetPetCooldownByGUID(pick)
+        ns:Printf("Pick cooldown: start %s, duration %s, now %.1f, blocked %s, summonable %s", tostring(start), tostring(duration),
+            GetTime(), tostring(ns.PetCache:OnCooldown(pick)), tostring(C_PetJournal.PetIsSummonable(pick)))
+    end
+    ns:Printf("Falling %s, full control %s, since last cast %.1f s, waiting %s, forced %s", tostring(IsFalling()), tostring(HasFullControl()),
+        GetTime() - self.last_spell_sent, tostring(self.wait_timer ~= nil), tostring(self.force))
 end

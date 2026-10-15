@@ -35,6 +35,14 @@ describe("Summon", function()
         W.world.cooldowns.a, W.world.cooldowns.b = 10, 10
         assert.is_false(ns.Summon:SummonRandom())
     end)
+    it("an expired cooldown does not block summoning", function()
+        W.world.pastCooldowns.a, W.world.pastCooldowns.b = true, true
+        W.world.summoned = "a"
+        ns:SummonAnother()
+        W.advance(1)
+        assert.equal("b", W.world.summoned)
+    end)
+
     it("verbose message", function()
         ns.Summon:SummonRandom()
         assert.is_true(W.world.printed[#W.world.printed]:find("Summoning") ~= nil)

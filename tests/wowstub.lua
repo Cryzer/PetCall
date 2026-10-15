@@ -54,7 +54,7 @@ local function defaultWorld()
         class = "HUNTER", className = "Hunter", spec = 1, playerName = "Tester", realm = "Realm",
         combat = false, flying = false, falling = false, mounted = false, stealthed = false, dead = false,
         vehicle = false, afk = false, casting = false, fullControl = true,
-        auras = {}, items = {}, equipped = {}, quests = {},
+        auras = {}, items = {}, equipped = {}, quests = {}, pastCooldowns = {},
         pets = {}, summoned = nil, cooldowns = {}, favorites = {},
         macroResult = nil, locale = "enUS",
         printed = {},
@@ -185,7 +185,12 @@ function W.reset()
             if w.summoned == id then w.summoned = nil else w.summoned = id end
             w.summonCalls = (w.summonCalls or 0) + 1
         end,
-        GetPetCooldownByGUID = function(id) return w.cooldowns[id] or 0 end,
+        -- real API: start, duration, isEnabled; cooldowns[id] = seconds left, pastCooldowns[id] = expired one
+        GetPetCooldownByGUID = function(id)
+            if w.cooldowns[id] then return w.time - 1, w.cooldowns[id] + 1, 1 end
+            if w.pastCooldowns[id] then return w.time - 100, 30, 1 end
+            return 0, 0, 1
+        end,
         SetPetLoadOutInfo = noop,
         SetCustomName = noop,
         SetFavorite = function(id, v) w.favorites[id] = v == 1 end,

@@ -48,7 +48,7 @@ function Summon:SummonRandom()
     -- never "summon" the pet that is already out: that would dismiss it
     local petID = set and set:PickPet(ns:GetCurrentPet())
     if not petID then return false end
-    if (C_PetJournal.GetPetCooldownByGUID(petID) or 0) > 0 then return false end
+    if ns.PetCache:OnCooldown(petID) then return false end
     doSummon(petID)
     return true
 end
@@ -58,7 +58,7 @@ function ns:SummonPet(petID)
     if not petID or ns:GetCurrentPet() == petID then return end
     local info = ns.PetCache:GetInfo(petID)
     local name = info and (info.customName or info.name) or "?"
-    if (C_PetJournal.GetPetCooldownByGUID(petID) or 0) > 0 then
+    if ns.PetCache:OnCooldown(petID) then
         return ns:Printf(L["%s is on cooldown."], name)
     end
     if not C_PetJournal.PetIsSummonable(petID) then

@@ -91,7 +91,7 @@ end
 function SetMixin:GetChance(petID)
     local chance = ns.Weights.Chance(self:GetWeightTable(), petID)
     local reason
-    if (C_PetJournal.GetPetCooldownByGUID(petID) or 0) > 0 then
+    if ns.PetCache:OnCooldown(petID) then
         reason = L["On cooldown"]
     elseif not C_PetJournal.PetIsSummonable(petID) then
         reason = L["Cannot be summoned"]

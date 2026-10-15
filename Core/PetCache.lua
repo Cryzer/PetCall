@@ -82,6 +82,12 @@ PetCache.QueueRescan = ns.Debounce(0.5, function() PetCache:Rescan() end)
 function PetCache:IteratePetIDs() return ipairs(ids) end
 function PetCache:NumPets() return #ids end
 function PetCache:IsLoaded() return loaded end
+-- GetPetCooldownByGUID returns start, duration: a start time alone does not mean the cooldown is still running
+function PetCache:OnCooldown(petID)
+    local start, duration = C_PetJournal.GetPetCooldownByGUID(petID)
+    return (start or 0) > 0 and (duration or 0) > 0 and start + duration > GetTime()
+end
+
 function PetCache:GetCopies(petID) return copiesOf[petID] or { petID } end
 function PetCache:IsPrimary(petID) local g = copiesOf[petID] return g ~= nil and g[1] == petID end
 function PetCache:Contains(petID) return infos[petID] ~= nil end
