@@ -129,6 +129,41 @@ function SetMixin:GetStatus()
     return "waiting"
 end
 
+function SetMixin:GetConditionModel() return ns.Conditions.ToModel(self.settings.trigger) end
+
+function SetMixin:SetConditionModel(model)
+    local list = ns.Conditions.FromModel(model)
+    local t = self.settings.trigger
+    wipe(t)
+    for i, e in ipairs(list) do t[i] = e end
+    self:ConditionsChanged()
+end
+
+function SetMixin:ConditionsChanged()
+    if self.watcher then self.watcher:Rebuild() end
+    ns:Fire("ConditionStateChanged", self.name)
+    changed(self)
+end
+
+function SetMixin:GetConditionStates() return self.watcher and self.watcher.states or {} end
+
+local TEMPLATES = {
+    city = function() return { { "specialLocation", locs = { "city" } } } end,
+    instance = function() return { { "specialLocation", locs = { "dungeon", "raid" } } } end,
+    here = function() return { { "zone", mapIDs = { C_Map.GetBestMapForUnit("player") } } } end,
+    spec = function()
+        local _, class = UnitClass("player")
+        return { { "specialization", class = class, spec = C_SpecializationInfo.GetSpecialization() or -1 } }
+    end,
+    group = function() return { { "groupType", party = true, raid = true } } end,
+}
+
+function SetMixin:ApplyTemplate(key)
+    local t = self.settings.trigger
+    for _, e in ipairs(TEMPLATES[key]()) do t[#t + 1] = e end
+    self:ConditionsChanged()
+end
+
 --
 -- Collection
 --
@@ -136,8 +171,13 @@ end
 local function newSet(name)
     local set = setmetatable({ name = name, settings = ns.db.profile.sets[name], dirty = true }, SetMixin)
     cache[name] = set
-    if ns.Conditions and not set:IsDefault() then
-        set.watcher = ns.Conditions.NewWatcher(set.settings.trigger, function() Sets:Update() end)
+    if not set:IsDefault() then
+        set.settings.trigger = set.settings.trigger or {}
+        ns.Conditions.Normalize(set.settings.trigger)
+        set.watcher = ns.Conditions.NewWatcher(set.settings.trigger, function()
+            ns:Fire("ConditionStateChanged", set.name)
+            Sets:Update()
+        end)
     end
     return set
 end
