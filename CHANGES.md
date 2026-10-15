@@ -1,6 +1,22 @@
 
 # Changelog
 
+## v2.0.0 (unreleased)
+
+- New PetCall window (/pcall): sets on the left, Pets / When / Set settings tabs, a status bar, resizable and scalable.
+- Pets tab: a fast grid of all your pets with search, filters and sorting; click to include or exclude a pet, right-click to set its weight; bulk weight for all visible pets.
+- 3D preview panel with the pet's chance in the active set, a weight slider and a Summon button.
+- Auto rules (favorites, pet type, level) shown as chips above the grid replace the old Filters tab.
+- When tab: conditions read like sentences, with live green/grey dots and reasons; add "or another set of conditions" groups; one-click templates (in a city, in a raid or dungeon, here, my spec, in a group).
+- New conditions: several places at once, place types (city, dungeon, raid, scenario, delve, PvP, open world), solo/party/raid, character name, time of day.
+- The status bar and the minimap tooltip show why no pet is summoned ("Paused by: In combat").
+- Settings moved to the game's native Options panel, with Profiles and About pages and a window scale slider.
+- EllesmereUI users get the PetCall window in their EllesmereUI skin; the PetCall data block works in data bars.
+- Right-click pet menu with recently summoned pets and all pets in alphabetical pages with a 3D preview; Addon Compartment support.
+- Sets exported from PetCall 1.x still import; new exports are shorter. Imported Lua code stays disabled until you review it.
+- Faster and lighter: no Ace3, events only for your own character, fewer updates in raids.
+- Fixed: Lua code conditions, the Party/Raid group setting being ignored, "Any" class for specializations, renaming a set, changes needing /reload, the Special Items entry for spell 100959.
+
 ## v1.0.15 (2026-10-15)
 
 - Fixed a Lua error that could appear when opening the pet list in the PetCall settings.

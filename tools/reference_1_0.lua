@@ -1,3 +1,4 @@
+-- Needs a checkout that still has the 1.x files (v1.0.15 or older); 2.0 deleted them.
 -- Usage (from repo root, on main or any commit that still has 1.0.x files):
 --   git worktree add ../petcall-ref v1.0.15
 --   python tools/lua.py tools/reference_1_0.lua ../petcall-ref > tests/fixtures/reference_1_0.lua

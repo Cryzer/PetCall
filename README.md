@@ -25,14 +25,18 @@ Instead of manually picking a pet every time, PetCall checks where you are, what
 ## Features
 
 - Automatically summons a companion pet based on your current situation
-- Trigger conditions: zone, instance type, activity, resting, class, specialization, and more
+- One window for everything (`/pcall`): your sets, a searchable pet grid, conditions and set settings
+- Conditions that read like sentences: place, place type, group (solo/party/raid), class and specialization, character, time of day, macro conditionals and Lua code — with live "met right now" indicators
+- "Or" groups and one-click templates (in a city, in a raid or dungeon, here, my spec, in a group)
 - Multiple pet sets with priority — the highest-priority active set wins
-- Add multiple pets to a set — PetCall picks one at random
-- Filter pets by favorites, type, level, and more
-- Import and export pet sets as shareable strings — easy to share with friends
-- 3D pet preview when browsing pets in the options panel
-- Minimap button for quick access
-- Lightweight — has minimal impact on game performance
+- Pet weights from Never to Extra High, plus auto rules (favorites, pet type, level)
+- 3D preview with the pet's chance in the active set
+- Shows why no pet is summoned ("Paused by: In combat")
+- Native game Settings panel with profiles
+- Import and export pet sets as shareable strings (1.x strings still work)
+- Minimap button, data broker block and Addon Compartment entry with a pet menu
+- EllesmereUI skin support
+- Lightweight — no Ace3, minimal impact on game performance
 - Available in multiple languages
 
 ---
@@ -56,37 +60,45 @@ Ensure the folder is named `PetCall`.
 
 ## Usage
 
-Open configuration:
+Open PetCall:
 
-- **Interface → AddOns → PetCall**
-- Minimap button — **Ctrl+Click**
+- `/pcall` (or `/petcall`)
+- Minimap button or Addon Compartment — **Ctrl+Click**
+- **Options → AddOns → PetCall → Open**
 
-The minimap button also gives quick access to your pet:
+The minimap button:
 
-- **Left-click** — toggle PetCall on or off (dismisses or resummons your pet)
-- **Right-click** — open the pet selection panel
+- **Left-click** — toggle your pet (and auto-summon)
+- **Right-click** — pet menu: summon another, recently summoned, all pets
+- **Ctrl+Click** — open the PetCall window
 
-### Pet Triggers tab
+### Sets
 
-Create one or more **pet sets**. Each set defines:
+The **Default** set is used whenever no other set is active. Create more sets with **+ New**; each set has:
 
-- A **pet pool** — which companions can be summoned by this set
-- One or more **trigger conditions** — when this set should be active
-- **Priority** — higher-priority sets take precedence over lower ones
-- **Default behavior** — what happens when none of the trigger conditions are met (summon or dismiss)
+- **Pets** — click a pet to include or exclude it, right-click for its weight; auto rules add weight to matching pets
+- **When** — the conditions that make the set active; add "or another set of conditions" for alternatives
+- **Set settings** — priority, summon immediately, name, export, delete
 
-Sets are checked in priority order. The first active set wins.
+When several sets are active, the one with the highest priority wins.
 
 ### Import / Export
 
-Share your pet set configuration with other players using the **Export** button on any set. Send the resulting string to a friend — they paste it into **Import Set** and choose a name for it.
+Use **Export** on any set (right-click it in the sets list) and send the string to a friend — they paste it into **Import** and choose a name. Imported Lua code stays disabled until you review it in the When tab.
 
 ### Slash commands
 
 | Command | Action |
 |---|---|
-| `/pcall` | Open configuration |
+| `/pcall` | Open the PetCall window |
+| `/pcall settings` | Open the settings |
+| `/pcall resummon` | Summon another pet; turns auto-summon on |
+| `/pcall dismiss` | Dismiss your pet; turns auto-summon off |
+| `/pcall togglePet` | Toggle your pet and auto-summon |
+| `/pcall enable` | Toggle auto-summon |
+| `/pcall dismissWhenStealthed` | Toggle dismissing in stealth |
 | `/pcall migrate` | Re-run the PetLeash import dialog |
+| `/pcall help` | List commands |
 
 ---
 

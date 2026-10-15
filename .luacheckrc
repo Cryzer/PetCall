@@ -45,7 +45,7 @@ read_globals = {
     "CreateSettingsButtonInitializer", "GameTooltip", "UIErrorsFrame", "StaticPopup_Show",
     "C_EncodingUtil", "C_PartyInfo", "GetGameTime", "UnitName", "GetRealmName", "UISpecialFrames", "geterrorhandler",
 
-    -- Ace libraries
+    -- libraries
     "LibStub",
 
     -- WoW C_ namespaces
