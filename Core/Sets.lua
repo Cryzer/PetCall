@@ -99,7 +99,7 @@ function SetMixin:GetChance(petID)
     return chance, reason
 end
 
-function SetMixin:PickPet() return ns.Weights.Pick(self:GetWeightTable(), fastrandom()) end
+function SetMixin:PickPet(exclude) return ns.Weights.Pick(self:GetWeightTable(), fastrandom(), exclude) end
 function SetMixin:Contains(petID) return ns.Weights.Sum(self:GetWeightTable(), petID) > 0 end
 
 function SetMixin:HasConditions()

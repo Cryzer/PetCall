@@ -90,7 +90,10 @@ function Menu:Build(owner, root)
     root:CreateButton(L["Dismiss pet"], function() ns:Dismiss() end)
     root:CreateCheckbox(L["Auto-summon"], function() return ns:IsAutoSummon() end, function() ns:SetAutoSummon(not ns:IsAutoSummon()) end)
     local set = ns.Sets:GetCurrent()
-    root:CreateTitle(format("%s: %s", L["Active"], set and set:DisplayName() or NONE))
+    root:CreateButton(format("%s: %s", L["Active"], set and set:DisplayName() or NONE), function()
+        ns.UI.Main:Show()
+        if set then ns.UI.Main:SelectSet(set.name) end
+    end)
     local recent = ns:GetRecentPets()
     if #recent > 0 then
         local r = root:CreateButton(L["Recently summoned"])

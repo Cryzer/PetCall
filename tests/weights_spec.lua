@@ -34,6 +34,13 @@ describe("Weights", function()
         assert.equal(0.75, ns.Weights.Chance(tbl, "b"))
         assert.is_nil(ns.Weights.Pick({ total = 0 }, 0.5))
     end)
+    it("can leave one pet out of the draw", function()
+        local tbl = { 1, "a", 3, "b", 1, "a", total = 5 }
+        assert.equal("b", ns.Weights.Pick(tbl, 0, "a"))
+        assert.equal("b", ns.Weights.Pick(tbl, 0.99, "a"))
+        assert.is_nil(ns.Weights.Pick({ 2, "a", total = 2 }, 0.5, "a"))
+    end)
+
     it("labels", function()
         assert.equal("+2", ns.Weights.Short(64))
         assert.is_nil(ns.Weights.Short(1))

@@ -45,15 +45,25 @@ end
 
 function Summon:SummonRandom()
     local set = ns.Sets:GetCurrent()
-    local petID = set and set:PickPet()
-    if not petID or ns:GetCurrentPet() == petID then return false end
+    -- never "summon" the pet that is already out: that would dismiss it
+    local petID = set and set:PickPet(ns:GetCurrentPet())
+    if not petID then return false end
     if (C_PetJournal.GetPetCooldownByGUID(petID) or 0) > 0 then return false end
     doSummon(petID)
     return true
 end
 
+-- explicit pick (menu, preview, grid): the game would fail silently, so say why
 function ns:SummonPet(petID)
     if not petID or ns:GetCurrentPet() == petID then return end
+    local info = ns.PetCache:GetInfo(petID)
+    local name = info and (info.customName or info.name) or "?"
+    if (C_PetJournal.GetPetCooldownByGUID(petID) or 0) > 0 then
+        return ns:Printf(L["%s is on cooldown."], name)
+    end
+    if not C_PetJournal.PetIsSummonable(petID) then
+        return ns:Printf(L["%s cannot be summoned right now."], name)
+    end
     doSummon(petID)
 end
 
@@ -91,7 +101,21 @@ function ns:TogglePet()
 end
 function ns:OpenOptions() ns:OpenWindow() end
 
-function ns:SummonAnother() ns:ResummonPet(true, true) end
+-- explicit request (button, menu, key binding): say why nothing happens instead of failing silently
+function ns:SummonAnother()
+    local set = ns.Sets:GetCurrent()
+    if set and not set:PickPet(ns:GetCurrentPet()) then
+        ns:Printf(L["No other pet to choose from in %s."], set:DisplayName())
+        return
+    end
+    local blockers = ns.Ready:GetBlockers()
+    if #blockers > 0 then
+        local labels = {}
+        for _, b in ipairs(blockers) do labels[#labels + 1] = b.label end
+        ns:Printf(L["A pet will be summoned when this ends: %s."], table.concat(labels, ", "))
+    end
+    ns:ResummonPet(true, true)
+end
 function ns:Dismiss() Summon:Dismiss(true) end
 function ns:Toggle() ns:TogglePet() end
 

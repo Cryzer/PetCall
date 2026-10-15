@@ -221,4 +221,59 @@ describe("UI smoke", function()
         assert.equal(0, set:GetPetWeight("a2"))
         assert.has_no_error(function() tiles.b:Click("RightButton") end)
     end)
+    it("every pet menu button does its job", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        W.random = function() return 0.1 end        -- the draw would pick "a" first
+        ns:SummonPet("a")
+        ns.UI.Menu:Open(U.universal())
+        local menu = U.lastMenu
+        menu:Find("Summon another"):Click()
+        W.advance(1)
+        assert.equal("b", W.world.summoned, "Summon another must pick a different pet")
+
+        ns.UI.Menu:Open(U.universal())
+        local recent = U.lastMenu:Find("Recently summoned")      -- most recent first: b, then a
+        recent.items[2]:Click()
+        assert.equal("a", W.world.summoned)
+
+        ns.UI.Menu:Open(U.universal())
+        U.lastMenu:Find("All pets").items[1].items[2]:Click()  -- group "A – B": a, b
+        assert.equal("b", W.world.summoned)
+
+        ns.UI.Menu:Open(U.universal())
+        U.lastMenu:Find("Dismiss pet"):Click()
+        assert.is_nil(W.world.summoned)
+        assert.is_false(ns:IsAutoSummon())
+        ns.UI.Menu:Open(U.universal())
+        U.lastMenu:Find("Auto-summon"):Click()
+        assert.is_true(ns:IsAutoSummon())
+
+        ns.UI.Menu:Open(U.universal())
+        U.lastMenu:Find("Open PetCall"):Click()
+        assert.is_true(ns.UI.Main:GetFrame():IsShown())
+        ns.UI.Menu:Open(U.universal())
+        assert.has_no_error(function() U.lastMenu:Find("Settings"):Click() end)
+        W.random = nil
+    end)
+
+    it("Summon another says why it cannot summon right now", function()
+        W.world.combat = true
+        W.fire("PLAYER_REGEN_DISABLED")
+        ns.UI.Menu:Open(U.universal())
+        U.lastMenu:Find("Summon another"):Click()
+        assert.is_true(W.world.printed[#W.world.printed]:find("In combat") ~= nil)
+    end)
+    it("menu explains pets that cannot be summoned and opens the active set", function()
+        W.world.cooldowns.a = 30
+        ns.UI.Menu:Open(U.universal())
+        U.lastMenu:Find("All pets").items[1].items[1]:Click()
+        assert.is_nil(W.world.summoned)
+        assert.is_true(W.world.printed[#W.world.printed]:find("cooldown") ~= nil)
+        ns.UI.Menu:Open(U.universal())
+        local active = U.lastMenu:Find("Active")
+        assert.equal("button", active.kind)
+        active:Click()
+        assert.is_true(ns.UI.Main:GetFrame():IsShown())
+    end)
 end)

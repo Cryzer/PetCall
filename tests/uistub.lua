@@ -117,6 +117,34 @@ end
 
 U.universal = universal
 
+-- Records a Blizzard menu description tree; items can be found by text and clicked.
+local MenuMT = {}
+MenuMT.__index = MenuMT
+function U.newMenu() return setmetatable({ items = {} }, MenuMT) end
+local function add(self, kind, text, a, b)
+    local item = setmetatable({ items = {}, kind = kind, text = text, a = a, b = b }, MenuMT)
+    self.items[#self.items + 1] = item
+    return item
+end
+function MenuMT:CreateTitle(text) return add(self, "title", text) end
+function MenuMT:CreateDivider() return add(self, "divider") end
+function MenuMT:CreateButton(text, onClick) return add(self, "button", text, onClick) end
+function MenuMT:CreateCheckbox(text, isSelected, onToggle) return add(self, "checkbox", text, isSelected, onToggle) end
+function MenuMT:CreateRadio(text, isSelected, onSelect) return add(self, "radio", text, isSelected, onSelect) end
+function MenuMT:SetScrollMode() end
+function MenuMT:SetOnEnter(fn) self.onEnter = fn end
+function MenuMT:SetOnLeave(fn) self.onLeave = fn end
+function MenuMT:Find(prefix)
+    for _, item in ipairs(self.items) do
+        if item.text and item.text:sub(1, #prefix) == prefix then return item end
+    end
+end
+-- runs the item's action the way the menu would
+function MenuMT:Click()
+    if self.kind == "button" and self.a then return self.a() end
+    if self.kind == "checkbox" or self.kind == "radio" then return self.b() end
+end
+
 -- Globals that must stay nil (optional addons) even though they are capitalized.
 local ABSENT = { EllesmereUI = true, ElvUI = true, LibStub = true }
 
@@ -141,6 +169,12 @@ function U.install()
     end
     CreateFrame = createFrame
     CreateDataProvider = function(elements) return { _elements = elements } end
+    MenuUtil = { CreateContextMenu = function(owner, builder)
+        local root = U.newMenu()
+        builder(owner, root)
+        U.lastMenu = root
+        return root
+    end }
     ScrollUtil = { InitScrollBoxListWithScrollBar = function(box, _, view) box._view = view end }
     UIParent = universal()
     UIParent._shown = true

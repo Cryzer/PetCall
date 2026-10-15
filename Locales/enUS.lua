@@ -271,3 +271,7 @@ L["List commands"] = true
 L["This set no longer exists."] = true
 L["%d copies"] = true
 L["Weight"] = true
+L["No other pet to choose from in %s."] = true
+L["A pet will be summoned when this ends: %s."] = true
+L["%s is on cooldown."] = true
+L["%s cannot be summoned right now."] = true

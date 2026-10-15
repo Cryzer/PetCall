@@ -70,14 +70,19 @@ function Weights.Build(settings, out)
     return out
 end
 
-function Weights.Pick(tbl, r)
-    if not tbl.total or tbl.total <= 0 then return nil end
-    local remaining = r * tbl.total
+-- r in [0, 1); exclude (optional) leaves one pet out, e.g. the one already summoned
+function Weights.Pick(tbl, r, exclude)
+    local total = (tbl.total or 0) - (exclude and Weights.Sum(tbl, exclude) or 0)
+    if total <= 0 then return nil end
+    local remaining, last = r * total, nil
     for i = 1, #tbl, 2 do
-        remaining = remaining - tbl[i]
-        if remaining <= 0 then return tbl[i + 1] end
+        if tbl[i + 1] ~= exclude then
+            last = tbl[i + 1]
+            remaining = remaining - tbl[i]
+            if remaining <= 0 then return last end
+        end
     end
-    return tbl[#tbl]
+    return last
 end
 
 function Weights.Sum(tbl, petID)
