@@ -28,6 +28,8 @@ Core\DB.lua
 Core\PetCache.lua
 Core\Weights.lua
 Core\AutoRules.lua
+Core\Conditions.lua
+Core\ConditionTypes.lua
 Core\Sets.lua
 Core\Ready.lua
 Core\Commands.lua
