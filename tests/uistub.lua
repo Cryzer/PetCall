@@ -192,6 +192,7 @@ function U.install()
     UIParent = universal()
     UIParent._shown = true
     GameTooltip = universal()
+    GetCursorPosition = function() return U.cursorX or 0, U.cursorY or 0 end
     setmetatable(_G, {
         __index = function(_, k)
             if type(k) ~= "string" or ABSENT[k] then return nil end

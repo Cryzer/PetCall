@@ -82,19 +82,9 @@ function Preview:Attach(parent)
     return panel
 end
 
--- Model loads are asynchronous and the client drops some when flooded, so a mouse
--- sweep over the grid only loads the pet it stops on.
-local HOVER_DELAY = 0.12
-local pendingLoad
-
-function loadModel(info, fromHover)
-    if pendingLoad then pendingLoad:Cancel() pendingLoad = nil end
-    local function load()
-        pendingLoad = nil
-        if viewer.creatureID ~= info.creatureID then return end   -- moved on meanwhile
-        viewer:Load(info)
-    end
-    if fromHover then pendingLoad = C_Timer.NewTimer(HOVER_DELAY, load) else load() end
+-- loads at once: responsiveness beats saving loads; a dropped load is retried by ShowPet
+function loadModel(info)
+    viewer:Load(info)
 end
 
 function Preview:ShowPet(petID, forSet)
@@ -112,7 +102,7 @@ function Preview:ShowPet(petID, forSet)
     -- (re)load when the pet changed or the client dropped the previous load
     if viewer.creatureID ~= info.creatureID or not viewer:ModelID() then
         viewer.creatureID = info.creatureID
-        loadModel(info, petID ~= selectedID)
+        loadModel(info)
     end
     local r, g, b = C_Item.GetItemQualityColor((info.quality or 2) - 1)
     panel.name:SetText(info.name)

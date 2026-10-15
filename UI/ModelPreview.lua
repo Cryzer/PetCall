@@ -9,8 +9,6 @@ local STATIC_PREVIEW_CREATURES = {
     [181535] = true,  -- Murkastrasza
 }
 
-local HOVER_DELAY = 0.12   -- a mouse sweep over a list only loads the pet it stops on
-
 ns.UI = ns.UI or {}
 ns.UI.previews = ns.UI.previews or {}
 
@@ -39,11 +37,7 @@ function ns:CreateModelPreview(frameName)
     viewer.frame:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -4, 4)
 
     local obj = { frame = container, viewer = viewer }
-    local current, pendingLoad, hideScheduled
-
-    local function cancelLoad()
-        if pendingLoad then pendingLoad:Cancel() pendingLoad = nil end
-    end
+    local current, hideScheduled
 
     function obj:ShowForPet(info, point, anchor, relPoint, xOff, yOff)
         if not info then return end
@@ -51,22 +45,15 @@ function ns:CreateModelPreview(frameName)
         container:ClearAllPoints()
         container:SetPoint(point, anchor, relPoint, xOff, yOff)
         container:Show()
-        -- same pet and its model is there (or on its way): nothing to do
-        if current == info.creatureID and (pendingLoad or viewer:ModelID()) then return end
+        -- same pet and its model is there: nothing to do (a dropped load is retried)
+        if current == info.creatureID and viewer:ModelID() then return end
         current = info.creatureID
-        cancelLoad()
-        viewer:Clear()
-        pendingLoad = C_Timer.NewTimer(HOVER_DELAY, function()
-            pendingLoad = nil
-            if current ~= info.creatureID then return end
-            viewer:SetStatic(STATIC_PREVIEW_CREATURES[info.creatureID])
-            viewer:Load(info)
-        end)
+        viewer:SetStatic(STATIC_PREVIEW_CREATURES[info.creatureID])
+        viewer:Load(info)
     end
 
     function obj:Hide()
         hideScheduled = false
-        cancelLoad()
         current = nil
         viewer:Clear()
         container:Hide()

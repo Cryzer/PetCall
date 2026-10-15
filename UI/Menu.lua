@@ -64,12 +64,23 @@ function Menu.Groups(ids, maxSize)
     return groups
 end
 
--- show the preview on the side of the menu that has room for it
+local openX = 0       -- cursor x (UIParent units) when the menu opened
+
+-- The preview goes on the outer side of the pet list: away from where the menu
+-- opened, so it never covers the parent menus; the other side when out of room.
+function Menu.PreviewSide(itemRight, itemLeft, opened, screenWidth)
+    local preferred = itemRight <= opened and "left" or "right"
+    local roomLeft = itemLeft - PREVIEW_SIZE - 8 >= 0
+    local roomRight = itemRight + PREVIEW_SIZE + 8 <= screenWidth
+    if preferred == "left" then return roomLeft and "left" or "right" end
+    return roomRight and "right" or "left"
+end
+
 local function showPreview(info, frame)
     preview = preview or ns:CreateModelPreview("PetCallMenuPreview")
     local scale = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    local right = (frame:GetRight() or 0) * scale
-    if right + PREVIEW_SIZE + 8 > UIParent:GetWidth() then
+    local side = Menu.PreviewSide((frame:GetRight() or 0) * scale, (frame:GetLeft() or 0) * scale, openX, UIParent:GetWidth())
+    if side == "left" then
         preview:ShowForPet(info, "RIGHT", frame, "LEFT", -8, 0)
     else
         preview:ShowForPet(info, "LEFT", frame, "RIGHT", 8, 0)
@@ -126,5 +137,6 @@ end
 -- when its owner hides, and minimap button collectors (EllesmereUI's flyout) hide
 -- their buttons on the very click that picks a menu item.
 function Menu:Open()
+    openX = GetCursorPosition() / UIParent:GetEffectiveScale()
     MenuUtil.CreateContextMenu(UIParent, function(owner, root) Menu:Build(owner, root) end)
 end

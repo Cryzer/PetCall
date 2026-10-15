@@ -355,18 +355,14 @@ describe("UI smoke", function()
         assert.equal(5001, viewer:ModelID())
     end)
 
-    it("sweeping the mouse over many pets loads only the one it stops on", function()
-        for i = 1, 30 do W.world.pets["p" .. i] = { species = 100 + i, name = "P" .. i } end
+    it("hovering a pet shows its model at once", function()
+        W.world.pets.b = { species = 2, name = "B" }
         ns.PetCache:Rescan()
         ns.UI.Main:GetFrame().GetWidth = function() return 900 end
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
-        W.advance(1)
-        U.modelLoads = 0
-        for i = 1, 30 do ns.UI.Preview:SetHover("p" .. i) end
-        W.advance(1)
-        assert.is_true(U.modelLoads <= 2, "model loads: " .. U.modelLoads)
-        assert.equal(5130, ns.UI.Preview:GetViewer():ModelID())
+        ns.UI.Preview:SetHover("b")
+        assert.equal(5002, ns.UI.Preview:GetViewer():ModelID())   -- no W.advance: immediate
     end)
     it("a freshly loaded model faces front and holds still before it turns", function()
         W.world.pets.b = { species = 2, name = "B" }
@@ -412,20 +408,25 @@ describe("UI smoke", function()
         assert.equal("PlayerModel", viewer.frame._type)
         assert.equal(5001, viewer:ModelID())
     end)
-    it("the pet menu preview uses the shared viewer and loads only where the mouse stops", function()
-        for i = 1, 20 do W.world.pets["m" .. i] = { species = 200 + i, name = "M" .. i } end
-        ns.PetCache:Rescan()
+    it("the pet menu preview loads at once and hides on leave", function()
         ns.UI.Menu:Open()
-        local page = U.lastMenu:Find("All pets").items[1]
-        U.modelLoads = 0
-        for _, item in ipairs(page.items) do item.onEnter(U.universal()) end
-        W.advance(1)
+        local item = U.lastMenu:Find("All pets").items[1].items[1]
+        item.onEnter(U.universal())
         local preview = ns.UI.previews.PetCallMenuPreview
-        assert.is_true(U.modelLoads <= 1, "model loads: " .. U.modelLoads)
-        local last = page.items[#page.items]
-        assert.is_not_nil(preview.viewer:ModelID())
-        last.onLeave()
+        assert.is_not_nil(preview.viewer:ModelID())      -- no W.advance: immediate
+        item.onLeave()
         W.advance(0.1)
         assert.is_false(preview.frame:IsShown())
+    end)
+
+    it("the menu preview goes on the side away from the parent menu", function()
+        local side = ns.UI.Menu.PreviewSide
+        -- submenus cascaded left of where the menu opened: preview further left
+        assert.equal("left", side(600, 400, 900, 1920))
+        -- cascading right: preview on the right
+        assert.equal("right", side(1100, 900, 700, 1920))
+        -- no room on the preferred side: the other one
+        assert.equal("right", side(300, 150, 900, 1920))
+        assert.equal("left", side(1850, 1650, 700, 1920))
     end)
 end)
