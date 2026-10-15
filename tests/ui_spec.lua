@@ -388,4 +388,17 @@ describe("UI smoke", function()
         tick(2)
         assert.is_true(model._facing > 0)
     end)
+    it("after a click, frames parented to the minimap button go back under its icon", function()
+        -- EllesmereUI's flyout raises every child of a clicked button, including its own
+        -- dark backdrop, which then covers the icon for good
+        local button = U.universal()
+        button:SetFrameLevel(10)
+        local backdrop = U.universal()
+        backdrop:SetFrameLevel(16)
+        button._children = { backdrop }
+        U.icon.buttons = { PetCall = button }
+        ns.UI.Broker:OnClick(button, "LeftButton")
+        W.advance(0.1)
+        assert.is_true(backdrop:GetFrameLevel() < button:GetFrameLevel())
+    end)
 end)

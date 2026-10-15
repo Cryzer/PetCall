@@ -115,6 +115,9 @@ function Universal:SetCreature(id) self._creature = id U.modelLoads = (U.modelLo
 function Universal:SetDisplayInfo(id) self._display = id U.modelLoads = (U.modelLoads or 0) + 1 end
 function Universal:ClearModel() self._creature, self._display = nil, nil end
 function Universal:SetFacing(a) self._facing = a end
+function Universal:SetFrameLevel(l) self._level = l end
+function Universal:GetFrameLevel() return self._level or 0 end
+function Universal:GetChildren() return unpack(self._children or {}) end
 function Universal:GetModelFileID() return self._display or self._creature end
 function Universal:Click(button)
     if self._scripts.OnClick then self._scripts.OnClick(self, button or "LeftButton") end
@@ -229,6 +232,7 @@ local function registerLibStandIns()
     function icon:Show(name) self.shown[name] = true end
     function icon:Hide(name) self.shown[name] = false end
     function icon:Refresh(name, db) self.registered[name] = db self.shown[name] = not (db and db.hide) end
+    function icon:GetMinimapButton(name) return self.buttons and self.buttons[name] end
     U.ldb, U.icon = ldb, icon
 end
 

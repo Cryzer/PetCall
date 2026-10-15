@@ -31,7 +31,23 @@ function Broker:FillTooltip(tt)
     tt:AddLine("|cff69b950" .. L["Ctrl + Click:"] .. "|r " .. L["Open PetCall"], 1, 1, 1)
 end
 
+-- EllesmereUI's minimap flyout raises every child of a clicked button above it, its
+-- own dark backdrop included, which then covers the icon. Our button has no children
+-- of its own, so on the next frame put whatever is parented to it back underneath.
+local function keepChildrenBelowIcon()
+    local btn = LDBIcon:GetMinimapButton("PetCall")
+    if not btn then return end
+    local below = math.max(0, btn:GetFrameLevel() - 1)
+    for _, child in ipairs({ btn:GetChildren() }) do
+        if child:GetFrameLevel() >= btn:GetFrameLevel() and not (InCombatLockdown() and child:IsProtected()) then
+            child:SetFrameStrata(btn:GetFrameStrata())
+            child:SetFrameLevel(below)
+        end
+    end
+end
+
 function Broker:OnClick(frame, button)
+    C_Timer.After(0, keepChildrenBelowIcon)
     if IsControlKeyDown() then
         ns:OpenWindow()
     elseif button == "RightButton" then
