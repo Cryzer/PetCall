@@ -28,3 +28,4 @@ Core\DB.lua
 Core\PetCache.lua
 Core\Weights.lua
 Core\AutoRules.lua
+Core\Sets.lua
