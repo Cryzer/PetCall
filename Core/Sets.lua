@@ -164,6 +164,18 @@ function SetMixin:ApplyTemplate(key)
     self:ConditionsChanged()
 end
 
+-- A set object outlives its data when it is deleted or the profile changes; its
+-- mutators must not touch the (new) profile's tables or revive its freed watcher.
+for _, method in ipairs({ "Rename", "Delete", "SetEnabled", "SetPriority", "SetImmediate", "SetDefaultWeight",
+    "SetPetWeight", "SetPetWeights", "ClearPetWeights", "FiltersChanged", "SetConditionModel", "ConditionsChanged",
+    "ApplyTemplate" }) do
+    local original = SetMixin[method]
+    SetMixin[method] = function(self, ...)
+        if self.deleted then return false, L["This set no longer exists."] end
+        return original(self, ...)
+    end
+end
+
 --
 -- Collection
 --
@@ -226,6 +238,7 @@ end
 function Sets:Reload()
     for _, set in pairs(cache) do
         if set.watcher then set.watcher:Free() end
+        set.deleted = true
     end
     wipe(cache)
     current = nil

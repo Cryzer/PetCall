@@ -174,9 +174,10 @@ end
 
 function ns:OpenWindow() Main:Show() end
 
-ns:RegisterCallback(Main, "SetsChanged", function(_, name)
-    if selectedSet and selectedSet.deleted then Main:SelectSet(ns.Sets.DEFAULT) end
-end)
-ns:RegisterCallback(Main, "ProfileChanged", function()
-    if frame and frame:IsShown() then Main:SelectSet(ns.Sets.DEFAULT) end
+-- Deleted sets and sets of a previous profile are stale objects: pick the set
+-- with the same name in the current data, or the default set.
+ns:RegisterCallback(Main, "SetsChanged", function()
+    if frame and selectedSet and selectedSet.deleted then
+        Main:SelectSet(ns.Sets:Get(selectedSet.name) and selectedSet.name or ns.Sets.DEFAULT)
+    end
 end)

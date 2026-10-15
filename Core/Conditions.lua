@@ -271,6 +271,7 @@ local function collect(list, out)
 end
 
 function Watcher:Rebuild()
+    if self.freed then return end
     ns.Events.UnregisterAll(self)
     unsubscribeTicks(self)
     local events = {}
