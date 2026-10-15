@@ -62,7 +62,7 @@ end
 local function tile_OnEnter(self)
     if not self.petID then return end
     if floatingPreview then
-        floatingPreview:ShowForCreature(ns.PetCache:GetCreatureID(self.petID), "LEFT", self, "RIGHT", 6, 0)
+        floatingPreview:ShowForPet(ns.PetCache:GetInfo(self.petID), "LEFT", self, "RIGHT", 6, 0)
     else
         ns.UI.Preview:SetHover(self.petID)
     end

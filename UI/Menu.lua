@@ -70,9 +70,9 @@ local function showPreview(info, frame)
     local scale = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
     local right = (frame:GetRight() or 0) * scale
     if right + PREVIEW_SIZE + 8 > UIParent:GetWidth() then
-        preview:ShowForCreature(info.creatureID, "RIGHT", frame, "LEFT", -8, 0)
+        preview:ShowForPet(info, "RIGHT", frame, "LEFT", -8, 0)
     else
-        preview:ShowForCreature(info.creatureID, "LEFT", frame, "RIGHT", 8, 0)
+        preview:ShowForPet(info, "LEFT", frame, "RIGHT", 8, 0)
     end
 end
 

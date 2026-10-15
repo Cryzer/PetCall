@@ -42,6 +42,7 @@ Core\LegacyDeserialize.lua
 Core\Share.lua
 Core\Migrate.lua
 Core\Commands.lua
+UI\ModelViewer.lua
 UI\ModelPreview.lua
 UI\Skin.lua
 UI\Widgets.lua

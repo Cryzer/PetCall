@@ -1,41 +1,26 @@
 local _, ns = ...
 
-local C_Timer, CreateFrame, UIParent =
-    C_Timer, CreateFrame, UIParent
+local C_Timer, CreateFrame, UIParent = C_Timer, CreateFrame, UIParent
 
-local ROT_SPEED = math.pi / 4  -- 45°/s — full rotation in 8 s
-
--- Creature IDs whose skeleton root is significantly offset from their visual
--- centre; SetFacing() rotates around the root so they orbit instead of
--- spinning in place.  List the creatureID (not speciesID) here to show a
--- static pose instead.
+-- Creature IDs whose skeleton root is far from their visual centre: turning them
+-- makes them orbit instead of spin, so they get a static pose.
 -- Find a creature ID: /run print(select(11, C_PetJournal.GetPetInfoByPetID(petGUID)))
 local STATIC_PREVIEW_CREATURES = {
     [181535] = true,  -- Murkastrasza
 }
 
--- Creates and returns an independent 3-D model-preview object.
---   frameName  unique string used as the container frame name (/fstack debugging).
---
--- Returned object:
---   obj:ShowForCreature(creatureID, point, anchor, relPoint, xOff, yOff)
---       Show and position the preview.  No-ops if creatureID is already
---       loaded or loading — safe to call on every OnEnter.
---   obj:ScheduleHide()
---       Deferred hide (one frame).  Call from OnLeave; a rapid OnLeave→OnEnter
---       pair within the same frame cancels the hide without flickering.
---   obj:Hide()
---       Immediate hide.  Use when the owning panel closes or the list scrolls.
---   obj.frame
---       The underlying container Frame, for parenting or layout queries.
-function ns:CreateModelPreview(frameName)
-    local generation    = 0   -- bumped on each new ShowForCreature request
-    local angle         = 0
-    local hideScheduled = false
+local HOVER_DELAY = 0.12   -- a mouse sweep over a list only loads the pet it stops on
 
-    -- Container: plain Frame + BackdropTemplate.
-    -- Mixing PlayerModel with BackdropTemplate on the same frame breaks model
-    -- methods in some WoW versions, so model and backdrop live on separate frames.
+ns.UI = ns.UI or {}
+ns.UI.previews = ns.UI.previews or {}
+
+-- Creates a floating 3-D preview (pet menu, narrow grid) on the shared model viewer.
+--   obj:ShowForPet(info, point, anchor, relPoint, xOff, yOff)
+--       Show and position the preview for a PetCache info; cheap to call on every OnEnter.
+--   obj:ScheduleHide()   deferred hide (one frame): an OnLeave followed by OnEnter does not flicker
+--   obj:Hide()           immediate hide
+--   obj.frame, obj.viewer
+function ns:CreateModelPreview(frameName)
     local container = CreateFrame("Frame", frameName, UIParent, "BackdropTemplate")
     container:SetSize(200, 200)
     container:SetFrameStrata("TOOLTIP")
@@ -44,82 +29,56 @@ function ns:CreateModelPreview(frameName)
         bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
         tile = true, tileSize = 32, edgeSize = 12,
-        insets = {left = 3, right = 3, top = 3, bottom = 3},
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
     })
     container:SetBackdropColor(0, 0, 0, 0.9)
     container:Hide()
 
-    -- PlayerModel exposes SetCreature/SetDisplayInfo/SetFacing on all retail
-    -- builds.  Plain Model lost SetCreature in TWW 11.0+.
-    local model = CreateFrame("PlayerModel", nil, container)
-    model:SetPoint("TOPLEFT",     container, "TOPLEFT",      4, -4)
-    model:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -4,  4)
+    local viewer = ns.UI.NewModelViewer(container, { turnSpeed = math.pi / 4 })
+    viewer.frame:SetPoint("TOPLEFT", container, "TOPLEFT", 4, -4)
+    viewer.frame:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -4, 4)
 
-    model:SetScript("OnUpdate", function(self, elapsed)
-        if not container.isStatic then
-            angle = (angle + ROT_SPEED * elapsed) % (2 * math.pi)
-            self:SetFacing(angle)
-        end
-    end)
-    -- OnModelLoaded is registered per-request inside ShowForCreature so that
-    -- each callback closure captures the generation value at call time.
+    local obj = { frame = container, viewer = viewer }
+    local current, pendingLoad, hideScheduled
 
-    local obj = {}
-    obj.frame = container
+    local function cancelLoad()
+        if pendingLoad then pendingLoad:Cancel() pendingLoad = nil end
+    end
 
-    function obj:ShowForCreature(creatureID, point, anchor, relPoint, xOff, yOff)
+    function obj:ShowForPet(info, point, anchor, relPoint, xOff, yOff)
+        if not info then return end
         hideScheduled = false
-        obj.hoverFrame = anchor      -- track anchor so OnLeave can detect scroll-driven updates
         container:ClearAllPoints()
         container:SetPoint(point, anchor, relPoint, xOff, yOff)
         container:Show()
-
-        if container.currentCreatureID == creatureID then return end  -- already correct
-
-        container.currentCreatureID = creatureID
-        angle = 0
-
-        -- Capture the generation for this specific request.  If generation
-        -- advances (a newer ShowForCreature arrived) before this load
-        -- completes, the callback will see myGen ~= generation and bail.
-        generation = generation + 1
-        local myGen = generation
-
-        model:SetScript("OnModelLoaded", function(self)
-            if myGen ~= generation then return end  -- stale load; discard
-            container.isStatic =
-                STATIC_PREVIEW_CREATURES[container.currentCreatureID] or false
-            self:SetFacing(0)
-            angle = 0
-        end)
-
-        model:ClearModel()           -- remove stale geometry before the new load
-        model:SetPosition(0, 0, 0)   -- reset any per-species model position offset
-        model:SetCreature(creatureID)
-    end
-
-    function obj:ScheduleHide()
-        hideScheduled = true
-        C_Timer.After(0, function()
-            if not hideScheduled then return end
-            -- Invalidate any in-flight load so its OnModelLoaded is discarded.
-            generation = generation + 1
-            model:SetScript("OnModelLoaded", nil)
-            container.currentCreatureID = nil  -- reset same-creature guard
-            model:ClearModel()
-            container:Hide()
-            hideScheduled = false
+        -- same pet and its model is there (or on its way): nothing to do
+        if current == info.creatureID and (pendingLoad or viewer:ModelID()) then return end
+        current = info.creatureID
+        cancelLoad()
+        viewer:Clear()
+        pendingLoad = C_Timer.NewTimer(HOVER_DELAY, function()
+            pendingLoad = nil
+            if current ~= info.creatureID then return end
+            viewer:SetStatic(STATIC_PREVIEW_CREATURES[info.creatureID])
+            viewer:Load(info)
         end)
     end
 
     function obj:Hide()
         hideScheduled = false
-        generation = generation + 1
-        model:SetScript("OnModelLoaded", nil)
-        container.currentCreatureID = nil
-        model:ClearModel()
+        cancelLoad()
+        current = nil
+        viewer:Clear()
         container:Hide()
     end
 
+    function obj:ScheduleHide()
+        hideScheduled = true
+        C_Timer.After(0, function()
+            if hideScheduled then obj:Hide() end
+        end)
+    end
+
+    ns.UI.previews[frameName] = obj
     return obj
 end

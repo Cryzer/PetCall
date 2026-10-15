@@ -9,92 +9,7 @@ ns.UI.Preview = Preview
 local panel, viewer, set, hoverID, selectedID
 local shownID, syncing
 local loadModel        -- assigned above Preview:ShowPet
-local angle = 0
--- after a (re)load the model faces front, holds still, then eases into the idle turn
-local HOLD, EASE, TURN_SPEED = 0.8, 1.0, 0.3
-local holdUntil = 0
 local MODEL_SHARE = 0.55        -- part of the panel's height given to the model
-
---
--- Viewer: the Pet Journal's ModelScene (camera framed per species) when the client
--- has it, else a plain PlayerModel. Both expose Load/Clear/ModelID/SetYaw.
---
-local SCENE_TEMPLATE = "WrappedAndUnwrappedModelScene"
-
-local function newViewer(parent)
-    local v = {}
-    local useScene = C_PetJournal.GetPetModelSceneInfoBySpeciesID and C_XMLUtil and C_XMLUtil.GetTemplateInfo
-        and C_XMLUtil.GetTemplateInfo(SCENE_TEMPLATE)
-    if useScene then
-        v.frame = CreateFrame("ModelScene", nil, parent, SCENE_TEMPLATE)
-    else
-        v.frame = CreateFrame("PlayerModel", nil, parent)
-        v.frame:EnableMouse(true)
-        v.frame:EnableMouseWheel(true)
-        local dragging, lastX = false, nil
-        v.frame:SetScript("OnMouseDown", function(_, button) if button == "LeftButton" then dragging, lastX = true, GetCursorPosition() end end)
-        v.frame:SetScript("OnMouseUp", function() dragging = false end)
-        v.frame:SetScript("OnMouseWheel", function(self, delta)
-            self.zoom = math.max(-0.5, math.min(0.7, (self.zoom or 0) + delta * 0.1))
-            self:SetPortraitZoom(self.zoom)
-        end)
-        function v:Dragging()
-            if not dragging then return nil end
-            local x = GetCursorPosition()
-            local dx = x - lastX
-            lastX = x
-            return dx
-        end
-    end
-
-    function v:Load(info)
-        local displayID = select(12, C_PetJournal.GetPetInfoBySpeciesID(info.speciesID))
-        if useScene then
-            local sceneID = C_PetJournal.GetPetModelSceneInfoBySpeciesID(info.speciesID)
-            self.frame:TransitionToModelSceneID(sceneID, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)
-            self.actor = self.frame:GetActorByTag("unwrapped")
-            if self.actor then
-                self.actor:SetModelByCreatureDisplayID(displayID)
-                if Enum.ModelBlendOperation then self.actor:SetAnimationBlendOperation(Enum.ModelBlendOperation.None) end
-            end
-        else
-            self.frame:ClearModel()
-            if displayID and displayID > 0 then self.frame:SetDisplayInfo(displayID) else self.frame:SetCreature(info.creatureID) end
-        end
-    end
-
-    function v:Clear()
-        if useScene then
-            if self.actor then self.actor:ClearModel() end
-        else
-            self.frame:ClearModel()
-        end
-    end
-
-    function v:ModelID()
-        if useScene then return self.actor and self.actor:GetModelFileID() end
-        return self.frame:GetModelFileID()
-    end
-
-    function v:SetYaw(a)
-        if useScene then
-            if self.actor then self.actor:SetYaw(a) end
-        else
-            self.frame:SetFacing(a)
-        end
-    end
-
-    -- the scene rotates its own camera on drag; the idle turn pauses meanwhile
-    if useScene then
-        function v:Dragging() return (self.frame:IsMouseOver() and IsMouseButtonDown("LeftButton")) and 0 or nil end
-    end
-    return v
-end
-
-local function faceFront()
-    angle, holdUntil = 0, GetTime() + HOLD
-    if viewer then viewer:SetYaw(0) end
-end
 
 -- a selected pet stays in the panel; hovering only previews while nothing is selected
 local function petToShow()
@@ -106,7 +21,7 @@ function Preview:Attach(parent)
     panel:SetWidth(240)
     ns.Skin:Apply("Panel", panel, { inset = true })
 
-    viewer = newViewer(panel)
+    viewer = ns.UI.NewModelViewer(panel, { mouse = true })
     local model = viewer.frame
     panel.viewer, panel.model = viewer, model
     model:SetPoint("TOPLEFT", 4, -4)
@@ -114,20 +29,6 @@ function Preview:Attach(parent)
     model:SetHeight(260)
     -- the model takes over half of the panel; text and controls sit below it
     panel:SetScript("OnSizeChanged", function(_, _, h) model:SetHeight(math.max(200, (h or 0) * MODEL_SHARE)) end)
-    model:HookScript("OnUpdate", function(_, elapsed)
-        local dx = viewer:Dragging()
-        if dx then
-            angle = angle + dx * 0.02
-            holdUntil = 0                       -- the player took over
-        else
-            local t = GetTime() - holdUntil
-            if t < 0 then return end
-            angle = angle + elapsed * TURN_SPEED * math.min(1, t / EASE)
-        end
-        viewer:SetYaw(angle)
-    end)
-    -- PlayerModel: loads finish later than they are requested; restart the hold when it appears
-    if model:GetObjectType() == "PlayerModel" then model:SetScript("OnModelLoaded", faceFront) end
 
     panel.name = ns.Widgets.Label(panel, "", "GameFontNormalLarge")
     panel.name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 4, -10)
@@ -192,7 +93,6 @@ function loadModel(info, fromHover)
         pendingLoad = nil
         if viewer.creatureID ~= info.creatureID then return end   -- moved on meanwhile
         viewer:Load(info)
-        faceFront()
     end
     if fromHover then pendingLoad = C_Timer.NewTimer(HOVER_DELAY, load) else load() end
 end
@@ -248,6 +148,6 @@ function Preview:SetSelected(petID) selectedID = petID self:ShowPet(petToShow())
 function Preview:Refresh() self:ShowPet(petToShow()) end
 function Preview:GetPanel() return panel end
 function Preview:GetViewer() return viewer end
-function Preview:GetYaw() return angle end
+function Preview:GetYaw() return viewer:GetYaw() end
 function Preview:GetSelected() return selectedID end
 function Preview:GetShown() return shownID end

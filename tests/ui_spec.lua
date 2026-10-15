@@ -412,4 +412,20 @@ describe("UI smoke", function()
         assert.equal("PlayerModel", viewer.frame._type)
         assert.equal(5001, viewer:ModelID())
     end)
+    it("the pet menu preview uses the shared viewer and loads only where the mouse stops", function()
+        for i = 1, 20 do W.world.pets["m" .. i] = { species = 200 + i, name = "M" .. i } end
+        ns.PetCache:Rescan()
+        ns.UI.Menu:Open()
+        local page = U.lastMenu:Find("All pets").items[1]
+        U.modelLoads = 0
+        for _, item in ipairs(page.items) do item.onEnter(U.universal()) end
+        W.advance(1)
+        local preview = ns.UI.previews.PetCallMenuPreview
+        assert.is_true(U.modelLoads <= 1, "model loads: " .. U.modelLoads)
+        local last = page.items[#page.items]
+        assert.is_not_nil(preview.viewer:ModelID())
+        last.onLeave()
+        W.advance(0.1)
+        assert.is_false(preview.frame:IsShown())
+    end)
 end)
