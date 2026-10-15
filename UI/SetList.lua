@@ -8,6 +8,8 @@ ns.UI.SetList = SetList
 
 local COLLAPSE_BELOW = 700
 local panel, rail, rows, newBox = nil, nil, {}, nil
+local RAIL_W, PANEL_W = 34, 190
+local collapsedNow = false
 local STATUS = {
     active = { "on", L["Active now"] },
     waiting = { "off", L["Conditions not met"] },
@@ -85,9 +87,10 @@ end
 
 function SetList:SetCollapsed(collapsed, user)
     local f = ns.UI.Main:GetFrame()
+    collapsedNow = collapsed and true or false
     panel:SetShown(not collapsed)
     rail:SetShown(collapsed)
-    f.left:SetWidth(collapsed and 28 or 190)
+    f.left:SetWidth(collapsed and RAIL_W or PANEL_W)
     if user then ns.db.global.window.setsCollapsed = collapsed end
 end
 
@@ -95,9 +98,12 @@ local function autoCollapse()
     local user = ns.db.global.window.setsCollapsed
     local f = ns.UI.Main:GetFrame()
     if f:GetWidth() < COLLAPSE_BELOW then return SetList:SetCollapsed(true) end
-    if user ~= nil then return SetList:SetCollapsed(user) end
-    SetList:SetCollapsed(#ns.Sets:List() <= 1)
+    -- open unless the player closed it: with one set the panel still offers + New and Import
+    SetList:SetCollapsed(user == true)
 end
+
+function SetList:IsCollapsed() return collapsedNow end
+function SetList:GetRail() return rail end
 
 ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     panel = CreateFrame("Frame", nil, frame.left)
@@ -139,8 +145,18 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     rail = CreateFrame("Button", nil, frame.left)
     rail:SetAllPoints()
     rail:Hide()
+    -- looks clickable: a tinted strip, an expand arrow and a hover highlight
+    rail.bg = rail:CreateTexture(nil, "BACKGROUND")
+    rail.bg:SetAllPoints()
+    rail.bg:SetColorTexture(1, 1, 1, 0.06)
+    rail:SetHighlightTexture("Interface\\Buttons\\UI-Listbox-Highlight2", "ADD")
+    rail:GetHighlightTexture():SetAlpha(0.35)
+    rail.arrow = rail:CreateTexture(nil, "ARTWORK")
+    rail.arrow:SetSize(20, 20)
+    rail.arrow:SetPoint("TOP", 0, -6)
+    rail.arrow:SetAtlas("common-icon-forwardarrow")
     rail.label = ns.Widgets.Label(rail, L["Sets"], "GameFontNormalSmall")
-    rail.label:SetPoint("TOP", 0, -8)
+    rail.label:SetPoint("TOP", rail.arrow, "BOTTOM", 0, -4)
     rail.count = ns.Widgets.Label(rail, "", "GameFontHighlightSmall")
     rail.count:SetPoint("TOP", rail.label, "BOTTOM", 0, -4)
     rail:SetScript("OnClick", function() SetList:SetCollapsed(false, true) end)
