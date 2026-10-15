@@ -29,6 +29,7 @@ Core\PetCache.lua
 Core\Weights.lua
 Core\AutoRules.lua
 Core\Sets.lua
+Core\Ready.lua
 Core\Commands.lua
 UI\ModelPreview.lua
 UI\Skin.lua
