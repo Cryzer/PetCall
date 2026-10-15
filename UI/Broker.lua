@@ -35,7 +35,7 @@ function Broker:OnClick(frame, button)
     if IsControlKeyDown() then
         ns:OpenWindow()
     elseif button == "RightButton" then
-        ns.UI.Menu:Open(frame)
+        ns.UI.Menu:Open()
     else
         ns:TogglePet()
     end

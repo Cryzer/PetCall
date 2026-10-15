@@ -172,7 +172,7 @@ function U.install()
     MenuUtil = { CreateContextMenu = function(owner, builder)
         local root = U.newMenu()
         builder(owner, root)
-        U.lastMenu = root
+        U.lastMenu, U.lastMenuOwner = root, owner
         return root
     end }
     ScrollUtil = { InitScrollBoxListWithScrollBar = function(box, _, view) box._view = view end }

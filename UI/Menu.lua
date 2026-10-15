@@ -122,6 +122,9 @@ function Menu:Build(owner, root)
     root:CreateButton(L["Settings"], function() ns:OpenSettings() end)
 end
 
-function Menu:Open(anchor)
-    MenuUtil.CreateContextMenu(anchor, function(owner, root) Menu:Build(owner, root) end)
+-- Opens at the cursor. The owner is UIParent, not the clicked button: a menu closes
+-- when its owner hides, and minimap button collectors (EllesmereUI's flyout) hide
+-- their buttons on the very click that picks a menu item.
+function Menu:Open()
+    MenuUtil.CreateContextMenu(UIParent, function(owner, root) Menu:Build(owner, root) end)
 end
