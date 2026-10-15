@@ -5,6 +5,9 @@ local CreateFrame = CreateFrame
 local Tab = {}
 local page, scroll, content, set, model
 local pool = {}          -- reusable row/group frames are rebuilt on each Refresh (sets have few rows)
+local dots, header = {}, nil                                  -- redrawn in place when condition states change
+local drafts = setmetatable({}, { __mode = "k" })             -- entry -> unsaved code text
+local results = setmetatable({}, { __mode = "k" })            -- entry -> last "Check" result text
 
 local TEMPLATES = {
     { key = "city", label = L["In a city"] }, { key = "instance", label = L["In a raid or dungeon"] },
@@ -18,6 +21,8 @@ local function changedInPlace() set:ConditionsChanged() end
 local function clear()
     for _, f in ipairs(pool) do f:Hide() f:SetParent(nil) end
     wipe(pool)
+    wipe(dots)
+    header = nil
 end
 
 local function track(f) pool[#pool + 1] = f return f end
@@ -138,15 +143,23 @@ local function codeEditor(parent, e, anchor)
     eb:SetFontObject("ChatFontNormal")
     eb:SetWidth(400)
     eb:SetAutoFocus(false)
-    eb:SetText(e.code or "")
+    eb:SetText(drafts[e] or e.code or "")
     sf:SetScrollChild(eb)
+    -- keep typing across redraws; commit when the box loses focus
+    eb:SetScript("OnTextChanged", function(self, userInput) if userInput then drafts[e] = self:GetText() end end)
+    eb:SetScript("OnEditFocusLost", function(self)
+        if drafts[e] and drafts[e] ~= e.code then e.code = drafts[e] drafts[e] = nil changedInPlace() end
+    end)
     local result = track(ns.Widgets.Label(parent, "", "GameFontHighlightSmall"))
     result:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -4)
     result:SetPoint("RIGHT", -8, 0)
+    result:SetText(results[e] or "")
     local check = track(ns.Widgets.Button(parent, L["Check"], function()
         e.code = eb:GetText()
+        drafts[e] = nil
         local ok, res = ns.Conditions.CheckLua(e.code)
-        result:SetText(ok and ("|cff40ff40" .. L["OK, current result:"] .. "|r " .. tostring(res)) or ("|cffff4040" .. tostring(res) .. "|r"))
+        results[e] = ok and ("|cff40ff40" .. L["OK, current result:"] .. "|r " .. tostring(res)) or ("|cffff4040" .. tostring(res) .. "|r")
+        result:SetText(results[e])
         changedInPlace()
     end))
     check:SetPoint("TOPRIGHT", box, "BOTTOMRIGHT", 0, -2)
@@ -162,15 +175,36 @@ local function codeEditor(parent, e, anchor)
     return 160
 end
 
+local function state(e) return set:GetConditionStates()[e] end
+
+local function paintDot(dot, e)
+    local on = state(e) and state(e).value
+    dot:SetText(on and "●" or "○")
+    dot:SetTextColor(on and 0.3 or 0.8, on and 1 or 0.8, on and 0.3 or 0.8)
+end
+
+local function paintHeader()
+    if not header then return end
+    header:SetText(format("%s   %s", #model.groups > 1 and L["Use this set when ANY of these groups is met:"] or L["Use this set when ALL conditions are met:"],
+        set:ConditionsMet() and "|cff40ff40● " .. L["active"] .. "|r" or "|cffcccccc○ " .. L["inactive"] .. "|r"))
+end
+
 local function stateDot(row, e)
-    local st = set:GetConditionStates()[e]
-    local dot = track(ns.Widgets.Label(row, st and st.value and "●" or "○", "GameFontNormal"))
-    dot:SetTextColor(st and st.value and 0.3 or 0.8, st and st.value and 1 or 0.8, st and st.value and 0.3 or 0.8)
+    local dot = track(ns.Widgets.Label(row, "", "GameFontNormal"))
+    paintDot(dot, e)
+    dots[#dots + 1] = { dot = dot, e = e }
     local hit = track(CreateFrame("Frame", nil, row))
     hit:SetAllPoints(dot)
     hit:EnableMouse(true)
-    ns.Widgets.Tooltip(hit, st and st.value and L["Met right now"] or L["Not met right now"], st and st.reason)
+    ns.Widgets.Tooltip(hit, function() return state(e) and state(e).value and L["Met right now"] or L["Not met right now"] end,
+        function() return state(e) and state(e).reason end)
     return dot
+end
+
+-- condition states changed (zone, group, time…): repaint, keep the editor as it is
+local function repaintStates()
+    for _, d in ipairs(dots) do paintDot(d.dot, d.e) end
+    paintHeader()
 end
 
 local function buildRow(parent, group, index, e, y)
@@ -244,11 +278,9 @@ end
 function render()
     clear()
     local y = -8
-    local header = track(ns.Widgets.Label(content, "", "GameFontNormal"))
+    header = track(ns.Widgets.Label(content, "", "GameFontNormal"))
     header:SetPoint("TOPLEFT", 8, y)
-    local met = set:ConditionsMet()
-    header:SetText(format("%s   %s", #model.groups > 1 and L["Use this set when ANY of these groups is met:"] or L["Use this set when ALL conditions are met:"],
-        met and "|cff40ff40● " .. L["active"] .. "|r" or "|cffcccccc○ " .. L["inactive"] .. "|r"))
+    paintHeader()
     y = y - 24
     if not set:HasConditions() then
         local note = track(ns.Widgets.Label(content, "|cffffb040" .. L["Without conditions this set is always active."] .. "|r"))
@@ -318,6 +350,6 @@ ns.UI.Main:RegisterTab("when", L["When"], function(p)
 end, 2)
 
 local refreshSoon = ns.Debounce(0.1, function()
-    if page and page:IsVisible() and set and not set.deleted then Tab:Refresh(set) end
+    if page and page:IsVisible() and set and not set.deleted then repaintStates() end
 end)
 ns:RegisterCallback(Tab, "ConditionStateChanged", function(_, name) if set and name == set.name then refreshSoon() end end)
