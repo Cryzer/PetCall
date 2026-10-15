@@ -101,3 +101,7 @@ L["Verbose"] = true
 L["Wait Time (Seconds)"] = true
 L["You have %d pets"] = true
 L["You have no pets"] = true
+
+L["Profile name cannot be empty."] = true
+L["Unknown profile."] = true
+L["Cannot delete the active profile."] = true
