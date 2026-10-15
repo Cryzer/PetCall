@@ -13,12 +13,12 @@ local STRING = { "Text", "Name", "Title", "ObjectType", "Atlas", "Texture" }
 local Universal
 local function universal() return setmetatable({ _events = {}, _scripts = {}, _shown = false }, Universal) end
 
-local function smart(name)
+local function defaultFor(name)
     for _, n in ipairs(NUMERIC) do
         if name == "Get" .. n then return function() return 0 end end
     end
     for _, n in ipairs(STRING) do
-        if name == "Get" .. n then return function(self) return self._text or "" end end
+        if name == "Get" .. n then return function(self) return type(self) == "table" and rawget(self, "_text") or "" end end
     end
     if name:match("^Is") or name:match("^Has") or name:match("^Can") then
         return function() return false end
@@ -28,6 +28,15 @@ local function smart(name)
     end
     return function() end
 end
+
+-- A capitalized member is both callable (a method with a sensible default result)
+-- and indexable (a nested table such as Mixin.Event.OnValueChanged).
+local Member = {}
+Member.__call = function(self, ...) return defaultFor(rawget(self, "_name"))(...) end
+Member.__index = function(_, k)
+    if type(k) == "string" and k:match("^[A-Z]") then return setmetatable({ _name = k }, Member) end
+end
+local function smart(name) return setmetatable({ _name = name }, Member) end
 
 Universal = {}
 Universal.__index = function(t, k)
@@ -88,7 +97,9 @@ function U.install()
     GameTooltip = universal()
     setmetatable(_G, {
         __index = function(_, k)
-            if type(k) == "string" and k:match("^[A-Z]") and not ABSENT[k] then return universal() end
+            if type(k) ~= "string" or ABSENT[k] then return nil end
+            if k:match("^[A-Z][A-Z0-9_]*$") then return k end   -- GlobalStrings such as BATTLE_PET_NAME_8
+            if k:match("^[A-Z]") then return universal() end
         end,
     })
 end
