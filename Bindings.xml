@@ -1,6 +1,6 @@
 <Bindings>
     <Binding name="PETCALL_SUMMON" category="PetCall">
-        PetCall:ResummonPet()
+        PetCall:SummonAnother()
     </Binding>
     <Binding name="PETCALL_DESUMMON" category="PetCall">
         PetCall:DismissPet()

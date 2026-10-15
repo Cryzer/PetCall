@@ -43,6 +43,14 @@ describe("Summon", function()
         assert.equal("b", W.world.summoned)
     end)
 
+    it("the Summon Another Pet key binding summons at once, without the idle wait", function()
+        local xml = assert(io.open("Bindings.xml")):read("*a")
+        local body = xml:match('name="PETCALL_SUMMON"[^>]*>%s*(.-)%s*</Binding>')
+        W.world.summoned = "a"
+        assert(loadstring(body))()
+        assert.equal("b", W.world.summoned)            -- no W.advance: immediate
+    end)
+
     it("verbose message", function()
         ns.Summon:SummonRandom()
         assert.is_true(W.world.printed[#W.world.printed]:find("Summoning") ~= nil)
