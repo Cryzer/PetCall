@@ -1,0 +1,42 @@
+local W = dofile("tests/wowstub.lua")
+local F = dofile("tests/fixtures/PetCall3DB_1_0.lua")
+local REF = dofile("tests/fixtures/reference_1_0.lua")
+
+local function deepcopy(t)
+    if type(t) ~= "table" then return t end
+    local c = {} for k, v in pairs(t) do c[k] = deepcopy(v) end return c
+end
+
+describe("Weights", function()
+    local ns
+    before_each(function()
+        W.reset()
+        for id, p in pairs(F.pets) do W.world.pets[id] = p end
+        for id in pairs(F.favorites) do W.world.favorites[id] = true end
+        PetCall3DB = deepcopy(F.db)
+        ns = W.load()
+        W.login()
+        W.advance(1)
+    end)
+    it("matches 1.0.x weight tables for every set", function()
+        for name, ref in pairs(REF[1].sets) do
+            local tbl = ns.Weights.Build(ns.db.profile.sets[name])
+            assert.equal(ref.total, tbl.total, name .. " total")
+            local sums = {}
+            for i = 1, #tbl, 2 do sums[tbl[i + 1]] = (sums[tbl[i + 1]] or 0) + tbl[i] end
+            assert.same(ref.weights, sums, name .. " weights")
+        end
+    end)
+    it("picks proportionally and reports chance", function()
+        local tbl = { 1, "a", 3, "b", total = 4 }
+        assert.equal("a", ns.Weights.Pick(tbl, 0.2))
+        assert.equal("b", ns.Weights.Pick(tbl, 0.3))
+        assert.equal(0.75, ns.Weights.Chance(tbl, "b"))
+        assert.is_nil(ns.Weights.Pick({ total = 0 }, 0.5))
+    end)
+    it("labels", function()
+        assert.equal("+2", ns.Weights.Short(64))
+        assert.is_nil(ns.Weights.Short(1))
+        assert.equal(8, ns.Weights.Nearest(7.9))
+    end)
+end)

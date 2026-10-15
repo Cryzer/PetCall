@@ -7,6 +7,8 @@ local specs = {
     "tests/locale_spec.lua",
     "tests/db_spec.lua",
     "tests/petcache_spec.lua",
+    "tests/weights_spec.lua",
+    "tests/autorules_spec.lua",
 }
 if arg and arg[1] then specs = { arg[1] } end
 for _, file in ipairs(specs) do

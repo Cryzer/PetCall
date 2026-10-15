@@ -26,3 +26,5 @@ Locales\ruRU.lua
 Locales\zhCN.lua
 Core\DB.lua
 Core\PetCache.lua
+Core\Weights.lua
+Core\AutoRules.lua
