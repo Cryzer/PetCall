@@ -24,12 +24,17 @@ function M.Filter(set, state)
     end
     local key = state.sort or "name"
     if key ~= "name" then
-        local tbl = key == "chance" and set:GetWeightTable() or nil
+        -- chance is proportional to a pet's summed weight: one pass over the table
+        local sums = {}
+        if key == "chance" then
+            local tbl = set:GetWeightTable()
+            for i = 1, #tbl, 2 do sums[tbl[i + 1]] = (sums[tbl[i + 1]] or 0) + tbl[i] end
+        end
         local function value(id)
             local info = ns.PetCache:GetInfo(id)
             if key == "level" then return info.level end
             if key == "rarity" then return info.quality end
-            return ns.Weights.Chance(tbl, id)
+            return sums[id] or 0
         end
         sort(out, function(a, b)
             local va, vb = value(a), value(b)

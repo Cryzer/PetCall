@@ -37,6 +37,18 @@ describe("PetGridModel", function()
         assert.same({ "a", "c", "b" }, ns.PetGridModel.Filter(set, { sort = "level" }))
         assert.same({ "a", "c", "b" }, ns.PetGridModel.Filter(set, { sort = "rarity" }))
     end)
+    it("sorts by chance with one pass over the weight table", function()
+        set:SetPetWeight("a", 64)
+        local sums = 0
+        local origSum, origChance = ns.Weights.Sum, ns.Weights.Chance
+        ns.Weights.Sum = function(...) sums = sums + 1 return origSum(...) end
+        ns.Weights.Chance = function(...) sums = sums + 1 return origChance(...) end
+        local ids = ns.PetGridModel.Filter(set, { sort = "chance" })
+        ns.Weights.Sum, ns.Weights.Chance = origSum, origChance
+        assert.same({ "a", "c", "b" }, ids)
+        assert.equal(0, sums)
+    end)
+
     it("chunks rows", function()
         assert.same({ { "a", "b" }, { "c" } }, ns.PetGridModel.Rows({ "a", "b", "c" }, 2))
     end)
