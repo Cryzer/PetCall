@@ -32,6 +32,8 @@ Core\Conditions.lua
 Core\ConditionTypes.lua
 Core\Sets.lua
 Core\Ready.lua
+Core\Summon.lua
+Core\SwitchTimer.lua
 Core\Commands.lua
 UI\ModelPreview.lua
 UI\Skin.lua

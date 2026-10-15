@@ -337,4 +337,3 @@ function Ready:DumpDebugState()
     ns:Printf("Ready: %s", tconcat(ready, " "))
     ns:Printf("Not Ready: %s", tconcat(notReady, " "))
 end
-ns.GetCurrentPet = ns.GetCurrentPet or function() return C_PetJournal.GetSummonedPetGUID() end
