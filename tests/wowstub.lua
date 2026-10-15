@@ -195,7 +195,10 @@ function W.reset()
         SetCustomName = noop,
         SetFavorite = function(id, v) w.favorites[id] = v == 1 end,
         GetNumPetTypes = function() return 10 end,
-        GetPetInfoBySpeciesID = function(s) return "Species" .. s, "icon", 1, 1000 + s, "Source " .. s end,
+        -- name, icon, type, creatureID, source, description, isWild, canBattle, isTradeable, isUnique, obtainable, displayID
+        GetPetInfoBySpeciesID = function(s)
+            return "Species" .. s, "icon", 1, 1000 + s, "Source " .. s, "", false, true, true, false, true, 5000 + s
+        end,
     }
     C_Item = {
         GetItemCount = function(id) return w.items[id] or 0 end,

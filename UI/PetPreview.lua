@@ -8,6 +8,7 @@ ns.UI.Preview = Preview
 
 local panel, model, set, hoverID, selectedID
 local shownID, syncing
+local loadModel        -- assigned above Preview:ShowPet
 local angle, dragging, lastX = 0, false, nil
 
 -- a selected pet stays in the panel; hovering only previews while nothing is selected
@@ -97,6 +98,24 @@ function Preview:Attach(parent)
     return panel
 end
 
+-- Model loads are asynchronous and the client drops some when flooded, so a mouse
+-- sweep over the grid only loads the pet it stops on. The species' display ID is
+-- more reliable than SetCreature, which needs the creature in the client cache.
+local HOVER_DELAY = 0.12
+local pendingLoad
+
+function loadModel(info, fromHover)
+    if pendingLoad then pendingLoad:Cancel() pendingLoad = nil end
+    local function load()
+        pendingLoad = nil
+        if model.creatureID ~= info.creatureID then return end   -- moved on meanwhile
+        model:ClearModel()
+        local displayID = select(12, C_PetJournal.GetPetInfoBySpeciesID(info.speciesID))
+        if displayID and displayID > 0 then model:SetDisplayInfo(displayID) else model:SetCreature(info.creatureID) end
+    end
+    if fromHover then pendingLoad = C_Timer.NewTimer(HOVER_DELAY, load) else load() end
+end
+
 function Preview:ShowPet(petID, forSet)
     set = forSet or set
     if not panel then return end
@@ -109,11 +128,11 @@ function Preview:ShowPet(petID, forSet)
         model.creatureID = nil      -- forget it, or the same pet would not be loaded again
         return
     end
-    if model.creatureID ~= info.creatureID then
+    -- (re)load when the pet changed or the client dropped the previous load
+    if model.creatureID ~= info.creatureID or not model:GetModelFileID() then
+        if model.creatureID ~= info.creatureID then angle = 0 end
         model.creatureID = info.creatureID
-        model:ClearModel()
-        model:SetCreature(info.creatureID)
-        angle = 0
+        loadModel(info, petID ~= selectedID)
     end
     local r, g, b = C_Item.GetItemQualityColor((info.quality or 2) - 1)
     panel.name:SetText(info.name)

@@ -334,10 +334,38 @@ describe("UI smoke", function()
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
         ns.UI.Preview:SetSelected("a")
+        W.advance(1)
         local model = ns.UI.Preview:GetPanel().model
-        assert.equal(1001, model._creature)
+        assert.equal(5001, model:GetModelFileID())        -- loaded by the species' display ID
         ns.Sets:Get("$Default"):SetPetWeight("a", 8)      -- grid rebuild clears and redraws the preview
         W.advance(1)
-        assert.equal(1001, model._creature)
+        assert.equal(5001, model:GetModelFileID())
+    end)
+
+    it("a model that failed to load is requested again", function()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        ns.UI.Preview:SetSelected("a")
+        W.advance(1)
+        local model = ns.UI.Preview:GetPanel().model
+        model:ClearModel()                                  -- the client dropped the load
+        ns.UI.Preview:Refresh()
+        W.advance(1)
+        assert.equal(5001, model:GetModelFileID())
+    end)
+
+    it("sweeping the mouse over many pets loads only the one it stops on", function()
+        for i = 1, 30 do W.world.pets["p" .. i] = { species = 100 + i, name = "P" .. i } end
+        ns.PetCache:Rescan()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        U.modelLoads = 0
+        for i = 1, 30 do ns.UI.Preview:SetHover("p" .. i) end
+        W.advance(1)
+        assert.is_true(U.modelLoads <= 2, "model loads: " .. U.modelLoads)
+        assert.equal(5130, ns.UI.Preview:GetPanel().model:GetModelFileID())
     end)
 end)
