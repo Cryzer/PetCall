@@ -29,6 +29,9 @@ globals = {
 }
 
 read_globals = {
+    -- PetCall 2.0
+    "C_EncodingUtil", "C_PartyInfo", "GetGameTime", "UnitName", "GetRealmName", "UISpecialFrames", "geterrorhandler",
+
     -- Ace libraries
     "LibStub",
 
