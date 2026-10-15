@@ -1,0 +1,17 @@
+local W = dofile("tests/wowstub.lua")
+describe("Locale", function()
+    before_each(function() W.reset() end)
+    it("falls back to key and maps true to key", function()
+        local ns = W.load()
+        assert.equal("Never", ns.L["Never"])
+        assert.equal("Some missing key", ns.L["Some missing key"])
+    end)
+    it("client locale overrides enUS", function()
+        W.world.locale = "deDE"
+        local ns = W.load()
+        local de = ns.NewLocale("deDE")
+        de["Never"] = "Nie"
+        assert.equal("Nie", ns.L["Never"])
+        assert.is_nil(ns.NewLocale("frFR"))
+    end)
+end)

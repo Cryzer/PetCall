@@ -8,7 +8,8 @@ file need to be updated in the localization system.
 
 --]]
 
-local L = LibStub("AceLocale-3.0"):NewLocale("PetCall", "enUS", true)
+local _, ns = ...
+local L = ns.NewLocale("enUS", true)
 if not L then return end
 
 L[" <<< Back "] = true

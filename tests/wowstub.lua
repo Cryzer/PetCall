@@ -256,6 +256,7 @@ function W.tocFiles(opts)
             local path = line:gsub("\\", "/")
             local skip = path:match("^Libs/LibDBIcon") or path:match("^Libs/LibDataBroker")
                 or (path:match("^UI/") and not uiAllowed[path])
+                or (path:match("^Locales/") and path ~= "Locales/enUS.lua")
             if not skip then list[#list + 1] = path end
         end
     end

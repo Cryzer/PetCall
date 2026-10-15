@@ -8,7 +8,8 @@ instead of modifying this file.
 
 --]]
 
-local L = LibStub("AceLocale-3.0"):NewLocale("PetCall", "zhCN")
+local _, ns = ...
+local L = ns.NewLocale("zhCN")
 if not L then return end
 
 @localization(locale="zhCN", format="lua_additive_table", handle-unlocalized="ignore")@
