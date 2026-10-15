@@ -421,12 +421,11 @@ describe("UI smoke", function()
 
     it("the menu preview goes on the side away from the parent menu", function()
         local side = ns.UI.Menu.PreviewSide
-        -- submenus cascaded left of where the menu opened: preview further left
-        assert.equal("left", side(600, 400, 900, 1920))
-        -- cascading right: preview on the right
-        assert.equal("right", side(1100, 900, 700, 1920))
-        -- no room on the preferred side: the other one
-        assert.equal("right", side(300, 150, 900, 1920))
-        assert.equal("left", side(1850, 1650, 700, 1920))
+        -- (itemLeft, itemRight, parentCenterX, screenWidth)
+        assert.equal("left", side(400, 600, 700, 1920))     -- parent menu on the right
+        assert.equal("right", side(900, 1100, 800, 1920))   -- parent menu on the left
+        assert.equal("right", side(150, 300, 400, 1920))    -- no room on the left
+        assert.equal("left", side(1650, 1850, 1500, 1920))  -- no room on the right
+        assert.equal("right", side(400, 600, nil, 1920))    -- parent unknown: right if it fits
     end)
 end)
