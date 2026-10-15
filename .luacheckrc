@@ -26,10 +26,15 @@ globals = {
 
     -- WoW tables we write into (e.g. StaticPopupDialogs["PETCALL_..."] = {...})
     "StaticPopupDialogs",
+    "SLASH_PETCALL1", "SLASH_PETCALL2", "SlashCmdList",
 }
 
 read_globals = {
     -- PetCall 2.0
+    "ButtonFrameTemplate_HideButtonBar", "PanelTemplates_SetNumTabs", "PanelTemplates_SetTab", "PanelTemplates_TabResize",
+    "GetScreenWidth", "GetScreenHeight", "MinimalSliderWithSteppersMixin", "SOUNDKIT", "EllesmereUI", "MenuUtil", "ScrollUtil",
+    "CreateDataProvider", "CreateScrollBoxListLinearView", "Settings", "CreateSettingsListSectionHeaderInitializer",
+    "CreateSettingsButtonInitializer", "GameTooltip", "UIErrorsFrame", "StaticPopup_Show",
     "C_EncodingUtil", "C_PartyInfo", "GetGameTime", "UnitName", "GetRealmName", "UISpecialFrames", "geterrorhandler",
 
     -- Ace libraries
@@ -63,7 +68,7 @@ read_globals = {
     "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitInVehicle",
     "UnitIsDeadOrGhost", "UnitIsAFK", "SendChatMessage",
     "SecureCmdOptionParse", "PlaySound", "PlaySoundFile",
-    "ReloadUI", "SlashCmdList", "SLASH_PETCALL1",
+    "ReloadUI",
     "hooksecurefunc", "CopyTable",
 
     -- WoW stdlib aliases (globals in WoW environment)
@@ -90,3 +95,4 @@ read_globals = {
 files["tests/"] = { std = "+busted", globals = { "PetCall3DB", "PetLeash3DB", "PetCall", "assert" }, allow_defined_top = true }
 -- the stub exists to define WoW globals
 files["tests/wowstub.lua"] = { ignore = { "1" } }
+files["tests/uistub.lua"] = { ignore = { "1" } }

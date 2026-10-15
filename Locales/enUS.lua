@@ -120,3 +120,5 @@ L["On cooldown"] = true
 L["Cannot be summoned"] = true
 L["Set name cannot be empty or begin with '$'."] = true
 L["A set with this name already exists."] = true
+L["Settings"] = true
+L["Unknown command: %s. Type /pcall help."] = true

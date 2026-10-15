@@ -1,5 +1,4 @@
-
-local _, addon = ...
+local _, ns = ...
 
 local C_Timer, CreateFrame, UIParent =
     C_Timer, CreateFrame, UIParent
@@ -29,7 +28,7 @@ local STATIC_PREVIEW_CREATURES = {
 --       Immediate hide.  Use when the owning panel closes or the list scrolls.
 --   obj.frame
 --       The underlying container Frame, for parenting or layout queries.
-function addon:CreateModelPreview(frameName)
+function ns:CreateModelPreview(frameName)
     local generation    = 0   -- bumped on each new ShowForCreature request
     local angle         = 0
     local hideScheduled = false

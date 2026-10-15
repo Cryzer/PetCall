@@ -30,6 +30,9 @@ function W.newFrame()
     return f
 end
 
+-- lets tests/uistub.lua route events to its own frame objects
+function W.track(f) frames[#frames + 1] = f end
+
 function W.fire(event, ...)
     local unit = ...
     for _, f in ipairs(frames) do
@@ -60,6 +63,7 @@ end
 
 -- ------------------------------------------------------------------ install
 function W.reset()
+    setmetatable(_G, nil)   -- drop tests/uistub.lua's permissive globals
     frames, timers = {}, {}
     W.world = defaultWorld()
     local w = W.world

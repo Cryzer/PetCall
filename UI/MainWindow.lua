@@ -1,0 +1,183 @@
+local _, ns = ...
+-- Replaced by UI/Settings.lua (Task 21)
+ns.OpenSettings = ns.OpenSettings or function() end
+
+local L = ns.L
+local CreateFrame, UIParent = CreateFrame, UIParent
+
+ns.UI = ns.UI or {}
+local Main = {}
+ns.UI.Main = Main
+
+local MIN_W, MIN_H = 640, 440
+local frame, tabs, tabOrder, tabButtons, selectedTab, selectedSet = nil, {}, {}, {}, nil, nil
+
+local function saveGeometry()
+    local g = ns.db.global.window
+    g.width, g.height = frame:GetSize()
+    local point, _, relPoint, x, y = frame:GetPoint(1)
+    g.point, g.relPoint, g.x, g.y = point, relPoint, x, y
+end
+
+local function applyScale()
+    frame:SetScale(ns.db.global.window.scale or 1)
+end
+
+function Main:Build()
+    if frame then return end
+    local g = ns.db.global.window
+    frame = CreateFrame("Frame", "PetCallMainWindow", UIParent, "ButtonFrameTemplate")
+    frame:SetTitle("PetCall")
+    frame:SetPortraitToAsset("Interface\\AddOns\\PetCall\\Media\\icon")
+    frame:SetSize(g.width or 820, g.height or 560)
+    frame:SetPoint(g.point or "CENTER", UIParent, g.relPoint or "CENTER", g.x or 0, g.y or 0)
+    frame:SetFrameStrata("HIGH")
+    frame:SetToplevel(true)
+    frame:SetMovable(true)
+    frame:SetResizable(true)
+    frame:SetResizeBounds(MIN_W, MIN_H)
+    frame:SetClampedToScreen(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() saveGeometry() end)
+    frame:Hide()
+    tinsert(UISpecialFrames, "PetCallMainWindow")
+    ButtonFrameTemplate_HideButtonBar(frame)
+    applyScale()
+    ns.Skin:Apply("Shell", frame, { bottomBar = 28 })
+    ns.Skin:Apply("CloseButton", frame.CloseButton)
+    ns.Skin:Apply("Inset", frame.Inset)
+
+    local resize = CreateFrame("Button", nil, frame, "PanelResizeButtonTemplate")
+    resize:SetPoint("BOTTOMRIGHT", -4, 4)
+    resize:Init(frame, MIN_W, MIN_H, GetScreenWidth(), GetScreenHeight())
+    resize:SetOnResizeStoppedCallback(saveGeometry)
+
+    local gear = CreateFrame("Button", nil, frame)
+    gear:SetSize(20, 20)
+    gear:SetPoint("RIGHT", frame.CloseButton, "LEFT", -2, 0)
+    gear:SetNormalAtlas("mechagon-projects")
+    gear:SetHighlightAtlas("mechagon-projects", "ADD")
+    gear:SetScript("OnClick", function() ns:OpenSettings() end)
+    ns.Widgets.Tooltip(gear, L["Settings"])
+
+    -- Layout regions: left panel (sets), content (tabs), status bar (bottom).
+    frame.left = CreateFrame("Frame", nil, frame.Inset)
+    frame.left:SetPoint("TOPLEFT", 4, -4)
+    frame.left:SetPoint("BOTTOMLEFT", 4, 4)
+    frame.left:SetWidth(190)
+
+    frame.content = CreateFrame("Frame", nil, frame.Inset)
+    frame.content:SetPoint("TOPLEFT", frame.left, "TOPRIGHT", 6, -28)
+    frame.content:SetPoint("BOTTOMRIGHT", -4, 4)
+
+    frame.status = CreateFrame("Frame", nil, frame)
+    frame.status:SetPoint("BOTTOMLEFT", 8, 6)
+    frame.status:SetPoint("BOTTOMRIGHT", -24, 6)
+    frame.status:SetHeight(22)
+
+    frame:SetScript("OnSizeChanged", function(_, w, h)
+        ns:Fire("WindowResized", w, h)
+    end)
+    frame:SetScript("OnShow", function()
+        PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
+        if not selectedSet or selectedSet.deleted then Main:SelectSet(ns.Sets.DEFAULT) end
+        if not selectedTab then Main:SelectTab("pets") end
+        ns:Fire("WindowShown")
+    end)
+    frame:SetScript("OnHide", function()
+        PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE)
+        ns:Fire("WindowHidden")
+    end)
+
+    -- fade in
+    local ag = frame:CreateAnimationGroup()
+    local a = ag:CreateAnimation("Alpha")
+    a:SetFromAlpha(0) a:SetToAlpha(1) a:SetDuration(0.15)
+    frame:HookScript("OnShow", function() ag:Play() end)
+
+    for _, key in ipairs(tabOrder) do Main:BuildTab(key) end
+    ns:Fire("WindowBuilt", frame)
+end
+
+-- order: 1 = pets, 2 = when, 3 = settings (files load in a different order)
+function Main:RegisterTab(key, label, factory, order)
+    tabs[key] = { key = key, label = label, factory = factory, order = order or 99 }
+    tabOrder[#tabOrder + 1] = key
+    table.sort(tabOrder, function(a, b) return tabs[a].order < tabs[b].order end)
+    assert(not frame, "register tabs at load time")
+end
+
+function Main:BuildTab(key)
+    local t = tabs[key]
+    if t.button then return end
+    local index = #tabButtons + 1
+    local b = CreateFrame("Button", nil, frame, "PanelTopTabButtonTemplate")
+    b:SetID(index)
+    b:SetText(t.label)
+    b:SetScript("OnClick", function() Main:SelectTab(key) end)
+    if index == 1 then
+        b:SetPoint("BOTTOMLEFT", frame.content, "TOPLEFT", 4, 2)
+    else
+        b:SetPoint("LEFT", tabButtons[index - 1], "RIGHT", 2, 0)
+    end
+    PanelTemplates_TabResize(b, 12)
+    tabButtons[index], t.button = b, b
+    frame.Tabs = tabButtons
+    PanelTemplates_SetNumTabs(frame, #tabButtons)
+    ns.Skin:Apply("Tab", b)
+    t.page = CreateFrame("Frame", nil, frame.content)
+    t.page:SetAllPoints()
+    t.page:Hide()
+    t.object = t.factory(t.page)
+end
+
+function Main:SelectTab(key)
+    local t = tabs[key]
+    if not t or not t.button:IsShown() then key, t = "pets", tabs.pets end
+    if not t then return end
+    selectedTab = key
+    for k, other in pairs(tabs) do
+        local on = k == key
+        other.page:SetShown(on)
+        ns.Skin:SetTabSelected(other.button, on)
+    end
+    PanelTemplates_SetTab(frame, t.button:GetID())
+    if t.object.Refresh then t.object:Refresh(selectedSet) end
+end
+
+function Main:SelectSet(name)
+    selectedSet = ns.Sets:Get(name) or ns.Sets:Get(ns.Sets.DEFAULT)
+    -- the "when" tab does not exist for the default set
+    if tabs.when and tabs.when.button then
+        tabs.when.button:SetShown(not selectedSet:IsDefault())
+    end
+    ns:Fire("SelectedSetChanged", selectedSet)
+    self:SelectTab(selectedTab or "pets")
+end
+
+function Main:GetSelectedSet() return selectedSet end
+function Main:GetFrame() self:Build() return frame end
+function Main:GetContentWidth() return frame and frame.content:GetWidth() or 0 end
+
+function Main:SetScale(scale)
+    ns.db.global.window.scale = scale
+    if frame then applyScale() end
+end
+
+function Main:Show() self:Build() frame:Show() end
+function Main:Hide() if frame then frame:Hide() end end
+function Main:Toggle()
+    self:Build()
+    frame:SetShown(not frame:IsShown())
+end
+
+function ns:OpenWindow() Main:Show() end
+
+ns:RegisterCallback(Main, "SetsChanged", function(_, name)
+    if selectedSet and selectedSet.deleted then Main:SelectSet(ns.Sets.DEFAULT) end
+end)
+ns:RegisterCallback(Main, "ProfileChanged", function()
+    if frame and frame:IsShown() then Main:SelectSet(ns.Sets.DEFAULT) end
+end)
