@@ -42,6 +42,8 @@ function Main:Build()
     frame:Hide()
     tinsert(UISpecialFrames, "PetCallMainWindow")
     ButtonFrameTemplate_HideButtonBar(frame)
+    -- the status bar lives below the inset
+    frame.Inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 32)
     applyScale()
     ns.Skin:Apply("Shell", frame, { bottomBar = 28 })
     ns.Skin:Apply("CloseButton", frame.CloseButton)
@@ -96,6 +98,7 @@ function Main:Build()
     frame:HookScript("OnShow", function() ag:Play() end)
 
     for _, key in ipairs(tabOrder) do Main:BuildTab(key) end
+    Main:LayoutTabs()
     ns:Fire("WindowBuilt", frame)
 end
 
@@ -115,12 +118,9 @@ function Main:BuildTab(key)
     b:SetID(index)
     b:SetText(t.label)
     b:SetScript("OnClick", function() Main:SelectTab(key) end)
-    if index == 1 then
-        b:SetPoint("BOTTOMLEFT", frame.content, "TOPLEFT", 4, 2)
-    else
-        b:SetPoint("LEFT", tabButtons[index - 1], "RIGHT", 2, 0)
-    end
     PanelTemplates_TabResize(b, 12)
+    b:SetScript("OnShow", function() Main:LayoutTabs() end)
+    b:SetScript("OnHide", function() Main:LayoutTabs() end)
     tabButtons[index], t.button = b, b
     frame.Tabs = tabButtons
     PanelTemplates_SetNumTabs(frame, #tabButtons)
@@ -129,6 +129,20 @@ function Main:BuildTab(key)
     t.page:SetAllPoints()
     t.page:Hide()
     t.object = t.factory(t.page)
+end
+
+-- chains the visible tabs left to right; hidden tabs (When for the default set) leave no gap
+function Main:LayoutTabs()
+    local prev
+    for _, b in ipairs(tabButtons) do
+        b:ClearAllPoints()
+        if not prev then
+            b:SetPoint("BOTTOMLEFT", frame.content, "TOPLEFT", 4, 2)
+        else
+            b:SetPoint("LEFT", prev, "RIGHT", 2, 0)
+        end
+        if b:IsShown() then prev = b end
+    end
 end
 
 function Main:SelectTab(key)

@@ -20,6 +20,34 @@ local function readInfo(petID)
     }
 end
 
+-- Copies: owned pets of one species with the same visible name. The primary copy
+-- (favorite, else highest level, else best quality) stands for the group in lists.
+local copiesOf = {}     -- petID -> { primary, other copies in list order }
+
+local function better(a, b)
+    if a.isFavorite ~= b.isFavorite then return a.isFavorite end
+    if a.level ~= b.level then return a.level > b.level end
+    return a.quality > b.quality
+end
+
+local function groupCopies()
+    wipe(copiesOf)
+    local groups = {}
+    for _, id in ipairs(ids) do
+        local info = infos[id]
+        local key = info.speciesID .. "\0" .. strlower(info.customName or info.name)
+        local g = groups[key]
+        if not g then g = {} groups[key] = g end
+        g[#g + 1] = id
+        copiesOf[id] = g
+    end
+    for _, g in pairs(groups) do
+        local best = 1
+        for i = 2, #g do if better(infos[g[i]], infos[g[best]]) then best = i end end
+        if best ~= 1 then table.insert(g, 1, table.remove(g, best)) end
+    end
+end
+
 function PetCache:Rescan()
     local owned = C_PetJournal.GetOwnedPetIDs()
     if not owned then return end
@@ -44,6 +72,7 @@ function PetCache:Rescan()
         if ka == kb then return a < b end
         return ka < kb
     end)
+    groupCopies()
     loaded = true
     ns:Fire("PetsChanged", listChanged)
 end
@@ -53,6 +82,8 @@ PetCache.QueueRescan = ns.Debounce(0.5, function() PetCache:Rescan() end)
 function PetCache:IteratePetIDs() return ipairs(ids) end
 function PetCache:NumPets() return #ids end
 function PetCache:IsLoaded() return loaded end
+function PetCache:GetCopies(petID) return copiesOf[petID] or { petID } end
+function PetCache:IsPrimary(petID) local g = copiesOf[petID] return g ~= nil and g[1] == petID end
 function PetCache:Contains(petID) return infos[petID] ~= nil end
 function PetCache:GetInfo(petID) return infos[petID] end
 function PetCache:GetSpeciesID(petID) local i = infos[petID] return i and i.speciesID end

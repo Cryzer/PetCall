@@ -149,7 +149,7 @@ function S:RegisterAbout(parent)
         line(format(L["WoW %s · Interface %d"], version, toc), "GameFontDisableSmall")
         y = y - 8
         line(L["What's new"], "GameFontNormal")
-        for _, note in ipairs(ns.releaseNotes or {}) do line("• " .. note, "GameFontHighlightSmall", 8) end
+        for _, note in ipairs(ns.releaseNotes or {}) do line("- " .. note, "GameFontHighlightSmall", 8) end
         y = y - 8
         line(L["Commands"], "GameFontNormal")
         for _, c in ipairs(ns.Commands:HelpLines()) do line(c, "GameFontHighlightSmall", 8) end
@@ -160,8 +160,8 @@ function S:RegisterAbout(parent)
         end
         y = y - 8
         line(L["Credits"], "GameFontNormal")
-        line("Cryzer — PetCall 2.0", "GameFontHighlightSmall", 8)
-        line("End — PetLeash", "GameFontHighlightSmall", 8)
+        line("Cryzer – PetCall 2.0", "GameFontHighlightSmall", 8)
+        line("End – PetLeash", "GameFontHighlightSmall", 8)
         line(L["Translations by the WoW community."], "GameFontHighlightSmall", 8)
     end)
     Settings.RegisterCanvasLayoutSubcategory(parent, f, L["About"])

@@ -10,6 +10,11 @@ StaticPopupDialogs["PETCALL_CONFIRM"] = {
     OnAccept = function(_, data) data.onAccept() end,
 }
 
+-- Inline status dot; the game fonts have no circle glyphs. kind: "on" | "off" | "warn"
+local DOTS = { on = "Interface\\COMMON\\Indicator-Green", off = "Interface\\COMMON\\Indicator-Gray",
+    warn = "Interface\\COMMON\\Indicator-Yellow" }
+function Widgets.Dot(kind) return "|T" .. DOTS[kind] .. ":12:12|t" end
+
 function Widgets.Label(parent, text, font)
     local fs = parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlight")
     fs:SetJustifyH("LEFT")

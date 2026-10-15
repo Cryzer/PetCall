@@ -9,11 +9,11 @@ ns.UI.SetList = SetList
 local COLLAPSE_BELOW = 700
 local panel, rail, rows, newBox = nil, nil, {}, nil
 local STATUS = {
-    active = { "●", 0.3, 1, 0.3, L["Active now"] },
-    waiting = { "○", 0.8, 0.8, 0.8, L["Conditions not met"] },
-    empty = { "●", 1, 0.55, 0.1, L["No pets to choose from"] },
-    noConditions = { "●", 1, 0.55, 0.1, L["No conditions: this set is always active"] },
-    disabled = { "◌", 0.5, 0.5, 0.5, L["Disabled"] },
+    active = { "on", L["Active now"] },
+    waiting = { "off", L["Conditions not met"] },
+    empty = { "warn", L["No pets to choose from"] },
+    noConditions = { "warn", L["No conditions: this set is always active"] },
+    disabled = { nil, L["Disabled"] },
 }
 
 local function setMenu(owner, root, set)
@@ -55,7 +55,7 @@ local function row(i)
             ns.UI.Main:SelectSet(self.set.name)
         end
     end)
-    ns.Widgets.Tooltip(r, function(self) return self.set:DisplayName() end, function(self) return STATUS[self.set:GetStatus()][5] end)
+    ns.Widgets.Tooltip(r, function(self) return self.set:DisplayName() end, function(self) return STATUS[self.set:GetStatus()][2] end)
     rows[i] = r
     return r
 end
@@ -71,8 +71,7 @@ function SetList:Refresh()
         r:SetPoint("TOPLEFT", 0, -28 - (i - 1) * 26)
         r:SetPoint("RIGHT")
         local st = STATUS[set:GetStatus()]
-        r.dot:SetText(st[1])
-        r.dot:SetTextColor(st[2], st[3], st[4])
+        r.dot:SetText(st[1] and ns.Widgets.Dot(st[1]) or "")
         r.name:SetText(set:DisplayName() .. (set.settings.enabled and "" or (" (" .. L["off"] .. ")")))
         r.name:SetFontObject(set.settings.enabled and "GameFontHighlight" or "GameFontDisable")
         r.prio:SetText(set:IsDefault() and "" or (ns.Weights.Short(set:GetPriority()) or ""))

@@ -20,7 +20,7 @@ function Bar:Refresh()
     else
         local labels = {}
         for i = 1, math.min(3, #blockers) do labels[i] = blockers[i].label end
-        bar.mid:SetText("|cffffb040" .. L["Paused by"] .. ":|r " .. table.concat(labels, ", ") .. (#blockers > 3 and " …" or ""))
+        bar.mid:SetText("|cffffb040" .. L["Paused by"] .. ":|r " .. table.concat(labels, ", ") .. (#blockers > 3 and " ..." or ""))
     end
     bar.blockers = blockers
     bar.auto:SetText(ns:IsAutoSummon() and L["Auto-summon: ON"] or L["Auto-summon: OFF"])
@@ -47,7 +47,7 @@ ns:RegisterCallback(Bar, "WindowBuilt", function(_, frame)
     ns.Widgets.Tooltip(hit, L["Why is no pet summoned?"], function()
         if not bar.blockers or #bar.blockers == 0 then return L["Nothing is blocking PetCall."] end
         local lines = {}
-        for _, b in ipairs(bar.blockers) do lines[#lines + 1] = "• " .. b.label end
+        for _, b in ipairs(bar.blockers) do lines[#lines + 1] = "- " .. b.label end
         return table.concat(lines, "\n")
     end)
     bar:SetScript("OnShow", function() Bar:Refresh() end)

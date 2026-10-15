@@ -4,8 +4,12 @@ local strfind, strlower, sort, ipairs = strfind, strlower, table.sort, ipairs
 local M = {}
 ns.PetGridModel = M
 
+-- a tile stands for all copies of a pet: it is selected when any copy can be drawn
 local function isSelected(set, id)
-    return set:GetPetWeight(id) > 0 or set:GetAutoWeight(id) > 0
+    for _, copy in ipairs(ns.PetCache:GetCopies(id)) do
+        if set:GetPetWeight(copy) > 0 or set:GetAutoWeight(copy) > 0 then return true end
+    end
+    return false
 end
 
 function M.Filter(set, state)
@@ -14,7 +18,7 @@ function M.Filter(set, state)
     local out = {}
     for _, id in ns.PetCache:IteratePetIDs() do
         local info = ns.PetCache:GetInfo(id)
-        local ok = true
+        local ok = ns.PetCache:IsPrimary(id)
         if search ~= "" and not strfind(info.sortKey, search, 1, true) then ok = false end
         if ok and state.show == "selected" and not isSelected(set, id) then ok = false end
         if ok and state.show == "unselected" and isSelected(set, id) then ok = false end
@@ -28,7 +32,10 @@ function M.Filter(set, state)
         local sums = {}
         if key == "chance" then
             local tbl = set:GetWeightTable()
-            for i = 1, #tbl, 2 do sums[tbl[i + 1]] = (sums[tbl[i + 1]] or 0) + tbl[i] end
+            for i = 1, #tbl, 2 do
+                local primary = ns.PetCache:GetCopies(tbl[i + 1])[1]   -- copies add up on their tile
+                sums[primary] = (sums[primary] or 0) + tbl[i]
+            end
         end
         local function value(id)
             local info = ns.PetCache:GetInfo(id)

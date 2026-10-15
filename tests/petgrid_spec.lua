@@ -49,6 +49,14 @@ describe("PetGridModel", function()
         assert.equal(0, sums)
     end)
 
+    it("shows one tile per pet; a copy's weight counts for the tile", function()
+        W.world.pets.a2 = { species = 1, name = "Alpha", level = 1 }
+        ns.PetCache:Rescan()
+        assert.same({ "a", "b", "c" }, ns.PetGridModel.Filter(set, {}))
+        set:SetPetWeight("a", 0)
+        assert.same({ "a", "c" }, ns.PetGridModel.Filter(set, { show = "selected" }))   -- a2 still Normal
+    end)
+
     it("chunks rows", function()
         assert.same({ { "a", "b" }, { "c" } }, ns.PetGridModel.Rows({ "a", "b", "c" }, 2))
     end)

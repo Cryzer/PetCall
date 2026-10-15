@@ -186,4 +186,39 @@ describe("UI smoke", function()
         assert.is_false(set:ConditionsMet())
         assert.equal(before, #U.created)
     end)
+    it("keeps the tab content above the status bar", function()
+        local f = ns.UI.Main:GetFrame()
+        local bottom = f.Inset._points and f.Inset._points.BOTTOMRIGHT
+        assert.is_true(bottom ~= nil and bottom.y >= 28, "inset must end above the status bar")
+    end)
+
+    it("anchors each visible tab to the previous visible one", function()
+        ns.Sets:Create("Town")
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("$Default")
+        local tabs = ns.UI.Main:GetFrame().Tabs
+        assert.is_true(tabs[3]._points.LEFT.rel == tabs[1], "settings tab follows pets when When is hidden")
+        ns.UI.Main:SelectSet("Town")
+        assert.is_true(tabs[3]._points.LEFT.rel == tabs[2], "settings tab follows When")
+    end)
+    it("grid tiles render, and a click sets every copy of the pet", function()
+        W.world.pets.a2 = { species = 1, name = "A", level = 25 }
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local set = ns.Sets:Get("$Default")
+        local box
+        for _, f in ipairs(U.created) do if f._template == "WowScrollBoxList" then box = f end end
+        local tiles = {}
+        for _, row in ipairs(box._rowFrames or {}) do
+            for _, t in ipairs(row.tiles or {}) do if t.petID then tiles[t.petID] = t end end
+        end
+        assert.is_not_nil(tiles.a2)              -- the level-25 copy stands for "A"
+        assert.is_nil(tiles.a)
+        tiles.a2:Click("LeftButton")
+        assert.equal(0, set:GetPetWeight("a"))
+        assert.equal(0, set:GetPetWeight("a2"))
+        assert.has_no_error(function() tiles.b:Click("RightButton") end)
+    end)
 end)

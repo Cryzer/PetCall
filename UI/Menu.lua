@@ -11,24 +11,12 @@ local preview
 
 local function petName(id) local i = ns.PetCache:GetInfo(id) return i and (i.customName or i.name) or "?" end
 
--- one entry per pet as the player sees it: copies of a species with the same
--- name collapse into the favorite, else the highest level/quality copy
-local function better(a, b)
-    if a.isFavorite ~= b.isFavorite then return a.isFavorite end
-    if a.level ~= b.level then return a.level > b.level end
-    return (a.quality or 0) > (b.quality or 0)
-end
-
+-- one entry per pet as the player sees it (copies collapse into PetCache's primary copy)
 function Menu.UniquePets()
-    local best, order = {}, {}
-    for _, id in ns.PetCache:IteratePetIDs() do
-        local info = ns.PetCache:GetInfo(id)
-        local key = info.speciesID .. "\0" .. strlower(petName(id))
-        if not best[key] then order[#order + 1] = key end
-        if not best[key] or better(info, ns.PetCache:GetInfo(best[key])) then best[key] = id end
-    end
     local ids = {}
-    for _, key in ipairs(order) do ids[#ids + 1] = best[key] end
+    for _, id in ns.PetCache:IteratePetIDs() do
+        if ns.PetCache:IsPrimary(id) then ids[#ids + 1] = id end
+    end
     table.sort(ids, function(a, b)
         local na, nb = strlower(petName(a)), strlower(petName(b))
         if na == nb then return a < b end

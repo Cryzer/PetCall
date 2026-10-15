@@ -179,14 +179,14 @@ local function state(e) return set:GetConditionStates()[e] end
 
 local function paintDot(dot, e)
     local on = state(e) and state(e).value
-    dot:SetText(on and "●" or "○")
-    dot:SetTextColor(on and 0.3 or 0.8, on and 1 or 0.8, on and 0.3 or 0.8)
+    dot:SetText(ns.Widgets.Dot(on and "on" or "off"))
 end
 
 local function paintHeader()
     if not header then return end
     header:SetText(format("%s   %s", #model.groups > 1 and L["Use this set when ANY of these groups is met:"] or L["Use this set when ALL conditions are met:"],
-        set:ConditionsMet() and "|cff40ff40● " .. L["active"] .. "|r" or "|cffcccccc○ " .. L["inactive"] .. "|r"))
+        set:ConditionsMet() and (ns.Widgets.Dot("on") .. " |cff40ff40" .. L["active"] .. "|r")
+            or (ns.Widgets.Dot("off") .. " |cffcccccc" .. L["inactive"] .. "|r")))
 end
 
 local function stateDot(row, e)

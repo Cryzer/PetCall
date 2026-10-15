@@ -21,6 +21,7 @@ local specs = {
     "tests/localekeys_spec.lua",
     "tests/commands_spec.lua",
     "tests/menu_spec.lua",
+    "tests/glyphs_spec.lua",
 }
 if arg and arg[1] then specs = { arg[1] } end
 for _, file in ipairs(specs) do

@@ -31,9 +31,9 @@ local byName = {}
 for _, c in ipairs(list) do byName[strlower(c[1])] = c end
 
 function Commands:HelpLines()
-    local out = { "/pcall, /petcall — " .. L["Open the PetCall window"] }
+    local out = { "/pcall, /petcall – " .. L["Open the PetCall window"] }
     for _, c in ipairs(list) do
-        if c[2] then out[#out + 1] = format("/pcall %s — %s", c[1], c[2]) end
+        if c[2] then out[#out + 1] = format("/pcall %s – %s", c[1], c[2]) end
     end
     return out
 end

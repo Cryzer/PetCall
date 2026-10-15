@@ -14,7 +14,7 @@ local function commit() set:FiltersChanged() Bar:Refresh(set) end
 
 local function chipText(chip)
     local text = chip.legacy and L["Complex rule (previous version)"] or ns.AutoRules.Describe(chip.entry)
-    return format("%s → %s", text, ns.Weights.Label(ns.AutoRules.Weight(chip.entry)))
+    return format("%s: %s", text, ns.Weights.Label(ns.AutoRules.Weight(chip.entry)))
 end
 
 local function closeEditor() if editor then editor:Hide() end end

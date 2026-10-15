@@ -45,7 +45,7 @@ Universal.__index = function(t, k)
     local m = rawget(Universal, k)
     if m then return m end
     if type(k) ~= "string" then return nil end
-    if k:match("^[a-z]") then return nil end   -- plain fields are ours to set
+    if k:match("^[a-z_]") then return nil end   -- plain and stub fields are ours to set
     return smart(k)
 end
 Universal.__call = function() return universal() end
@@ -90,6 +90,27 @@ function Universal:SetValue(v)
     for _, c in ipairs(self._callbacks or {}) do c.fn(c.owner, v) end
 end
 function Universal:GetValue() return self._value or 0 end
+-- anchors are recorded so layout tests can check them
+function Universal:SetPoint(point, rel, relPoint, x, y)
+    if type(rel) == "number" then rel, relPoint, x, y = nil, point, rel, relPoint end
+    self._points = self._points or {}
+    self._points[point] = { rel = rel, relPoint = relPoint or point, x = x or 0, y = y or 0 }
+end
+function Universal:ClearAllPoints() self._points = {} end
+function Universal:SetAllPoints(rel) self._points = { ALL = { rel = rel } } end
+-- linear ScrollBox: SetDataProvider initialises one row frame per element
+function Universal:SetElementInitializer(_, fn) self._init = fn end
+function Universal:SetDataProvider(dp)
+    self._rowFrames = {}
+    local view = self._view
+    if not (view and view._init and type(dp) == "table" and dp._elements) then return end
+    for _, data in ipairs(dp._elements) do
+        local row = universal()
+        row._shown, row._parent = true, self
+        view._init(row, data)
+        self._rowFrames[#self._rowFrames + 1] = row
+    end
+end
 function Universal:Click(button)
     if self._scripts.OnClick then self._scripts.OnClick(self, button or "LeftButton") end
 end
@@ -110,11 +131,17 @@ function U.install()
         U.created[#U.created + 1] = f
         -- template child keys our code reads
         if template and template:find("CheckButton") then f.text = universal() end
+        if template == "ButtonFrameTemplate" then
+            f.Inset, f.CloseButton = universal(), universal()
+            f.Inset._shown, f.CloseButton._shown = true, true
+        end
         if name then rawset(_G, name, f) end
         W.track(f)
         return f
     end
     CreateFrame = createFrame
+    CreateDataProvider = function(elements) return { _elements = elements } end
+    ScrollUtil = { InitScrollBoxListWithScrollBar = function(box, _, view) box._view = view end }
     UIParent = universal()
     UIParent._shown = true
     GameTooltip = universal()
@@ -122,6 +149,7 @@ function U.install()
         __index = function(_, k)
             if type(k) ~= "string" or ABSENT[k] then return nil end
             if k:match("^[A-Z][A-Z0-9_]*$") then return k end   -- GlobalStrings such as BATTLE_PET_NAME_8
+            if k:match("^Is[A-Z]") or k:match("^Has[A-Z]") then return function() return false end end   -- IsControlKeyDown…
             if k:match("^[A-Z]") then return universal() end
         end,
     })

@@ -54,15 +54,20 @@ function Preview:Attach(parent)
     panel.source:SetPoint("RIGHT", -6, 0)
     panel.source:SetWordWrap(true)
 
+    -- weight label above the slider: the slider's own side label does not fit the panel
+    panel.weight = ns.Widgets.Label(panel, "", "GameFontNormal")
+    panel.weight:SetPoint("TOPLEFT", panel.source, "BOTTOMLEFT", 0, -12)
+    panel.weight:SetPoint("RIGHT", -6, 0)
+
     local steps = #ns.Weights.LEVELS - 1
     panel.slider = ns.Widgets.Slider(panel, 0, steps, steps, 3, function(v)
         -- the slider also reports our own SetValue calls; only user moves change weights,
         -- and only for the pet the panel is showing
         if syncing or not shownID or not set then return end
         local value = ns.Weights.LEVELS[math.floor(v + 0.5) + 1].value
-        if ns.Weights.Nearest(set:GetPetWeight(shownID)) ~= value then set:SetPetWeight(shownID, value) end
-    end, function(v) return ns.Weights.LEVELS[math.floor(v + 0.5) + 1].label end)
-    panel.slider:SetPoint("TOPLEFT", panel.source, "BOTTOMLEFT", -2, -10)
+        if ns.Weights.Nearest(set:GetPetWeight(shownID)) ~= value then set:SetPetWeights(ns.PetCache:GetCopies(shownID), value) end
+    end)
+    panel.slider:SetPoint("TOPLEFT", panel.weight, "BOTTOMLEFT", -2, -4)
     panel.slider:SetPoint("RIGHT", -6, 0)
 
     panel.chance = ns.Widgets.Label(panel, "", "GameFontHighlight")
@@ -70,18 +75,23 @@ function Preview:Attach(parent)
     panel.chance:SetPoint("RIGHT", -6, 0)
 
     panel.summon = ns.Widgets.Button(panel, L["Summon"], function()
-        local id = selectedID or hoverID
-        if id then ns:SummonPet(id) end
+        if shownID then ns:SummonPet(shownID) end
     end)
     panel.summon:SetPoint("BOTTOMLEFT", 6, 6)
-    panel.fav = ns.Widgets.Button(panel, "☆", function()
-        local id = selectedID or hoverID
-        if not id then return end
-        local info = ns.PetCache:GetInfo(id)
-        C_PetJournal.SetFavorite(id, info.isFavorite and 0 or 1)
+    panel.fav = CreateFrame("Button", nil, panel)
+    panel.fav:SetSize(22, 22)
+    panel.fav:SetPoint("LEFT", panel.summon, "RIGHT", 6, 0)
+    panel.fav:SetNormalTexture("Interface\\COMMON\\FavoritesIcon")
+    panel.fav:SetHighlightTexture("Interface\\COMMON\\FavoritesIcon", "ADD")
+    panel.fav:SetScript("OnClick", function()
+        if not shownID then return end
+        local info = ns.PetCache:GetInfo(shownID)
+        C_PetJournal.SetFavorite(shownID, info.isFavorite and 0 or 1)
     end)
-    panel.fav:SetWidth(32)
-    panel.fav:SetPoint("LEFT", panel.summon, "RIGHT", 4, 0)
+    ns.Widgets.Tooltip(panel.fav, function()
+        local info = shownID and ns.PetCache:GetInfo(shownID)
+        return info and info.isFavorite and L["Remove favorite"] or L["Set favorite"]
+    end)
     return panel
 end
 
@@ -92,7 +102,7 @@ function Preview:ShowPet(petID, forSet)
     shownID = info and petID or nil
     if not info then
         panel.name:SetText(L["No pet selected"])
-        panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("")
+        panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("") panel.weight:SetText("")
         model:ClearModel()
         return
     end
@@ -107,19 +117,28 @@ function Preview:ShowPet(petID, forSet)
     panel.name:SetTextColor(r, g, b)
     panel.sub:SetText(format("%s%s · %s %d · %s", info.customName and ("«" .. info.customName .. "» ") or "",
         _G["BATTLE_PET_NAME_" .. (info.petType or 0)] or "", L["Level"], info.level, _G["BATTLE_PET_BREED_QUALITY" .. (info.quality or 2)] or ""))
+    local copies = ns.PetCache:GetCopies(petID)
+    if #copies > 1 then panel.sub:SetText(panel.sub:GetText() .. " · " .. format(L["%d copies"], #copies)) end
     local _, _, _, _, source = C_PetJournal.GetPetInfoBySpeciesID(info.speciesID)
     panel.source:SetText(source or "")
     if set then
         local w = set:GetPetWeight(petID)
+        panel.weight:SetText(L["Weight"] .. ": |cffffffff" .. ns.Weights.Label(w) .. "|r")
         syncing = true
         for i, lvl in ipairs(ns.Weights.LEVELS) do
             if lvl.value == ns.Weights.Nearest(w) then panel.slider:SetValue(i - 1) end
         end
         syncing = false
-        local chance, reason = set:GetChance(petID)
+        -- every copy of the pet is a separate ticket in the draw
+        local chance, reason = 0, nil
+        for _, id in ipairs(copies) do
+            local c, r = set:GetChance(id)
+            chance, reason = chance + c, reason or r
+        end
         panel.chance:SetText(format(L["Chance in this set: %.1f%%"], chance * 100) .. (reason and ("\n|cffff8040" .. reason .. "|r") or ""))
     end
-    panel.fav:SetText(info.isFavorite and "★" or "☆")
+    panel.fav:GetNormalTexture():SetDesaturated(not info.isFavorite)
+    panel.fav:GetNormalTexture():SetAlpha(info.isFavorite and 1 or 0.4)
 end
 
 function Preview:SetHover(petID) hoverID = petID self:ShowPet(petToShow()) end

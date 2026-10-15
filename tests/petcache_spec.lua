@@ -39,6 +39,20 @@ describe("PetCache", function()
         W.advance(1)
         assert.same({ true, false }, events)
     end)
+    it("groups copies of the same pet and picks the favorite or best copy as primary", function()
+        W.world.pets.c1 = { species = 50, name = "Bouncer", level = 3 }
+        W.world.pets.c2 = { species = 50, name = "Bouncer", level = 25 }
+        W.world.pets.c3 = { species = 50, name = "Bouncer", level = 10 }
+        W.world.pets.c4 = { species = 50, name = "Bouncer", custom = "Boing" }
+        W.world.favorites.c3 = true
+        ns.PetCache:Rescan()
+        assert.same({ "c3", "c1", "c2" }, ns.PetCache:GetCopies("c1"))
+        assert.is_true(ns.PetCache:IsPrimary("c3"))
+        assert.is_false(ns.PetCache:IsPrimary("c2"))
+        assert.same({ "c4" }, ns.PetCache:GetCopies("c4"))
+        assert.is_true(ns.PetCache:IsPrimary("c4"))
+    end)
+
     it("handles an empty collection", function()
         W.reset()
         local ns2 = W.load()
