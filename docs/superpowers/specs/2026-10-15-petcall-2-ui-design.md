@@ -183,7 +183,7 @@ Kategoria „PetCall” (układ pionowy, `Settings.RegisterVerticalLayoutCategor
 - **Automatyczna zmiana peta:** Włączona; Co ile (1–60 min); Tylko w miastach; Przy zmianie mapy.
 - **Przedmioty specjalne:** Włączone; lista przełączników z nazwami przedmiotów/questów (nazwy z API, z pamięcią podręczną).
 - **Podkategoria „Profile”** (canvas): bieżący profil (lista), nowy, kopiuj z, resetuj, usuń (potwierdzenie). Format `profileKeys`/`profiles` zgodny z 1.0.x.
-- **Sekcja „O dodatku”** (na dole kategorii): wersja PetCall, wersja gry i Interface (z `GetBuildInfo`), nowości z bieżącej wersji (`ReleaseNotes`), lista komend, skróty klawiszowe z przypisanymi klawiszami, autorzy.
+- **Podkategoria „O dodatku”** (canvas; układ pionowy Ustawień nie ma elementu z dowolnym tekstem): wersja PetCall, wersja gry i Interface (z `GetBuildInfo`), nowości z bieżącej wersji (`ReleaseNotes`), lista komend, skróty klawiszowe z przypisanymi klawiszami, autorzy.
 - Otwarcie panelu w walce: komunikat „Otworzę po walce” i otwarcie po `PLAYER_REGEN_ENABLED`.
 
 ## 11. Wygląd, EllesmereUI, skalowanie, tłumaczenia
@@ -277,5 +277,5 @@ Wszystkie funkcje modyfikujące zwracają `ok, err`; `err` jest przetłumaczonym
 | Menu PPM z petami | menu MenuUtil |
 | Tooltip LDB | tooltip LDB (+ powody wstrzymania) |
 | Komendy i skróty | §9 |
-| Panel About | Ustawienia › O dodatku |
+| Panel About | Ustawienia › O dodatku (podkategoria) |
 | `/pcall debugstate` | bez zmian |

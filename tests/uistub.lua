@@ -23,8 +23,10 @@ local function defaultFor(name)
     if name:match("^Is") or name:match("^Has") or name:match("^Can") then
         return function() return false end
     end
-    if name:match("^Get") or name:match("^Create") or name:match("^New") then
-        return function() return universal() end
+    if name:match("^Get") then return function() return universal() end end
+    -- factories may return several objects (e.g. Settings.RegisterVerticalLayoutCategory)
+    if name:match("^Create") or name:match("^New") or name:match("^Register") then
+        return function() return universal(), universal() end
     end
     return function() end
 end

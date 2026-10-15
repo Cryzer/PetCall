@@ -1,6 +1,4 @@
 local _, ns = ...
--- Replaced by UI/Settings.lua (Task 21)
-ns.OpenSettings = ns.OpenSettings or function() end
 
 local L = ns.L
 local CreateFrame, UIParent = CreateFrame, UIParent

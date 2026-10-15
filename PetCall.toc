@@ -52,3 +52,6 @@ UI\StatusBar.lua
 UI\SetSettingsTab.lua
 UI\WhenTab.lua
 UI\ShareDialog.lua
+UI\Settings.lua
+UI\Profiles.lua
+ReleaseNotes.lua

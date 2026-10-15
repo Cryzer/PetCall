@@ -18,6 +18,7 @@ local specs = {
     "tests/specialitems_spec.lua",
     "tests/share_spec.lua",
     "tests/migrate_spec.lua",
+    "tests/localekeys_spec.lua",
 }
 if arg and arg[1] then specs = { arg[1] } end
 for _, file in ipairs(specs) do
