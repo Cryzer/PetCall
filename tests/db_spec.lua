@@ -16,6 +16,7 @@ local function fixture()
         },
         namespaces = { SpecialItems = { profiles = { Default = { enable = false } }, global = { localeCache = { enUS = { ["item:1"] = "X" } } } } },
         _petleashMigrated = true,
+        _futureField = { x = 1 },
     }
 end
 
@@ -50,7 +51,7 @@ describe("DB", function()
     end)
 
     it("keeps unknown top-level keys", function()
-        assert.equal(true, PetCall3DB._petleashMigrated)
+        assert.same({ x = 1 }, PetCall3DB._futureField)
     end)
 
     it("namespaces follow the profile", function()

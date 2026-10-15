@@ -259,3 +259,4 @@ L["Export: %s"] = true
 L["All text is selected – press Ctrl+C to copy."] = true
 L["Import set"] = true
 L["Paste a PetCall export string below:"] = true
+L["No PetLeash data found."] = true
