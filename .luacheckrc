@@ -35,6 +35,7 @@ read_globals = {
     -- WoW C_ namespaces
     "C_PetJournal", "C_Timer", "C_AddOns", "C_Item", "C_Map",
     "C_QuestLog", "C_SettingsUtil", "C_Spell", "C_UnitAuras",
+    "C_ChatInfo", "C_SpecializationInfo",
 
     -- WoW UI
     "CreateFrame", "UIParent", "GameTooltip", "Settings",
@@ -50,14 +51,14 @@ read_globals = {
 
     -- WoW API functions
     "GetTime", "GetZoneText", "GetSubZoneText", "GetLocale",
-    "GetItemCount", "GetItemInfo", "GetNumGroupMembers",
+    "GetNumGroupMembers", "GetBuildInfo",
     "GetSpecialization", "GetSpecializationInfo",
     "GetBindingKey",
     "HasFullControl", "InCombatLockdown", "IsFalling", "IsFlying",
     "IsInGroup", "IsInInstance", "IsResting", "IsStealthed",
-    "IsControlKeyDown", "IsEquippedItem", "IsMounted",
+    "IsControlKeyDown", "IsMounted",
     "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitInVehicle",
-    "UnitIsDeadOrGhost", "UnitIsAFK",
+    "UnitIsDeadOrGhost", "UnitIsAFK", "SendChatMessage",
     "SecureCmdOptionParse", "PlaySound", "PlaySoundFile",
     "ReloadUI", "SlashCmdList", "SLASH_PETCALL1",
     "hooksecurefunc", "CopyTable",

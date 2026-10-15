@@ -1,6 +1,15 @@
 
 # Changelog
 
+## v1.0.14 (2026-10-15)
+
+- Updated for WoW 12.1.5 (interface 120105).
+- Fixed a Lua error on login in 12.1.5: Special Items now uses the current item API after Blizzard removed the old item functions.
+- Fixed a Lua error on login when the game's deprecated-API fallbacks are turned off (AFK message detection).
+- Class Specialization trigger now uses the current specialization API.
+- Fixed the Special Items entry for spell 100959 never activating.
+- The About panel now shows the real game version instead of a fixed one.
+
 ## v1.0.13 (2026-03-23)
 
 - Locale files now pull translations automatically from CurseForge at release time via the BigWigs packager.

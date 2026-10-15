@@ -130,11 +130,19 @@ function module:OnEnable()
         end
     end)
 
-    hooksecurefunc("SendChatMessage", function(msg, msgtype)
+    -- SendChatMessage is deprecated since 11.2 and only exists as a shim when
+    -- loadDeprecationFallbacks is on; hooking a missing global would error here.
+    local function onSendChatMessage(msg, msgtype)
         if msgtype == "AFK" then
             self.afk_message = msg
         end
-    end)
+    end
+    if C_ChatInfo and C_ChatInfo.SendChatMessage then
+        hooksecurefunc(C_ChatInfo, "SendChatMessage", onSendChatMessage)
+    end
+    if type(SendChatMessage) == "function" then
+        hooksecurefunc("SendChatMessage", onSendChatMessage)
+    end
 end
 
 function module:OnAddOnState(event, enabled)

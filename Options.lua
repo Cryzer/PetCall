@@ -486,7 +486,7 @@ function module:SetupOptions()
             local y = -PAD
 
             -- ── HEADER ───────────────────────────────────────────────────
-            local ver = C_AddOns.GetAddOnMetadata("PetCall", "Version") or "1.0.1"
+            local ver = C_AddOns.GetAddOnMetadata("PetCall", "Version") or ""
 
             local titleFS = c:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
             titleFS:SetPoint("TOPLEFT", c, "TOPLEFT", PAD, y)
@@ -498,7 +498,7 @@ function module:SetupOptions()
 
             local buildFS = c:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             buildFS:SetPoint("TOPLEFT", c, "TOPLEFT", PAD, y)
-            buildFS:SetText("|cff555577WoW: Midnight  ·  Interface 120001|r")
+            buildFS:SetText(("|cff555577WoW %s  ·  Interface %d|r"):format(GetBuildInfo(), select(4, GetBuildInfo())))
             y = y - 28
 
             -- ── WHAT'S NEW ───────────────────────────────────────────────

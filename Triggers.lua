@@ -11,6 +11,10 @@ local error, format, GetSubZoneText, GetZoneText, ipairs,
     IsInGroup, IsResting, loadstring, pairs, pcall, print, SecureCmdOptionParse,
     setmetatable, tinsert, tonumber, tostring, type, UnitClass, wipe
 
+-- GetSpecialization/GetSpecializationInfo deprecated in 11.2 → C_SpecializationInfo
+local GetSpecialization = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization or GetSpecialization
+local GetSpecializationInfo = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo or GetSpecializationInfo
+
 local AceEvent = LibStub("AceEvent-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
 

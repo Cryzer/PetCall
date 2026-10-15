@@ -10,12 +10,17 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 -- GetNumQuestLogEntries/GetQuestLink/GetQuestLogTitle deprecated in 9.0 → C_QuestLog.*
 -- GetSpellInfo deprecated in 10.1 → C_Spell.GetSpellInfo
-local CreateFrame, GetItemCount, GetItemInfo, GetLocale,
-    GetZoneText, IsEquippedItem, ipairs, pairs, print, setmetatable, strfind,
+local CreateFrame, GetLocale,
+    GetZoneText, ipairs, pairs, print, setmetatable, strfind,
     strsub, tinsert, tonumber, tostring, wipe
-    = CreateFrame, GetItemCount, GetItemInfo, GetLocale,
-    GetZoneText, IsEquippedItem, ipairs, pairs, print, setmetatable, strfind,
+    = CreateFrame, GetLocale,
+    GetZoneText, ipairs, pairs, print, setmetatable, strfind,
     strsub, tinsert, tonumber, tostring, wipe
+
+-- WoW 12.1.5: the global GetItemCount/GetItemInfo/IsEquippedItem fallbacks were removed
+local GetItemCount   = C_Item.GetItemCount
+local GetItemInfo    = C_Item.GetItemInfo
+local IsEquippedItem = C_Item.IsEquippedItem
 
 local MAP_NAME_CACHE = setmetatable({}, {
     __index = function(self, key)
@@ -163,20 +168,21 @@ SpecialItems["item:68646"] = function(item)
 end
 
 SpecialItems["item:71137"] = function(item)
-    item:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-    
+    item:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+
     function item:TimerFinished()
         self.timer = nil
         self:Update(false)
     end
 
-    function item:Check(event, ...)
-        if event == "UNIT_SPELLCAST_SUCCEEDED" then
-            local unit, name, _, _, spellid = ...
-            if unit == "player" and spellid == 100959 then
-                self.timer = self:ScheduleTimer("TimerFinished", 180)
-                return true
+    -- UNIT_SPELLCAST_SUCCEEDED payload since 8.0: unitTarget, castGUID, spellID
+    function item:Check(event, unit, castGUID, spellID)
+        if event == "UNIT_SPELLCAST_SUCCEEDED" and spellID == 100959 then
+            if self.timer then
+                self:CancelTimer(self.timer)
             end
+            self.timer = self:ScheduleTimer("TimerFinished", 180)
+            return true
         end
         return self.timer ~= nil
     end
@@ -344,10 +350,12 @@ function module:InitWatchers()
     end
 end
 
-function module:SI_RegisterEvent(item, event)
+function module:SI_RegisterEvent(item, event, unit)
     if not self.event_item_map[event] then
         self.event_item_map[event] = {}
-        if event ~= "UpdateQuestList" then
+        if unit then
+            self.event_handler:RegisterUnitEvent(event, unit)
+        elseif event ~= "UpdateQuestList" then
             self.event_handler:RegisterEvent(event)
         end
     end
@@ -429,6 +437,10 @@ LibStub("AceTimer-3.0"):Embed(SpecialItemMeta)
 
 function SpecialItemMeta:RegisterEvent(event)
     module:SI_RegisterEvent(self, event)
+end
+
+function SpecialItemMeta:RegisterUnitEvent(event, unit)
+    module:SI_RegisterEvent(self, event, unit)
 end
 
 function SpecialItemMeta:RegisterQuestEvent()
