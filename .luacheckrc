@@ -32,6 +32,7 @@ globals = {
 
 read_globals = {
     -- PetCall 2.0
+    "C_XMLUtil", "CAMERA_TRANSITION_TYPE_IMMEDIATE", "CAMERA_MODIFICATION_TYPE_DISCARD", "Enum", "IsMouseButtonDown",
     "AddonCompartmentFrame", "IsControlKeyDown",
     "SettingsPanel",
     "ButtonFrameTemplate_HidePortrait",

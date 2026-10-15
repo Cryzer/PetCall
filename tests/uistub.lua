@@ -115,6 +115,11 @@ function Universal:SetCreature(id) self._creature = id U.modelLoads = (U.modelLo
 function Universal:SetDisplayInfo(id) self._display = id U.modelLoads = (U.modelLoads or 0) + 1 end
 function Universal:ClearModel() self._creature, self._display = nil, nil end
 function Universal:SetFacing(a) self._facing = a end
+function Universal:SetYaw(a) self._yaw = a end
+function Universal:SetModelByCreatureDisplayID(id) self._display = id U.modelLoads = (U.modelLoads or 0) + 1 end
+function Universal:GetObjectType() return self._type or "Frame" end
+-- one actor per scene, like a real ModelScene with a single tagged actor
+function Universal:GetActorByTag() self._actor = self._actor or universal() return self._actor end
 function Universal:SetFrameLevel(l) self._level = l end
 function Universal:GetFrameLevel() return self._level or 0 end
 function Universal:GetChildren() return unpack(self._children or {}) end

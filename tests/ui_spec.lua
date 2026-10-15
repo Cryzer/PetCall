@@ -335,11 +335,11 @@ describe("UI smoke", function()
         ns.UI.Main:SelectTab("pets")
         ns.UI.Preview:SetSelected("a")
         W.advance(1)
-        local model = ns.UI.Preview:GetPanel().model
-        assert.equal(5001, model:GetModelFileID())        -- loaded by the species' display ID
+        local viewer = ns.UI.Preview:GetViewer()
+        assert.equal(5001, viewer:ModelID())              -- loaded by the species' display ID
         ns.Sets:Get("$Default"):SetPetWeight("a", 8)      -- grid rebuild clears and redraws the preview
         W.advance(1)
-        assert.equal(5001, model:GetModelFileID())
+        assert.equal(5001, viewer:ModelID())
     end)
 
     it("a model that failed to load is requested again", function()
@@ -348,11 +348,11 @@ describe("UI smoke", function()
         ns.UI.Main:SelectTab("pets")
         ns.UI.Preview:SetSelected("a")
         W.advance(1)
-        local model = ns.UI.Preview:GetPanel().model
-        model:ClearModel()                                  -- the client dropped the load
+        local viewer = ns.UI.Preview:GetViewer()
+        viewer:Clear()                                      -- the client dropped the load
         ns.UI.Preview:Refresh()
         W.advance(1)
-        assert.equal(5001, model:GetModelFileID())
+        assert.equal(5001, viewer:ModelID())
     end)
 
     it("sweeping the mouse over many pets loads only the one it stops on", function()
@@ -366,7 +366,7 @@ describe("UI smoke", function()
         for i = 1, 30 do ns.UI.Preview:SetHover("p" .. i) end
         W.advance(1)
         assert.is_true(U.modelLoads <= 2, "model loads: " .. U.modelLoads)
-        assert.equal(5130, ns.UI.Preview:GetPanel().model:GetModelFileID())
+        assert.equal(5130, ns.UI.Preview:GetViewer():ModelID())
     end)
     it("a freshly loaded model faces front and holds still before it turns", function()
         W.world.pets.b = { species = 2, name = "B" }
@@ -380,13 +380,13 @@ describe("UI smoke", function()
         end
         ns.UI.Preview:SetSelected("a")
         tick(3)
-        assert.is_true(model._facing > 0.3, "turning after a while")
+        assert.is_true(ns.UI.Preview:GetYaw() > 0.3, "turning after a while")
         ns.UI.Preview:SetSelected("b")                -- new model: no jump from the old angle
         if model._scripts.OnModelLoaded then model._scripts.OnModelLoaded(model) end
         tick(0.3)
-        assert.equal(0, model._facing)
+        assert.equal(0, ns.UI.Preview:GetYaw())
         tick(2)
-        assert.is_true(model._facing > 0)
+        assert.is_true(ns.UI.Preview:GetYaw() > 0)
     end)
     it("after a click, frames parented to the minimap button go back under its icon", function()
         -- EllesmereUI's flyout raises every child of a clicked button, including its own
@@ -400,5 +400,16 @@ describe("UI smoke", function()
         ns.UI.Broker:OnClick(button, "LeftButton")
         W.advance(0.1)
         assert.is_true(backdrop:GetFrameLevel() < button:GetFrameLevel())
+    end)
+    it("falls back to a PlayerModel when the client has no pet model scenes", function()
+        C_PetJournal.GetPetModelSceneInfoBySpeciesID = nil -- luacheck: ignore 122
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        ns.UI.Preview:SetSelected("a")
+        W.advance(1)
+        local viewer = ns.UI.Preview:GetViewer()
+        assert.equal("PlayerModel", viewer.frame._type)
+        assert.equal(5001, viewer:ModelID())
     end)
 end)
