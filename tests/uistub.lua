@@ -80,6 +80,16 @@ function Universal:SetParent(p) self._parent = p end
 function Universal:CreateTexture() local t = universal() t._parent = self t._shown = true return t end
 function Universal:CreateFontString() local t = universal() t._parent = self t._shown = true return t end
 function Universal:CreateAnimationGroup() local t = universal() t._parent = self return t end
+-- CallbackRegistry-style widgets (MinimalSliderWithSteppers) notify on every SetValue, user or not
+function Universal:RegisterCallback(event, fn, owner)
+    self._callbacks = self._callbacks or {}
+    self._callbacks[#self._callbacks + 1] = { fn = fn, owner = owner }
+end
+function Universal:SetValue(v)
+    self._value = v
+    for _, c in ipairs(self._callbacks or {}) do c.fn(c.owner, v) end
+end
+function Universal:GetValue() return self._value or 0 end
 function Universal:Click(button)
     if self._scripts.OnClick then self._scripts.OnClick(self, button or "LeftButton") end
 end
@@ -90,11 +100,14 @@ U.universal = universal
 local ABSENT = { EllesmereUI = true, ElvUI = true, LibStub = true }
 
 function U.install()
-    local createFrame = function(_, name, parent, template)
+    U.created = {}
+    local createFrame = function(frameType, name, parent, template)
         local f = universal()
         f._shown = true
         f._template = template
         f._parent = parent
+        f._type = frameType
+        U.created[#U.created + 1] = f
         -- template child keys our code reads
         if template and template:find("CheckButton") then f.text = universal() end
         if name then rawset(_G, name, f) end

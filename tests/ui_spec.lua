@@ -134,4 +134,30 @@ describe("UI smoke", function()
             ns.Commands:Handle("help")
         end)
     end)
+    it("hovering pets never changes their weights", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local set = ns.Sets:Get("$Default")
+        set:SetPetWeight("a", 0)
+        ns.UI.Preview:SetSelected("a")
+        ns.UI.Preview:SetHover("b")
+        ns.UI.Preview:SetHover(nil)
+        assert.equal(0, set:GetPetWeight("a"))
+        assert.is_false(set:HasManualWeight("b"))
+    end)
+
+    it("creates the stepper slider as a Frame", function()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local found = false
+        for _, f in ipairs(U.created) do
+            if f._template == "MinimalSliderWithSteppersTemplate" then
+                found = true
+                assert.equal("Frame", f._type)
+            end
+        end
+        assert.is_true(found)
+    end)
 end)

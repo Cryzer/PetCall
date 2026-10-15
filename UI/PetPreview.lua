@@ -7,6 +7,7 @@ local Preview = {}
 ns.UI.Preview = Preview
 
 local panel, model, set, hoverID, selectedID
+local shownID, syncing
 local angle, dragging, lastX = 0, false, nil
 
 local function petToShow()
@@ -55,8 +56,11 @@ function Preview:Attach(parent)
 
     local steps = #ns.Weights.LEVELS - 1
     panel.slider = ns.Widgets.Slider(panel, 0, steps, steps, 3, function(v)
-        local id = selectedID or hoverID
-        if id and set then set:SetPetWeight(id, ns.Weights.LEVELS[math.floor(v + 0.5) + 1].value) end
+        -- the slider also reports our own SetValue calls; only user moves change weights,
+        -- and only for the pet the panel is showing
+        if syncing or not shownID or not set then return end
+        local value = ns.Weights.LEVELS[math.floor(v + 0.5) + 1].value
+        if ns.Weights.Nearest(set:GetPetWeight(shownID)) ~= value then set:SetPetWeight(shownID, value) end
     end, function(v) return ns.Weights.LEVELS[math.floor(v + 0.5) + 1].label end)
     panel.slider:SetPoint("TOPLEFT", panel.source, "BOTTOMLEFT", -2, -10)
     panel.slider:SetPoint("RIGHT", -6, 0)
@@ -85,6 +89,7 @@ function Preview:ShowPet(petID, forSet)
     set = forSet or set
     if not panel then return end
     local info = petID and ns.PetCache:GetInfo(petID)
+    shownID = info and petID or nil
     if not info then
         panel.name:SetText(L["No pet selected"])
         panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("")
@@ -106,9 +111,11 @@ function Preview:ShowPet(petID, forSet)
     panel.source:SetText(source or "")
     if set then
         local w = set:GetPetWeight(petID)
+        syncing = true
         for i, lvl in ipairs(ns.Weights.LEVELS) do
             if lvl.value == ns.Weights.Nearest(w) then panel.slider:SetValue(i - 1) end
         end
+        syncing = false
         local chance, reason = set:GetChance(petID)
         panel.chance:SetText(format(L["Chance in this set: %.1f%%"], chance * 100) .. (reason and ("\n|cffff8040" .. reason .. "|r") or ""))
     end

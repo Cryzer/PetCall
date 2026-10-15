@@ -68,7 +68,7 @@ function Widgets.Search(parent, onChanged)
 end
 
 function Widgets.Slider(parent, minValue, maxValue, steps, value, onChange, formatter)
-    local s = CreateFrame("Slider", nil, parent, "MinimalSliderWithSteppersTemplate")
+    local s = CreateFrame("Frame", nil, parent, "MinimalSliderWithSteppersTemplate")
     local formatters = formatter and { [MinimalSliderWithSteppersMixin.Label.Right] = formatter } or nil
     s:Init(value, minValue, maxValue, steps, formatters)
     s:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, v) onChange(v) end, s)
