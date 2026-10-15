@@ -9,7 +9,7 @@ ignore = { "211", "212", "213", "411", "421", "422", "431", "432", "433", "443",
 
 -- Locales are auto-generated from CurseForge and may contain Lua 5.3 \uXXXX escapes.
 -- Libs are vendored third-party libraries; not our code to lint.
-exclude_files = { "Locales/", "Libs/" }
+exclude_files = { "Locales/", "Libs/", "tests/lib/", "tools/" }
 
 globals = {
     -- Addon globals
@@ -83,3 +83,7 @@ read_globals = {
     "ZONE", "BATTLEGROUND", "TYPE", "GROUP", "PARTY", "RAID",
     "CLASS", "SPECIALIZATION", "ITEMS",
 }
+
+files["tests/"] = { std = "+busted", globals = { "PetCall3DB", "PetLeash3DB", "PetCall", "assert" }, allow_defined_top = true }
+-- the stub exists to define WoW globals
+files["tests/wowstub.lua"] = { ignore = { "1" } }

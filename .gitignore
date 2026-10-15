@@ -10,3 +10,5 @@ Thumbs.db
 
 # WoW packaging artifacts
 *.zip
+tools/.luacheck/
+tools/.argparse/

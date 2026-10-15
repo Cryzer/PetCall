@@ -8,3 +8,5 @@ manual-changelog:
 
 ignore:
   - docs
+  - tests
+  - tools
