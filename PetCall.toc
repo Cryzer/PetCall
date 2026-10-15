@@ -25,3 +25,4 @@ Locales\koKR.lua
 Locales\ruRU.lua
 Locales\zhCN.lua
 Core\DB.lua
+Core\PetCache.lua
