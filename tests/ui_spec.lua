@@ -448,4 +448,50 @@ describe("UI smoke", function()
         local content = ns.UI.Main:GetFrame().content
         assert.is_true(content._points.TOPLEFT.rel == header, "tabs and pages sit below the header")
     end)
+    it("toolbar segments filter the grid and the count line says how many are in and out", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local set = ns.Sets:Get("$Default")
+        set:SetPetWeight("b", 0)
+        W.advance(1)
+        local page = ns.UI.PetsTabPage
+        assert.equal("1 in this set · 1 left out", page.count:GetText())
+        page.show.buttons[3]:Click()                        -- Left out
+        local ids = {}
+        for _, t in pairs(gridTiles()) do ids[#ids + 1] = t.petID end
+        assert.same({ "b" }, ids)
+        page.show.buttons[1]:Click()                        -- All
+        page.favorites:Click()
+        assert.is_true(ns.UI.PetsTabState().favoritesOnly)
+    end)
+
+    it("set settings hold the default weight and the reset that left the main view", function()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("settings")
+        local page = ns.UI.SetSettingsPage
+        assert.is_not_nil(page.defaultWeight)
+        page.reset:Click()
+        assert.equal("PETCALL_CONFIRM", W.world.popup)
+        assert.is_nil(ns.UI.PetsTabPage.defaultWeight)
+    end)
+    it("tiles say the pet type and how often, not just the level", function()
+        W.world.pets.b = { species = 2, name = "B", type = 3 }
+        W.world.pets.c = { species = 3, name = "C" }
+        W.world.pets.c2 = { species = 3, name = "C" }
+        ns.PetCache:Rescan()
+        local set = ns.Sets:Get("$Default")
+        set:SetPetWeight("a", 0)
+        set:SetPetWeight("b", 8)
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local tiles = gridTiles()
+        assert.is_true(tiles.a.sub:GetText():find("Left out") ~= nil, tiles.a.sub:GetText())
+        assert.is_true(tiles.b.sub:GetText():find("BATTLE_PET_NAME_3", 1, true) ~= nil, tiles.b.sub:GetText())
+        assert.is_true(tiles.b.sub:GetText():find("Often") ~= nil)
+        assert.is_true(tiles.c.sub:GetText():find("x2") ~= nil)
+        assert.is_nil(tiles.b.sub:GetText():find("Level"))
+    end)
 end)

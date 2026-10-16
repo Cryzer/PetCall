@@ -32,6 +32,32 @@ function Widgets.Button(parent, text, onClick)
     return b
 end
 
+-- Row of joined buttons, one selected: items = { {value =, label =} }, get() -> value
+function Widgets.Segmented(parent, items, get, onPick)
+    local f = CreateFrame("Frame", nil, parent)
+    f.buttons = {}
+    local x = 0
+    for i, item in ipairs(items) do
+        local b = Widgets.Button(f, item.label, function() onPick(item.value) f:Refresh() end)
+        b:SetWidth(math.max(64, b:GetFontString():GetStringWidth() + 20))
+        b:SetPoint("LEFT", x, 0)
+        x = x + b:GetWidth() - 2
+        b.value = item.value
+        f.buttons[i] = b
+    end
+    f:SetSize(math.max(1, x), 22)
+    function f:Refresh()
+        local cur = get()
+        for _, b in ipairs(self.buttons) do
+            local on = b.value == cur
+            if on then b:LockHighlight() else b:UnlockHighlight() end
+            b:GetFontString():SetTextColor(1, on and 1 or 0.82, on and 1 or 0)   -- white when picked, gold otherwise
+        end
+    end
+    f:Refresh()
+    return f
+end
+
 function Widgets.Checkbox(parent, label, get, set)
     local cb = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
     cb:SetSize(24, 24)

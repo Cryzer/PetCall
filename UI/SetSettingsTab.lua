@@ -22,17 +22,24 @@ function Tab:Refresh(newSet)
     page.enabled:SetChecked(set.settings.enabled)
     page.immediate:SetChecked(set.settings.immediate and true or false)
     page.priority:GenerateMenu()
+    page.defaultWeight:GenerateMenu()
     page.name:SetText(set.name)
     page.export:ClearAllPoints()
     if default then
         page.export:SetPoint("TOPLEFT", page.defaultNote, "BOTTOMLEFT", 0, -16)
+        -- the default set keeps the weight controls: place them under the note
+        page.dwLabel:ClearAllPoints()
+        page.dwLabel:SetPoint("TOPLEFT", page.export, "BOTTOMLEFT", 4, -22)
     else
-        page.export:SetPoint("TOPLEFT", page.nameLabel, "BOTTOMLEFT", -4, -24)
+        page.dwLabel:ClearAllPoints()
+        page.dwLabel:SetPoint("TOPLEFT", page.nameLabel, "BOTTOMLEFT", 0, -22)
+        page.export:SetPoint("TOPLEFT", page.dwLabel, "BOTTOMLEFT", -4, -24)
     end
 end
 
 ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     page = p
+    ns.UI.SetSettingsPage = page
     page.editable = {}
     page.title = ns.Widgets.Label(page, "", "GameFontNormalLarge")
     page.title:SetPoint("TOPLEFT", 8, -8)
@@ -71,6 +78,23 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     for _, w in ipairs({ nameLabel, page.name, rename }) do tinsert(page.editable, w) end
 
     page.nameLabel = nameLabel
+    -- weights for pets nobody set by hand, and the rare reset: here rather than in the main view
+    local dwLabel = ns.Widgets.Label(page, L["Pets you haven't set by hand:"])
+    dwLabel:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", 0, -22)
+    page.dwLabel = dwLabel
+    page.defaultWeight = ns.Widgets.Dropdown(page, 160, function(owner, root)
+        for _, lvl in ipairs(ns.Weights.LEVELS) do
+            root:CreateRadio(lvl.label, function() return set and ns.Weights.Nearest(set.settings.defaultValue) == lvl.value end,
+                function() set:SetDefaultWeight(lvl.value) end)
+        end
+    end)
+    page.defaultWeight:SetPoint("LEFT", dwLabel, "RIGHT", 10, 0)
+    page.reset = ns.Widgets.Button(page, L["Reset all weights"], function()
+        StaticPopup_Show("PETCALL_CONFIRM", L["Reset all pet weights in this set?"], nil,
+            { onAccept = function() set:ClearPetWeights() end })
+    end)
+    page.reset:SetPoint("LEFT", page.defaultWeight, "RIGHT", 10, 0)
+
     page.export = ns.Widgets.Button(page, L["Export"], function() if ns.UI.Share then ns.UI.Share:ShowExport(set.name) end end)
     local export = page.export
     local delete = ns.Widgets.Button(page, L["Delete set"], function()

@@ -151,7 +151,7 @@ function Bar:Refresh(newSet)
     if not bar or not set then return end
     closeEditor()
     local data = set:GetAutoRules()
-    local label = bar.label or ns.Widgets.Label(bar, L["Auto rules:"], "GameFontNormalSmall")
+    local label = bar.label or ns.Widgets.Label(bar, L["More chance for:"], "GameFontNormalSmall")
     bar.label = label
     label:SetPoint("LEFT")
     local prev = label
@@ -173,7 +173,7 @@ function Bar:Refresh(newSet)
             root:CreateButton(def.label, function() ns.AutoRules.AddChip(list(), def.key, ns.Weights.NORMAL) commit() end)
         end
     end)
-    bar.add:SetDefaultText(L["+ Rule"])
+    bar.add:SetDefaultText(L["+ Add"])
     bar.add:ClearAllPoints()
     bar.add:SetPoint("LEFT", prev, "RIGHT", 8, 0)
 end

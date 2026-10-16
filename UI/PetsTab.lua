@@ -98,7 +98,7 @@ local function createTile(parent)
     t.border:SetAllPoints(t.icon)
     t.name = t:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     t.name:SetPoint("TOPLEFT", t.icon, "TOPRIGHT", 6, -2)
-    t.name:SetPoint("RIGHT", -28, 0)
+    t.name:SetPoint("RIGHT", -26, 0)
     t.name:SetJustifyH("LEFT")
     t.name:SetWordWrap(false)
     t.sub = t:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -108,9 +108,14 @@ local function createTile(parent)
     t.sub:SetWordWrap(false)
     t.badge = t:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     t.badge:SetPoint("BOTTOMRIGHT", -6, 6)
-    t.check = CreateFrame("CheckButton", nil, t, "UICheckButtonTemplate")
-    t.check:SetSize(22, 22)
-    t.check:SetPoint("TOPRIGHT", -2, -2)
+    -- a small tick: bright when the pet is in the set, a faint ghost when it is left out
+    t.check = CreateFrame("Button", nil, t)
+    t.check:SetSize(18, 18)
+    t.check:SetPoint("TOPRIGHT", -4, -4)
+    t.check.tex = t.check:CreateTexture(nil, "ARTWORK")
+    t.check.tex:SetAllPoints()
+    t.check.tex:SetTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready")
+    t.check:SetHighlightTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready", "ADD")
     t.check:SetScript("OnClick", check_OnClick)
     ns.Widgets.Tooltip(t.check, L["Include in this set"], L["Unchecked pets are never summoned by this set."])
     ns.Skin:Apply("Checkbox", t.check)
@@ -138,12 +143,25 @@ local function setupTile(t, petID)
     t.border:SetVertexColor(r, g, b)
     t.name:SetText(displayName(info))
     t.name:SetTextColor(r, g, b)
+    -- second line: what kind of pet, and how often it is drawn when that is not "Normal"
+    local _, kind = ns.PetGridModel.Badge(set, petID)
+    local w = set:GetPetWeight(petID)
+    local parts = { _G["BATTLE_PET_NAME_" .. (info.petType or 0)] or "" }
+    if kind == "never" then
+        parts[#parts + 1] = "|cff999999" .. L["Left out"] .. "|r"
+    elseif kind == "auto" then
+        parts[#parts + 1] = "|cff66ccff" .. L["via a rule"] .. "|r"
+    elseif ns.Weights.Nearest(w) ~= ns.Weights.NORMAL then
+        local c = BADGE_COLORS.manual
+        parts[#parts + 1] = format("|cff%02x%02x%02x%s|r", c[1] * 255, c[2] * 255, c[3] * 255, ns.Weights.Label(w))
+    end
     local copies = #ns.PetCache:GetCopies(petID)
-    t.sub:SetText(format("%s %d", L["Level"], info.level) .. (copies > 1 and format("  |cffaaaaaax%d|r", copies) or ""))
-    local text, kind = ns.PetGridModel.Badge(set, petID)
-    t.badge:SetText(text or "")
-    if kind then t.badge:SetTextColor(unpack(BADGE_COLORS[kind])) end
-    t.check:SetChecked(set:GetPetWeight(petID) > 0)
+    if copies > 1 then parts[#parts + 1] = format("|cffaaaaaax%d|r", copies) end
+    t.sub:SetText(table.concat(parts, " 9483 "))
+    t.badge:SetText("")
+    local included = w > 0
+    t.check.tex:SetDesaturated(not included)
+    t.check.tex:SetAlpha(included and 1 or 0.25)
     t.selected:SetShown(petID == ns.UI.Preview:GetSelected())
     t:SetAlpha(kind == "never" and 0.45 or 1)
     t.icon:SetDesaturated(kind == "never")
@@ -182,9 +200,14 @@ function Tab:Rebuild()
         emptyText:SetText("")
         page.openJournal:Hide()
     end
+    local inSet, leftOut = ns.UI.SetHeader.Counts(set)
+    page.count:SetText(format(L["%d in this set · %d left out"], inSet, leftOut))
+    page.show:Refresh()
     ns.UI.Preview:ShowPet(nil, set)
     ns.UI.Preview:Refresh()
 end
+
+function ns.UI.PetsTabState() return state end
 
 local function layout()
     local width = ns.UI.Main:GetContentWidth()
@@ -206,7 +229,6 @@ end
 
 function Tab:Refresh(newSet)
     set = newSet
-    page.defaultWeight:GenerateMenu()
     if ns.UI.AutoRulesBar then ns.UI.AutoRulesBar:Refresh(set) end
     layout()
 end
@@ -215,12 +237,6 @@ local function filterMenu(owner, root)
     local function radio(text, key, value)
         root:CreateRadio(text, function() return state[key] == value end, function() state[key] = value Tab:Rebuild() end)
     end
-    root:CreateTitle(L["Show"])
-    radio(ALL, "show", "all")
-    radio(L["Selected"], "show", "selected")
-    radio(L["Unselected"], "show", "unselected")
-    root:CreateCheckbox(L["Favorites only"], function() return state.favoritesOnly end,
-        function() state.favoritesOnly = not state.favoritesOnly Tab:Rebuild() end)
     local types = root:CreateButton(L["Pet Type"])
     for i = 1, C_PetJournal.GetNumPetTypes() do
         types:CreateCheckbox(_G["BATTLE_PET_NAME_" .. i], function() return state.types and state.types[i] end,
@@ -252,38 +268,50 @@ end
 
 ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     page = p
+    ns.UI.PetsTabPage = page
     local search = ns.Widgets.Search(page, function(text) state.search = strlower(text) Tab:Rebuild() end)
     search:SetPoint("TOPLEFT", 6, -4)
-    search:SetWidth(200)
+    search:SetWidth(180)
+
+    -- what to show, on the surface instead of inside a menu
+    page.show = ns.Widgets.Segmented(page, {
+        { value = "all", label = ALL }, { value = "selected", label = L["In this set"] }, { value = "unselected", label = L["Left out"] },
+    }, function() return state.show end, function(v) state.show = v Tab:Rebuild() end)
+    page.show:SetPoint("LEFT", search, "RIGHT", 10, 0)
+
+    page.favorites = CreateFrame("Button", nil, page)
+    page.favorites:SetSize(22, 22)
+    page.favorites:SetPoint("LEFT", page.show, "RIGHT", 8, 0)
+    page.favorites:SetNormalTexture("Interface\\COMMON\\FavoritesIcon")
+    page.favorites:SetHighlightTexture("Interface\\COMMON\\FavoritesIcon", "ADD")
+    local function paintFavorites()
+        page.favorites:GetNormalTexture():SetDesaturated(not state.favoritesOnly)
+        page.favorites:GetNormalTexture():SetAlpha(state.favoritesOnly and 1 or 0.45)
+    end
+    page.favorites:SetScript("OnClick", function()
+        state.favoritesOnly = not state.favoritesOnly or nil
+        paintFavorites()
+        Tab:Rebuild()
+    end)
+    paintFavorites()
+    ns.Widgets.Tooltip(page.favorites, L["Favorites only"])
 
     local filterBtn = CreateFrame("DropdownButton", nil, page, "WowStyle1FilterDropdownTemplate")
-    filterBtn:SetPoint("LEFT", search, "RIGHT", 8, 0)
+    filterBtn:SetPoint("LEFT", page.favorites, "RIGHT", 8, 0)
     filterBtn:SetupMenu(filterMenu)
     ns.Skin:Apply("Dropdown", filterBtn)
-
-    local clear = ns.Widgets.Button(page, L["Clear"], function()
-        StaticPopup_Show("PETCALL_CONFIRM", L["Reset all pet weights in this set?"], nil,
-            { onAccept = function() set:ClearPetWeights() end })
-    end)
-    clear:SetPoint("TOPRIGHT", -6, -2)
-
-    page.defaultWeight = ns.Widgets.Dropdown(page, 150, function(owner, root)
-        for _, lvl in ipairs(ns.Weights.LEVELS) do
-            root:CreateRadio(lvl.label, function() return set and ns.Weights.Nearest(set.settings.defaultValue) == lvl.value end,
-                function() set:SetDefaultWeight(lvl.value) end)
-        end
-    end)
-    page.defaultWeight:SetPoint("RIGHT", clear, "LEFT", -8, 0)
-    local dwLabel = ns.Widgets.Label(page, L["Other pets:"])
-    dwLabel:SetPoint("RIGHT", page.defaultWeight, "LEFT", -6, 0)
 
     -- auto-rule chips row is filled by Task 11 (UI/AutoRulesBar.lua) at page.rulesBar
     page.rulesBar = CreateFrame("Frame", nil, page)
     page.rulesBar:SetPoint("TOPLEFT", search, "BOTTOMLEFT", -4, -6)
-    page.rulesBar:SetPoint("RIGHT", -6, 0)
+    page.rulesBar:SetPoint("RIGHT", -220, 0)
     page.rulesBar:SetHeight(24)
     page.rulesBar:SetClipsChildren(true)
     ns.UI.PetsTabRulesBar = page.rulesBar
+    page.count = ns.Widgets.Label(page, "", "GameFontDisable")
+    page.count:SetPoint("RIGHT", page, "RIGHT", -8, 0)
+    page.count:SetPoint("TOP", page.rulesBar, "TOP", 0, -5)
+    page.count:SetJustifyH("RIGHT")
 
     local previewPanel = ns.UI.Preview:Attach(page)
     previewPanel:SetPoint("TOPRIGHT", page.rulesBar, "BOTTOMRIGHT", 0, -6)
