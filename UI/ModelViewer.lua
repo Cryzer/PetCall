@@ -119,6 +119,8 @@ function ns.UI.NewModelViewer(parent, opts)
         local x1, y1, z1, x2, y2, z2 = self.actor:GetActiveBoundingBox()
         if not (x1 and x2) or x2 - x1 <= 0 then return end
         self.fitBox = format("%.2f x %.2f x %.2f", x2 - x1, y2 - y1, z2 - z1)
+        -- the journal's distance for this pet, read once per load before we move it
+        self.baseZoom = self.baseZoom or cam:GetZoomDistance()
         -- measured, but not worth fitting to: the journal's framing stays
         if ns.UI.IsStandInBox(x2 - x1, y2 - y1, z2 - z1) then self.standIn = true return true end
         local scale = self.actor.GetScale and self.actor:GetScale() or 1
@@ -126,8 +128,6 @@ function ns.UI.NewModelViewer(parent, opts)
         if not (w and h) or h <= 0 then return end
         local fov = cam.GetFieldOfView and cam:GetFieldOfView() or nil
         local want = ns.UI.FitDistance((x2 - x1) * scale, (y2 - y1) * scale, (z2 - z1) * scale, w / h, fov)
-        -- the journal's distance for this pet, read once per load before we move it
-        self.baseZoom = self.baseZoom or cam:GetZoomDistance()
         self.want = want
         if want > self.baseZoom * MAX_BACK then
             self.oddBox = true
