@@ -3,6 +3,7 @@ local _, ns = ...
 local L = ns.L
 local CreateFrame = CreateFrame
 local MIN_TILE_W, TILE_H, PREVIEW_MIN_WIDTH = 190, 48, 760
+local GRID_TOP = 60      -- below search (24) and the rules bar (30)
 
 local Tab = {}
 local state = { search = "", show = "all", sort = "name" }
@@ -210,7 +211,6 @@ end
 function ns.UI.PetsTabState() return state end
 
 local function layout()
-    local width = ns.UI.Main:GetContentWidth()
     local narrow = ns.UI.Main:GetFrame():GetWidth() < PREVIEW_MIN_WIDTH
     local previewPanel = ns.UI.Preview:GetPanel()
     previewPanel:SetShown(not narrow)
@@ -220,7 +220,11 @@ local function layout()
     end
     if not narrow and floatingPreview then floatingPreview:Hide() floatingPreview = nil end
     grid:SetPoint("BOTTOMRIGHT", narrow and page or previewPanel, narrow and "BOTTOMRIGHT" or "BOTTOMLEFT", narrow and -18 or -22, 0)
-    local gridWidth = width - (narrow and 18 or (240 + 22))
+    -- measure the grid itself; before the first frame it has no size yet, so derive it
+    local gridWidth = grid:GetWidth()
+    if not gridWidth or gridWidth <= 0 then
+        gridWidth = ns.UI.Main:GetContentWidth() - (narrow and 18 or (240 + 22))
+    end
     -- as many columns as fit, tiles stretched to fill the row
     columns = math.max(1, math.floor(gridWidth / MIN_TILE_W))
     tileW = math.floor(gridWidth / columns)
@@ -304,21 +308,23 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     -- auto-rule chips row is filled by Task 11 (UI/AutoRulesBar.lua) at page.rulesBar
     page.rulesBar = CreateFrame("Frame", nil, page)
     page.rulesBar:SetPoint("TOPLEFT", search, "BOTTOMLEFT", -4, -6)
-    page.rulesBar:SetPoint("RIGHT", -220, 0)
+    page.rulesBar:SetPoint("RIGHT", -6, 0)
     page.rulesBar:SetHeight(24)
     page.rulesBar:SetClipsChildren(true)
     ns.UI.PetsTabRulesBar = page.rulesBar
     page.count = ns.Widgets.Label(page, "", "GameFontDisable")
-    page.count:SetPoint("RIGHT", page, "RIGHT", -8, 0)
-    page.count:SetPoint("TOP", page.rulesBar, "TOP", 0, -5)
     page.count:SetJustifyH("RIGHT")
 
     local previewPanel = ns.UI.Preview:Attach(page)
-    previewPanel:SetPoint("TOPRIGHT", page.rulesBar, "BOTTOMRIGHT", 0, -6)
+    -- grid and preview share the row below the rules bar; the preview owns the right edge
+    previewPanel:SetPoint("TOPRIGHT", page, "TOPRIGHT", 0, -GRID_TOP)
     previewPanel:SetPoint("BOTTOMRIGHT", 0, 0)
 
     grid = CreateFrame("Frame", nil, page)
-    grid:SetPoint("TOPLEFT", page.rulesBar, "BOTTOMLEFT", 0, -6)
+    grid:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -GRID_TOP)
+    grid:SetClipsChildren(true)
+    page.grid = grid
+    page.count:SetPoint("BOTTOMRIGHT", grid, "TOPRIGHT", 0, 8)
     scrollBox = CreateFrame("Frame", nil, grid, "WowScrollBoxList")
     scrollBox:SetAllPoints()
     scrollBar = CreateFrame("EventFrame", nil, page, "MinimalScrollBar")
@@ -343,4 +349,7 @@ end, 1)
 local rebuildSoon = ns.Debounce(0.05, function() Tab:Rebuild() end)
 ns:RegisterCallback(Tab, "PetsChanged", rebuildSoon)
 ns:RegisterCallback(Tab, "SetsChanged", function(_, name) if set and (not name or name == set.name) then rebuildSoon() end end)
-ns:RegisterCallback(Tab, "WindowResized", function() if page and page:IsVisible() then layout() end end)
+-- while the window is being dragged to a new size the tiles keep their size (the grid
+-- clips them); the grid is laid out again once the size settles
+local layoutSoon = ns.Debounce(0.12, function() if page and page:IsVisible() then layout() end end)
+ns:RegisterCallback(Tab, "WindowResized", layoutSoon)

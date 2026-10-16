@@ -503,4 +503,25 @@ describe("UI smoke", function()
         ns.UI.Preview:SetSelected("b")
         assert.is_true(panel.chanceBar._value < 1)
     end)
+    it("the preview panel sits at the right edge and the count line above the grid", function()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local page = ns.UI.PetsTabPage
+        local panel = ns.UI.Preview:GetPanel()
+        assert.is_true(panel._points.TOPRIGHT.rel == page, "preview anchored to the page edge")
+        assert.is_true(page.count._points.BOTTOMRIGHT.rel == page.grid, "count sits on the grid")
+    end)
+
+    it("dragging the window size rebuilds the grid once it settles, not on every step", function()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local rows = 0
+        local orig = ns.PetGridModel.Rows
+        ns.PetGridModel.Rows = function(...) rows = rows + 1 return orig(...) end
+        for i = 1, 20 do ns:Fire("WindowResized", 800 + i, 560) end
+        W.advance(1)
+        ns.PetGridModel.Rows = orig
+        assert.equal(1, rows)
+    end)
 end)
