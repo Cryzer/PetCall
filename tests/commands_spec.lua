@@ -15,6 +15,7 @@ describe("Commands", function()
         assert.is_true(ns.db.profile.dismissWhenStealthed)
         local before = #W.world.printed
         SlashCmdList.PETCALL("debugstate")
+        SlashCmdList.PETCALL("holidays")
         assert.is_true(#W.world.printed - before >= 5)
         SlashCmdList.PETCALL("nope")
         assert.is_true(W.world.printed[#W.world.printed]:find("Unknown command") ~= nil)

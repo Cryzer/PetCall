@@ -398,3 +398,27 @@ C.RegisterType({
 })
 
 ns.Events.Register(C, "CALENDAR_UPDATE_EVENT_LIST", function() C.ForgetHolidays() end)
+
+-- /pcall holidays: what the calendar says about today, for bug reports
+function C.DumpHolidays()
+    if not calendarReady() then return ns:Print("no calendar API") end
+    local now = C_DateAndTime.GetCurrentCalendarTime()
+    local shown = C_Calendar.GetMonthInfo(0)
+    local offset = monthOffset(now)
+    ns:Printf("now %d-%02d-%02d %02d:%02d, calendar shows %s-%s, offset %d", now.year, now.month, now.monthDay,
+        now.hour or 0, now.minute or 0, tostring(shown and shown.year), tostring(shown and shown.month), offset)
+    local function when(t) return t and format("%d/%d %02d:%02d", t.month, t.monthDay, t.hour or 0, t.minute or 0) or "-" end
+    for o = offset - 1, offset + 1 do
+        for i = 1, C_Calendar.GetNumDayEvents(o, now.monthDay) or 0 do
+            local ev = C_Calendar.GetDayEvent(o, now.monthDay, i)
+            if ev then
+                ns:Printf("[%d] id=%s %s (%s, %s) %s -> %s", o, tostring(ev.eventID), tostring(ev.title), tostring(ev.calendarType),
+                    tostring(ev.sequenceType), when(ev.startTime), when(ev.endTime))
+            end
+        end
+    end
+    C.ForgetHolidays()
+    local active = {}
+    for id, title in pairs(C.ActiveHolidays()) do active[#active + 1] = id .. "=" .. title end
+    ns:Printf("active now: %s", #active > 0 and table.concat(active, ", ") or "none")
+end

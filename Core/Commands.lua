@@ -22,6 +22,7 @@ local list = {
         ns:Printf("%s: %s", L["Auto-summon"], ns:IsAutoSummon() and L["On"] or L["Off"])
         ns.Ready:DumpDebugState()
     end },
+    { "holidays", nil, function() ns.Conditions.DumpHolidays() end },
     { "help", L["List commands"], function()
         for _, line in ipairs(Commands:HelpLines()) do ns:Print(line) end
     end },
