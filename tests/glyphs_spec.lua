@@ -36,7 +36,8 @@ describe("Glyphs", function()
                 lineNo = lineNo + 1
                 local code = line:gsub("%-%-.*$", "")      -- comments never reach the screen
                 for cp, ch in codepoints(code) do
-                    if cp > 0xFF and not ALLOWED[cp] then bad[#bad + 1] = path .. ":" .. lineNo .. " " .. ch end
+                    local control = cp < 32 and cp ~= 9 and cp ~= 13      -- stray control bytes from broken escapes
+                    if control or (cp > 0xFF and not ALLOWED[cp]) then bad[#bad + 1] = path .. ":" .. lineNo .. " U+" .. format("%04X", cp) end
                 end
             end
             f:close()

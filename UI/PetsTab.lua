@@ -157,7 +157,7 @@ local function setupTile(t, petID)
     end
     local copies = #ns.PetCache:GetCopies(petID)
     if copies > 1 then parts[#parts + 1] = format("|cffaaaaaax%d|r", copies) end
-    t.sub:SetText(table.concat(parts, " 9483 "))
+    t.sub:SetText(table.concat(parts, " · "))
     t.badge:SetText("")
     local included = w > 0
     t.check.tex:SetDesaturated(not included)
