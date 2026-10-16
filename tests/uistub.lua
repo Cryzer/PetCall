@@ -76,6 +76,8 @@ function Universal:SetText(t) self._text = t end
 function Universal:GetChecked() return self._checked or false end
 function Universal:SetChecked(v) self._checked = v end
 function Universal:GetParent() return self._parent end
+function Universal:GetTop() return self._top or 500 end
+function Universal:GetEffectiveScale() return 1 end
 function Universal:SetParent(p) self._parent = p end
 function Universal:CreateTexture() local t = universal() t._parent = self t._shown = true return t end
 function Universal:CreateFontString() local t = universal() t._parent = self t._shown = true return t end

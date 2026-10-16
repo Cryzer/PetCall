@@ -787,10 +787,22 @@ describe("UI smoke", function()
         ns.UI.Main:Show()
         W.advance(1)
         ns.UI.SetList:Refresh()
-        assert.equal(1, ns.UI.SetList.DropSlot(500, { 400, 300 }))  -- above both cards
-        assert.equal(2, ns.UI.SetList.DropSlot(350, { 400, 300 }))
-        assert.equal(3, ns.UI.SetList.DropSlot(100, { 400, 300 }))
-        ns.Sets:MoveTo(a, 1)                                        -- what dropping A on top does
+        local SlotFor = ns.UI.SetList.SlotFor
+        assert.equal(1, SlotFor(-30, 2))                    -- held above the list
+        assert.equal(1, SlotFor(10, 2))
+        assert.equal(2, SlotFor(40, 2))                     -- past half a card: next place
+        assert.equal(2, SlotFor(999, 2))                    -- never below the last place
+        -- pick up B (first) and carry it one card down: the cursor moves 46 px
+        local rowB
+        for _, r in ipairs(ns.UI.SetList._rows) do if r:IsShown() and r.set == b then rowB = r end end
+        rowB._top = 460                                     -- first card: 40 px below the panel top
+        U.cursorY = 450                                     -- grabbed 10 px into the card
+        rowB._scripts.OnDragStart(rowB)
+        local panel = rowB:GetParent()
+        U.cursorY = 450 - 46
+        panel._scripts.OnUpdate(panel, 0.1)
+        rowB._scripts.OnDragStop(rowB)
+        assert.equal(2, b:GetRank())
         assert.equal(1, a:GetRank())
         local rowA
         for _, r in ipairs(ns.UI.SetList._rows) do if r:IsShown() and r.set == a then rowA = r end end

@@ -193,15 +193,19 @@ function SetList.PaintPause(r, hover)
     r.pause:SetShown(paused or hover or r:IsMouseOver())
 end
 
--- Drag and drop: the card fades, a line shows where it will land, the drop moves it.
--- slot = 1 + the number of other cards whose middle is above the cursor
-function SetList.DropSlot(cursorY, centers)
-    local slot = 1
-    for _, y in ipairs(centers) do if y > cursorY then slot = slot + 1 end end
-    return slot
+-- Drag and drop: the card is lifted and follows the cursor above the others; the
+-- other cards slide apart to leave the gap where it will land. Dropping it there
+-- moves the set to that place.
+local STEP = CARD_H + 4
+local function slotY(pos) return -LIST_TOP - (pos - 1) * STEP end
+
+-- the place (1..n) for a card whose top is `top` pixels below the start of the list
+function SetList.SlotFor(top, n)
+    local pos = math.floor(top / STEP + 0.5) + 1
+    return math.max(1, math.min(n, pos))
 end
 
-local dragging, dropLine
+local drag      -- { row, others, n, from, grab, slot }
 
 local function orderRows()
     local out = {}
@@ -209,43 +213,57 @@ local function orderRows()
     return out
 end
 
-local function cursorSlot()
-    local list = orderRows()
+-- how far below the top of the panel the cursor is
+local function cursorBelowTop()
     local _, y = GetCursorPosition()
-    y = y / panel:GetEffectiveScale()
-    local centers = {}
-    for k, r in ipairs(list) do centers[k] = select(2, r:GetCenter()) or 0 end
-    return SetList.DropSlot(y, centers), list
+    return (panel:GetTop() or 0) - y / panel:GetEffectiveScale()
 end
 
-local function placeLine()
-    local slot, list = cursorSlot()
-    dropLine:ClearAllPoints()
-    if list[slot] then
-        dropLine:SetPoint("BOTTOMLEFT", list[slot], "TOPLEFT", 0, 1)
-        dropLine:SetPoint("BOTTOMRIGHT", list[slot], "TOPRIGHT", 0, 1)
-    elseif list[#list] then
-        dropLine:SetPoint("TOPLEFT", list[#list], "BOTTOMLEFT", 0, -1)
-        dropLine:SetPoint("TOPRIGHT", list[#list], "BOTTOMRIGHT", 0, -1)
+local function place(r, y)
+    r:ClearAllPoints()
+    r:SetPoint("TOPLEFT", 4, y)
+    r:SetPoint("RIGHT", -4, 0)
+end
+
+local function follow()
+    local top = cursorBelowTop() - drag.grab - LIST_TOP
+    top = math.max(0, math.min((drag.n - 1) * STEP, top))
+    place(drag.row, -LIST_TOP - top)
+    drag.slot = SetList.SlotFor(top, drag.n)
+    local pos = 1
+    for _, r in ipairs(drag.others) do
+        if pos == drag.slot then pos = pos + 1 end
+        place(r, slotY(pos))
+        pos = pos + 1
     end
 end
 
 function SetList.StartDrag(r)
     if not r.set or r.set:IsDefault() then return end
-    dragging = r
-    r:SetAlpha(0.45)
-    dropLine:SetColorTexture(ns.Skin:Accent())
-    dropLine:Show()
-    panel:SetScript("OnUpdate", placeLine)
+    local list = orderRows()
+    drag = { row = r, others = {}, n = #list }
+    for k, x in ipairs(list) do
+        if x == r then drag.from = k else drag.others[#drag.others + 1] = x end
+    end
+    drag.slot = drag.from
+    -- where on the card it was picked up, so it does not jump to the cursor
+    drag.grab = cursorBelowTop() - ((panel:GetTop() or 0) - (r:GetTop() or 0))
+    r:SetFrameLevel(panel:GetFrameLevel() + 20)
+    r:LockHighlight()
+    r.selected:Show()
+    panel:SetScript("OnUpdate", follow)
 end
 
 function SetList.StopDrag(r)
-    if dragging ~= r then return end
-    dragging = nil
-    r:SetAlpha(1)
-    dropLine:Hide()
+    if not drag or drag.row ~= r then return end
+    local slot, from = drag.slot, drag.from
+    drag = nil
     panel:SetScript("OnUpdate", nil)
-    ns.Sets:MoveTo(r.set, (cursorSlot()))
+    r:UnlockHighlight()
+    r:SetFrameLevel(panel:GetFrameLevel() + 1)
+    -- MoveTo counts places with the card still in its old one
+    ns.Sets:MoveTo(r.set, slot > from and slot + 1 or slot)
+    SetList:Refresh()
 end
 
 -- the pet that is out right now, large, at the foot of the sets panel
@@ -334,9 +352,6 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     hint:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
     hint:SetPoint("RIGHT", -6, 0)
     hint:SetWordWrap(false)
-    dropLine = panel:CreateTexture(nil, "OVERLAY")
-    dropLine:SetHeight(2)
-    dropLine:Hide()
     local collapse = CreateFrame("Button", nil, panel)
     collapse:SetSize(20, 20)
     collapse:SetPoint("TOPRIGHT", -2, -2)
