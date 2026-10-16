@@ -49,7 +49,7 @@ describe("UI smoke", function()
             chips[1]:Click()
             -- the editor belongs to the main window, so it closes with it
             local editor = ns.UI.AutoRulesBar.GetEditor()
-            assert.equal(ns.UI.PetsTabRulesBar, editor:GetParent())
+            assert.equal(ns.UI.Main:GetFrame(), editor:GetParent())
             assert.is_true(editor:IsShown())
             editor.done:Click()
             assert.is_false(editor:IsShown())

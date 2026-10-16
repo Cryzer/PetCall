@@ -23,7 +23,8 @@ function Bar.GetEditor() return editor end      -- for tests
 -- A popover under the chip, part of the main window: it closes with it, takes its
 -- scale and skin, and every change applies at once, so it needs no Okay button.
 local function buildEditor()
-    editor = CreateFrame("Frame", nil, bar, "TooltipBackdropTemplate")
+    -- on the window itself: the rules bar clips its children, which would hide it
+    editor = CreateFrame("Frame", nil, ns.UI.Main:GetFrame(), "TooltipBackdropTemplate")
     editor:SetFrameStrata("DIALOG")
     editor:SetToplevel(true)
     editor:EnableMouse(true)
