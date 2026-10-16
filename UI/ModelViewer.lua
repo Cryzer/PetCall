@@ -26,6 +26,13 @@ local FILL = 0.8          -- part of the frame a fitted model may take
 local MAX_BACK = 4
 ns.UI.FIT_MAX_BACK = MAX_BACK      -- for tests
 
+-- A box with three equal sides is a stand-in the client gives some models (Will of
+-- Remornia: 7.99 on every side), not their shape: it says nothing about their size.
+function ns.UI.IsStandInBox(dx, dy, dz)
+    local hi, lo = math.max(dx, dy, dz), math.min(dx, dy, dz)
+    return lo > 0 and hi / lo < 1.01
+end
+
 -- How far the camera must be to see a model whole in a frame of this shape. The
 -- journal's camera is set up for the journal's frame; big pets (Willie, mounts-sized
 -- pets) overflow a narrower or a square frame.
@@ -67,7 +74,8 @@ function ns.UI.DumpModel()
         ns:Printf("camera %.2f (journal %.2f), frame %dx%d", cam:GetZoomDistance(), last.baseZoom or -1,
             last.frame:GetWidth() or 0, last.frame:GetHeight() or 0)
     end
-    ns:Printf("fit wants %.2f%s", last.want or -1, last.oddBox and " (odd box: journal framing kept)" or "")
+    ns:Printf("fit wants %.2f%s", last.want or -1, last.oddBox and " (odd box: journal framing kept)"
+        or last.standIn and " (stand-in box: journal framing kept)" or "")
 end
 
 function ns.UI.NewModelViewer(parent, opts)
@@ -110,6 +118,8 @@ function ns.UI.NewModelViewer(parent, opts)
         if self.actor.IsLoaded and not self.actor:IsLoaded() then return end
         local x1, y1, z1, x2, y2, z2 = self.actor:GetActiveBoundingBox()
         if not (x1 and x2) or x2 - x1 <= 0 then return end
+        -- measured, but not worth fitting to: the journal's framing stays
+        if ns.UI.IsStandInBox(x2 - x1, y2 - y1, z2 - z1) then self.standIn = true return true end
         local scale = self.actor.GetScale and self.actor:GetScale() or 1
         local w, h = self.frame:GetWidth(), self.frame:GetHeight()
         if not (w and h) or h <= 0 then return end
@@ -162,7 +172,7 @@ function ns.UI.NewModelViewer(parent, opts)
             if displayID and displayID > 0 then self.frame:SetDisplayInfo(displayID) else self.frame:SetCreature(info.creatureID) end
         end
         self:FaceFront()
-        self.baseZoom, self.oddBox, self.want = nil, nil, nil
+        self.baseZoom, self.oddBox, self.want, self.standIn = nil, nil, nil, nil
         -- a model already in memory may be ready before the hook fires
         if useScene then
             local token = self.loadedAt

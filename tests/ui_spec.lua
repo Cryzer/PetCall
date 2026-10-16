@@ -868,6 +868,17 @@ describe("UI smoke", function()
         local Fit, MAX = ns.UI.FitDistance, ns.UI.FIT_MAX_BACK
         assert.is_true(Fit(4.38 * 7, 2.98 * 7, 2.09 * 7, 191 / 192) <= 26 * MAX)
         assert.is_true(Fit(15.63 * 3.45, 13.54 * 3.45, 16.27 * 3.45, 191 / 192) > 14 * MAX)
+        -- a cube is a stand-in box (Will of Remornia): journal framing, still turning
+        assert.is_true(ns.UI.IsStandInBox(7.99, 7.99, 7.99))
+        assert.is_false(ns.UI.IsStandInBox(4.38, 2.98, 2.09))
+        cam.zoom = 14
+        viewer.actor.GetScale = function() return 2.55 end
+        viewer.actor.GetActiveBoundingBox = function() return -3.5, -4, -3.97, 4.49, 3.99, 4.02 end
+        viewer:Fit()
+        assert.equal(14, cam.zoom)
+        assert.is_true(viewer.standIn)
+        assert.is_true(not viewer.oddBox)
+        viewer.actor.GetScale = function() return 1 end
         -- a box mostly made of empty space (Murkastrasza): journal framing, standing still
         ns.UI.Preview:SetSelected("a")
         ns.UI.Preview:SetSelected("big")
