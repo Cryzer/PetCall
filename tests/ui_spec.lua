@@ -674,7 +674,7 @@ describe("UI smoke", function()
         ns.UI.Preview:SetSelected("a")                     -- no own look: the species display
         assert.equal(5001, ns.UI.Preview:GetViewer():ModelID())
     end)
-    it("crossing the gap between tiles keeps the hovered pet in the preview", function()
+    it("the preview keeps the last hovered pet after the cursor leaves", function()
         W.world.pets.b = { species = 2, name = "B" }
         W.world.summoned = "a"
         ns.PetCache:Rescan()
@@ -687,10 +687,8 @@ describe("UI smoke", function()
         tile._scripts.OnEnter(tile)
         assert.equal("b", ns.UI.Preview:GetShown())
         tile._scripts.OnLeave(tile)
-        W.advance(0.1)
-        assert.equal("b", ns.UI.Preview:GetShown())        -- still b while crossing the gap
-        W.advance(0.5)
-        assert.equal("a", ns.UI.Preview:GetShown())        -- then back to the summoned pet
+        W.advance(5)
+        assert.equal("b", ns.UI.Preview:GetShown())        -- not back to the summoned pet
     end)
     it("the default set stands by while another set is used", function()
         local town = ns.Sets:Create("Always")
