@@ -94,6 +94,20 @@ function PetCache:Contains(petID) return infos[petID] ~= nil end
 function PetCache:GetInfo(petID) return infos[petID] end
 function PetCache:GetSpeciesID(petID) local i = infos[petID] return i and i.speciesID end
 function PetCache:GetCreatureID(petID) local i = infos[petID] return i and i.creatureID end
+
+-- the journal's "where from" text, plain and lower case, for rules that search it
+local sources = {}      -- speciesID -> text
+function PetCache:GetSourceText(petID)
+    local i = infos[petID]
+    if not i then return "" end
+    local s = sources[i.speciesID]
+    if not s then
+        local _, _, _, _, raw = C_PetJournal.GetPetInfoBySpeciesID(i.speciesID)
+        s = strlower(((raw or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", " ")))
+        sources[i.speciesID] = s
+    end
+    return s
+end
 function PetCache:GetSortKey(petID) local i = infos[petID] return i and i.sortKey or "" end
 
 function PetCache:OnEnable()

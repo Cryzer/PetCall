@@ -1,7 +1,7 @@
 local _, ns = ...
 
 local L = ns.L
-local tonumber, tinsert, tremove, ipairs, type = tonumber, tinsert, tremove, ipairs, type
+local tonumber, tinsert, tremove, ipairs, type, strfind, strlower = tonumber, tinsert, tremove, ipairs, type, strfind, strlower
 
 local AutoRules = {}
 ns.AutoRules = AutoRules
@@ -59,7 +59,32 @@ local types = {
         new = function() return { "level", operator = ">=", level = "25" } end,
     },
 }
-local order = { "favorites", "petType", "level" }
+types.rare = {
+    key = "rare", label = L["Rare or better"], fields = {},
+    match = function(e, info) return (info.quality or 0) >= 4 end,
+    describe = function() return L["Rare or better"] end,
+    new = function() return { "rare" } end,
+}
+types.source = {
+    key = "source", label = L["Source mentions"],
+    fields = { { key = "text", kind = "text" } },
+    match = function(e, info)
+        local t = strlower(e.text or "")
+        return t ~= "" and strfind(ns.PetCache:GetSourceText(info.petID), t, 1, true) ~= nil
+    end,
+    describe = function(e) return L["Source"] .. ": " .. (e.text or "") end,
+    new = function() return { "source", text = "" } end,
+}
+types.nativeZone = {
+    key = "nativeZone", label = L["Native to where I am"], fields = {},
+    match = function(e, info)
+        local zone = strlower(GetZoneText() or "")
+        return zone ~= "" and strfind(ns.PetCache:GetSourceText(info.petID), zone, 1, true) ~= nil
+    end,
+    describe = function() return L["Native to where I am"] end,
+    new = function() return { "nativeZone" } end,
+}
+local order = { "favorites", "petType", "level", "rare", "source", "nativeZone" }
 
 function AutoRules.Types()
     local out = {}
@@ -214,3 +239,18 @@ function AutoRules.Simplify(list, index)
     list[index] = c
     return true
 end
+
+-- "native to where I am" depends on the zone: only sets that use it are rebuilt
+local function usesNativeZone(list)
+    for _, e in ipairs(list or {}) do
+        if e[1] == "nativeZone" then return true end
+        if (e[1] == "AND" or e[1] == "OR") and usesNativeZone(e.items) then return true end
+    end
+    return false
+end
+AutoRules.UsesNativeZone = usesNativeZone
+ns.Events.Register(AutoRules, "ZONE_CHANGED_NEW_AREA", function()
+    for _, set in ipairs(ns.Sets:List()) do
+        if usesNativeZone(set.settings.filter) then set:FiltersChanged() end
+    end
+end)

@@ -62,6 +62,7 @@ local function defaultWorld()
         -- calendar: the month it shows, today, and events keyed by offset * 100 + day
         calShown = { year = 2026, month = 10 }, now = { year = 2026, month = 10, monthDay = 16, hour = 12, minute = 0 },
         calEvents = {},
+        sources = {},
         printed = {},
     }
 end
@@ -208,7 +209,7 @@ function W.reset()
         -- name, icon, type, creatureID, source, description, isWild, canBattle, isTradeable, isUnique, obtainable, displayID
         GetPetModelSceneInfoBySpeciesID = function() return 718, 718 end,
         GetPetInfoBySpeciesID = function(s)
-            return "Species" .. s, "icon", 1, 1000 + s, "Source " .. s, "", false, true, true, false, true, 5000 + s
+            return "Species" .. s, "icon", 1, 1000 + s, w.sources[s] or ("Source " .. s), "", false, true, true, false, true, 5000 + s
         end,
     }
     C_Item = {

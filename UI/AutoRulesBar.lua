@@ -54,6 +54,18 @@ local function fieldControl(parent, leaf, field)
         end)
         ns.Skin:Apply("EditBox", eb)
         return eb
+    elseif field.kind == "text" then
+        local eb = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+        eb:SetSize(160, 20)
+        eb:SetAutoFocus(false)
+        eb:SetText(leaf[field.key] or "")
+        eb:SetScript("OnEnterPressed", function(self)
+            ns.AutoRules.SetField(leaf, field.key, strtrim(self:GetText()))
+            self:ClearFocus()
+            commit()
+        end)
+        ns.Skin:Apply("EditBox", eb)
+        return eb
     end
 end
 

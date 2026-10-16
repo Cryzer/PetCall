@@ -57,4 +57,34 @@ describe("AutoRules", function()
         assert.is_true(AR.Simplify(list, 1))
         assert.same({ { "favorites", 1 } }, list)
     end)
+    it("source, native zone and rare rules", function()
+        W.world.sources[1] = "|cFFFFD200World Event:|r Hallow's End"
+        W.world.sources[2] = "|cFFFFD200Pet Battle:|r Elwynn Forest, Stormwind City"
+        W.world.pets.a.quality = 4
+        ns.PetCache:Rescan()
+        assert.equal("world event: hallow's end", ns.PetCache:GetSourceText("a"))
+        assert.is_true(AR.Match({ "source", 1, text = "Hallow's End" }, "a"))
+        assert.is_false(AR.Match({ "source", 1, text = "Hallow's End" }, "b"))
+        assert.is_true(AR.Match({ "nativeZone", 1 }, "b"))        -- stub zone: Stormwind City
+        W.world.zone = "Durotar"
+        assert.is_false(AR.Match({ "nativeZone", 1 }, "b"))
+        assert.is_true(AR.Match({ "rare", 1 }, "a"))
+        assert.is_false(AR.Match({ "rare", 1 }, "b"))
+        assert.equal("Source: Hallow's End", AR.Describe({ "source", 1, text = "Hallow's End" }))
+    end)
+    it("a set with a native-zone rule is rebuilt after a zone change, others are not", function()
+        W.world.sources[2] = "Pet Battle: Durotar"
+        ns.PetCache:Rescan()
+        local zoneSet = ns.Sets:Create("Zone")
+        zoneSet.settings.defaultValue = 0
+        zoneSet.settings.filter = { { "nativeZone", 1 } }
+        zoneSet:FiltersChanged()
+        local other = ns.Sets:Create("Other")
+        assert.is_false(zoneSet:Contains("b"))
+        local before = other:GetWeightTable()
+        W.world.zone = "Durotar"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        assert.is_true(zoneSet:Contains("b"))
+        assert.is_true(other:GetWeightTable() == before and not other.dirty)
+    end)
 end)

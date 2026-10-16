@@ -346,3 +346,7 @@ L["While AFK"] = true
 L["Don't summon while mounted"] = true
 L["Wait until you dismount. A summon on a mount uses the global cooldown and can get in the way of Skyriding abilities."] = true
 L["Swimming, indoors or outdoors, AFK, or in a form like Travel Form. Any ticked one is enough. Mounted needs \"Don't summon while mounted\" turned off in the settings."] = true
+L["Rare or better"] = true
+L["Source mentions"] = true
+L["Source"] = true
+L["Native to where I am"] = true
