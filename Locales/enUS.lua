@@ -374,3 +374,5 @@ L["Back"] = true
 L["Empty set"] = true
 L["From a recipe..."] = true
 L["Standing by"] = true
+L["This pet is in the set through a \"More chance for\" rule. Change or remove the rule to leave it out."] = true
+L["In the set through a \"More chance for\" rule."] = true

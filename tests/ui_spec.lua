@@ -715,4 +715,26 @@ describe("UI smoke", function()
         assert.equal("BOTTOMLEFT", opened.anchor.point)
         assert.is_not_nil(opened.root:Find("From a recipe"))
     end)
+    it("a pet in the set through a rule has a lit tick that cannot be ticked off", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        local set = ns.Sets:Create("Rules")
+        set.settings.defaultValue = 0
+        set.settings.filter = { { "favorites", 1 } }
+        W.world.favorites.b = true
+        ns.PetCache:Rescan()
+        set:FiltersChanged()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Rules")
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local tile = gridTiles().b
+        assert.equal(0.5, tile.checkAlpha)                  -- lit like any included pet, not ghosted
+        assert.is_true(tile.sub:GetText():find("via a rule") ~= nil)
+        tile.check:Click()
+        assert.equal(0, set:GetPetWeight("b"))             -- the click did not add a manual weight
+        assert.is_true(set:Contains("b"))
+        set:SetPetWeight("b", 0)                            -- a manual Never does not hide a rule pet
+        assert.equal("auto", select(2, ns.PetGridModel.Badge(set, "b")))
+    end)
 end)

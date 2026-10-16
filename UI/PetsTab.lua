@@ -52,10 +52,17 @@ local function tile_OnClick(self, button)
     paintSelection()
 end
 
--- the checkbox includes the pet (all copies) at Normal or excludes it (Never)
+-- the checkbox includes the pet (all copies) at Normal or excludes it (Never); a pet
+-- that is in only through a rule cannot be ticked off: the rule decides
 local function check_OnClick(self)
     local id = self:GetParent().petID
     if not id then return end
+    local _, kind = ns.PetGridModel.Badge(set, id)
+    if kind == "auto" then
+        UIErrorsFrame:AddMessage(L["This pet is in the set through a \"More chance for\" rule. Change or remove the rule to leave it out."], 1, 0.82, 0)
+        PlaySound(SOUNDKIT.IG_PLAYER_INVITE_DECLINE)
+        return
+    end
     local included = set:GetPetWeight(id) > 0
     set:SetPetWeights(ns.PetCache:GetCopies(id), included and ns.Weights.NEVER or ns.Weights.NORMAL)
     PlaySound(included and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -132,7 +139,13 @@ local function createTile(parent)
     t.check.tex:SetTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready")
     t.check:SetHighlightTexture("Interface\\RAIDFRAME\\ReadyCheck-Ready", "ADD")
     t.check:SetScript("OnClick", check_OnClick)
-    ns.Widgets.Tooltip(t.check, L["Include in this set"], L["Unchecked pets are never summoned by this set."])
+    ns.Widgets.Tooltip(t.check, L["Include in this set"], function(self)
+        local id = self:GetParent().petID
+        if id and select(2, ns.PetGridModel.Badge(set, id)) == "auto" then
+            return L["In the set through a \"More chance for\" rule."]
+        end
+        return L["Unchecked pets are never summoned by this set."]
+    end)
     ns.Skin:Apply("Checkbox", t.check)
     allTiles[#allTiles + 1] = t
     t:SetScript("OnClick", tile_OnClick)
@@ -174,9 +187,11 @@ local function setupTile(t, petID)
     if copies > 1 then parts[#parts + 1] = format("|cffaaaaaax%d|r", copies) end
     t.sub:SetText(table.concat(parts, " · "))
     t.badge:SetText("")
-    local included = w > 0
-    -- hundreds of identical bright ticks are noise: quiet until the tile is hovered
+    local included = w > 0 or kind == "auto"
+    -- hundreds of identical bright ticks are noise: quiet until the tile is hovered;
+    -- pets that are in through a rule get the rule colour
     t.check.tex:SetDesaturated(not included)
+    if kind == "auto" then t.check.tex:SetVertexColor(0.4, 0.8, 1) else t.check.tex:SetVertexColor(1, 1, 1) end
     t.checkAlpha = included and 0.5 or 0.2
     t.check.tex:SetAlpha(t:IsMouseOver() and 1 or t.checkAlpha)
     t.selected:SetShown(petID == ns.UI.Preview:GetSelected())

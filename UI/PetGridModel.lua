@@ -62,12 +62,11 @@ function M.Rows(ids, columns)
     return rows
 end
 
+-- rules add their tickets whatever the weight says, so a pet a rule matches is never
+-- "left out", even when its own weight is Never
 function M.Badge(set, id)
     local w = set:GetPetWeight(id)
-    if set:HasManualWeight(id) or set:GetAutoWeight(id) == 0 then
-        if w == 0 then return ns.Weights.Short(0), "never" end
-        return ns.Weights.Short(w), "manual"
-    end
-    if w == 0 then return ns.L["auto"], "auto" end
-    return ns.Weights.Short(w), "manual"
+    if w > 0 then return ns.Weights.Short(w), "manual" end
+    if set:GetAutoWeight(id) > 0 then return ns.L["auto"], "auto" end
+    return ns.Weights.Short(0), "never"
 end
