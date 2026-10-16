@@ -126,7 +126,24 @@ function Universal:SetYaw(a) self._yaw = a end
 function Universal:SetModelByCreatureDisplayID(id) self._display = id U.modelLoads = (U.modelLoads or 0) + 1 end
 function Universal:GetObjectType() return self._type or "Frame" end
 -- one actor per scene, like a real ModelScene with a single tagged actor
-function Universal:GetActorByTag() self._actor = self._actor or universal() return self._actor end
+-- an actor is not a frame: no scripts (SetScript/HookScript), only what ModelSceneActor has
+local ACTOR_METHODS = { "SetModelByCreatureDisplayID", "SetAnimationBlendOperation", "ClearModel", "GetModelFileID",
+    "SetYaw", "GetYaw", "GetActiveBoundingBox", "GetScale", "SetScale", "GetPosition", "SetPosition", "IsLoaded",
+    "SetAnimation", "Show", "Hide", "IsShown" }
+local function strictActor()
+    local inner = universal()
+    local a = {}
+    for _, m in ipairs(ACTOR_METHODS) do a[m] = function(self, ...) return inner[m](inner, ...) end end
+    a.SetModelByCreatureDisplayID = function(self, id) inner._display = id U.modelLoads = (U.modelLoads or 0) + 1 end
+    a.GetModelFileID = function() return inner._display end
+    a.ClearModel = function() inner._display = nil end
+    a.IsLoaded = function() return true end
+    a.GetPosition = function() return 0, 0, 0 end
+    a.GetScale = function() return 1 end
+    a.GetActiveBoundingBox = function() return -0.5, -0.5, 0, 0.5, 0.5, 1 end
+    return setmetatable(a, { __index = function(_, k) error("ModelSceneActor has no method " .. tostring(k), 2) end })
+end
+function Universal:GetActorByTag() self._actor = self._actor or strictActor() return self._actor end
 function Universal:SetFrameLevel(l) self._level = l end
 function Universal:GetFrameLevel() return self._level or 0 end
 function Universal:GetChildren() return unpack(self._children or {}) end

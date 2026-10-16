@@ -104,8 +104,9 @@ function ns.UI.NewModelViewer(parent, opts)
         if not useScene or not self.actor or not self.actor.GetActiveBoundingBox then return end
         local cam = self.frame.GetActiveCamera and self.frame:GetActiveCamera()
         if not cam or not cam.SetZoomDistance or not cam.GetZoomDistance then return end
+        if self.actor.IsLoaded and not self.actor:IsLoaded() then return end
         local x1, y1, z1, x2, y2, z2 = self.actor:GetActiveBoundingBox()
-        if not (x1 and x2) then return end
+        if not (x1 and x2) or x2 - x1 <= 0 then return end
         local scale = self.actor.GetScale and self.actor:GetScale() or 1
         local w, h = self.frame:GetWidth(), self.frame:GetHeight()
         if not (w and h) or h <= 0 then return end
@@ -117,7 +118,7 @@ function ns.UI.NewModelViewer(parent, opts)
             self.oddBox = true
             self.angle = 0
             self:SetYaw(0)
-            return
+            return true
         end
         if want > cam:GetZoomDistance() then
             if cam.GetMaxZoomDistance and cam.SetMaxZoomDistance and cam:GetMaxZoomDistance() < want then
@@ -125,6 +126,15 @@ function ns.UI.NewModelViewer(parent, opts)
             end
             cam:SetZoomDistance(want)
         end
+        return true
+    end
+
+    -- the model loads in the background: measure it once it is there (actor objects
+    -- have no load script to hook), for about a second at most
+    function v:FitWhenLoaded(token, tries)
+        if self.loadedAt ~= token then return end           -- another pet was loaded since
+        if self:Fit() or tries >= 12 then return end
+        ns:After(0.1, function() v:FitWhenLoaded(token, tries + 1) end)
     end
 
     function v:FaceFront()
@@ -140,10 +150,6 @@ function ns.UI.NewModelViewer(parent, opts)
             self.frame:TransitionToModelSceneID(sceneID, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)
             self.actor = self.frame:GetActorByTag("unwrapped")
             if self.actor then
-                if not self.actor.petcallFit then
-                    self.actor.petcallFit = true
-                    self.actor:HookScript("OnModelLoaded", function() v:Fit() end)
-                end
                 self.actor:SetModelByCreatureDisplayID(displayID, true)
                 if Enum.ModelBlendOperation then self.actor:SetAnimationBlendOperation(Enum.ModelBlendOperation.None) end
             end
@@ -154,7 +160,10 @@ function ns.UI.NewModelViewer(parent, opts)
         self:FaceFront()
         self.baseZoom, self.oddBox = nil, nil
         -- a model already in memory may be ready before the hook fires
-        if useScene then ns:After(0.1, function() v:Fit() end) end
+        if useScene then
+            local token = self.loadedAt
+            ns:After(0.05, function() v:FitWhenLoaded(token, 0) end)
+        end
     end
 
     function v:Clear()
