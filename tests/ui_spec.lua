@@ -148,18 +148,6 @@ describe("UI smoke", function()
         assert.is_false(set:HasManualWeight("b"))
     end)
 
-    it("creates the stepper slider as a Frame", function()
-        ns.UI.Main:Show()
-        ns.UI.Main:SelectTab("pets")
-        local found = false
-        for _, f in ipairs(U.created) do
-            if f._template == "MinimalSliderWithSteppersTemplate" then
-                found = true
-                assert.equal("Frame", f._type)
-            end
-        end
-        assert.is_true(found)
-    end)
     it("re-selects the set by name after a profile change with the window closed", function()
         ns.Sets:Create("City")
         ns.UI.Main:Show()
@@ -493,5 +481,26 @@ describe("UI smoke", function()
         assert.is_true(tiles.b.sub:GetText():find("Often") ~= nil)
         assert.is_true(tiles.c.sub:GetText():find("x2") ~= nil)
         assert.is_nil(tiles.b.sub:GetText():find("Level"))
+    end)
+    it("the preview sets how often with named buttons and shows the chance as a bar", function()
+        W.world.pets.a2 = { species = 1, name = "A", level = 25 }
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local set = ns.Sets:Get("$Default")
+        ns.UI.Preview:SetSelected("a2")
+        local panel = ns.UI.Preview:GetPanel()
+        assert.equal(6, #panel.levels)
+        assert.equal("Often", panel.levels[5]:GetText())
+        panel.levels[5]:Click()
+        assert.equal(8, set:GetPetWeight("a"))
+        assert.equal(8, set:GetPetWeight("a2"))
+        ns.UI.Preview:Refresh()
+        assert.is_true(panel.levels[5]._highlightLocked)
+        assert.equal(1, panel.chanceBar._value)          -- the most likely pet fills the bar
+        ns.UI.Preview:SetSelected("b")
+        assert.is_true(panel.chanceBar._value < 1)
     end)
 end)

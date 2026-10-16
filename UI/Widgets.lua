@@ -98,14 +98,6 @@ function Widgets.Search(parent, onChanged)
     return eb
 end
 
-function Widgets.Slider(parent, minValue, maxValue, steps, value, onChange, formatter)
-    local s = CreateFrame("Frame", nil, parent, "MinimalSliderWithSteppersTemplate")
-    local formatters = formatter and { [MinimalSliderWithSteppersMixin.Label.Right] = formatter } or nil
-    s:Init(value, minValue, maxValue, steps, formatters)
-    s:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, v) onChange(v) end, s)
-    return s
-end
-
 function Widgets.Inset(parent)
     local f = CreateFrame("Frame", nil, parent, "InsetFrameTemplate")
     ns.Skin:Apply("Inset", f)

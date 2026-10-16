@@ -7,7 +7,7 @@ local Preview = {}
 ns.UI.Preview = Preview
 
 local panel, viewer, set, hoverID, selectedID
-local shownID, syncing
+local shownID
 local loadModel        -- assigned above Preview:ShowPet
 local MODEL_SHARE = 0.55        -- part of the panel's height given to the model
 
@@ -41,25 +41,44 @@ function Preview:Attach(parent)
     panel.source:SetPoint("RIGHT", -6, 0)
     panel.source:SetWordWrap(true)
 
-    -- weight label above the slider: the slider's own side label does not fit the panel
-    panel.weight = ns.Widgets.Label(panel, "", "GameFontNormal")
+    -- how often: six named steps in two rows instead of an unlabelled slider
+    panel.weight = ns.Widgets.Label(panel, L["How often"], "GameFontNormalSmall")
     panel.weight:SetPoint("TOPLEFT", panel.source, "BOTTOMLEFT", 0, -12)
-    panel.weight:SetPoint("RIGHT", -6, 0)
+    panel.levels = {}
+    for i, lvl in ipairs(ns.Weights.LEVELS) do
+        local btn = ns.Widgets.Button(panel, lvl.label, function()
+            if shownID and set then set:SetPetWeights(ns.PetCache:GetCopies(shownID), lvl.value) end
+        end)
+        btn:SetNormalFontObject("GameFontNormalSmall")
+        btn:SetHighlightFontObject("GameFontHighlightSmall")
+        btn:SetHeight(20)
+        btn.value = lvl.value
+        local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
+        btn:SetPoint("TOPLEFT", panel.weight, "BOTTOMLEFT", col * 76, -4 - row * 22)
+        btn:SetWidth(76)
+        panel.levels[i] = btn
+    end
 
-    local steps = #ns.Weights.LEVELS - 1
-    panel.slider = ns.Widgets.Slider(panel, 0, steps, steps, 3, function(v)
-        -- the slider also reports our own SetValue calls; only user moves change weights,
-        -- and only for the pet the panel is showing
-        if syncing or not shownID or not set then return end
-        local value = ns.Weights.LEVELS[math.floor(v + 0.5) + 1].value
-        if ns.Weights.Nearest(set:GetPetWeight(shownID)) ~= value then set:SetPetWeights(ns.PetCache:GetCopies(shownID), value) end
-    end)
-    panel.slider:SetPoint("TOPLEFT", panel.weight, "BOTTOMLEFT", -2, -4)
-    panel.slider:SetPoint("RIGHT", -6, 0)
-
+    -- chance: a bar measured against the most likely pet of the set, and the percentage
+    panel.chanceLabel = ns.Widgets.Label(panel, L["Chance in this set"], "GameFontNormalSmall")
+    panel.chanceLabel:SetPoint("TOPLEFT", panel.levels[4], "BOTTOMLEFT", 0, -12)
+    panel.chanceBar = CreateFrame("StatusBar", nil, panel)
+    panel.chanceBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    panel.chanceBar:SetStatusBarColor(1, 0.82, 0)
+    panel.chanceBar:SetMinMaxValues(0, 1)
+    panel.chanceBar:SetHeight(10)
+    panel.chanceBar:SetPoint("TOPLEFT", panel.chanceLabel, "BOTTOMLEFT", 0, -4)
+    panel.chanceBar:SetPoint("RIGHT", -52, 0)
+    panel.chanceBar.bg = panel.chanceBar:CreateTexture(nil, "BACKGROUND")
+    panel.chanceBar.bg:SetAllPoints()
+    panel.chanceBar.bg:SetColorTexture(1, 1, 1, 0.08)
     panel.chance = ns.Widgets.Label(panel, "", "GameFontHighlight")
-    panel.chance:SetPoint("TOPLEFT", panel.slider, "BOTTOMLEFT", 2, -8)
-    panel.chance:SetPoint("RIGHT", -6, 0)
+    panel.chance:SetPoint("LEFT", panel.chanceBar, "RIGHT", 6, 0)
+    panel.reason = ns.Widgets.Label(panel, "", "GameFontNormalSmall")
+    panel.reason:SetPoint("TOPLEFT", panel.chanceBar, "BOTTOMLEFT", 0, -4)
+    panel.reason:SetPoint("RIGHT", -6, 0)
+    panel.reason:SetTextColor(1, 0.5, 0.25)
+    ns.Widgets.Tooltip(panel.chanceBar, L["Chance in this set"], L["The bar compares this pet with the most likely pet of the set."])
 
     panel.summon = ns.Widgets.Button(panel, L["Summon"], function()
         if shownID then ns:SummonPet(shownID) end
@@ -94,7 +113,8 @@ function Preview:ShowPet(petID, forSet)
     shownID = info and petID or nil
     if not info then
         panel.name:SetText(L["No pet selected"])
-        panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("") panel.weight:SetText("")
+        panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("") panel.reason:SetText("")
+        panel.chanceBar:SetValue(0)
         viewer:Clear()
         viewer.creatureID = nil      -- forget it, or the same pet would not be loaded again
         return
@@ -114,20 +134,24 @@ function Preview:ShowPet(petID, forSet)
     local _, _, _, _, source = C_PetJournal.GetPetInfoBySpeciesID(info.speciesID)
     panel.source:SetText(source or "")
     if set then
-        local w = set:GetPetWeight(petID)
-        panel.weight:SetText(L["Weight"] .. ": |cffffffff" .. ns.Weights.Label(w) .. "|r")
-        syncing = true
-        for i, lvl in ipairs(ns.Weights.LEVELS) do
-            if lvl.value == ns.Weights.Nearest(w) then panel.slider:SetValue(i - 1) end
+        local current = ns.Weights.Nearest(set:GetPetWeight(petID))
+        for _, btn in ipairs(panel.levels) do
+            if btn.value == current then btn:LockHighlight() else btn:UnlockHighlight() end
         end
-        syncing = false
         -- every copy of the pet is a separate ticket in the draw
-        local chance, reason = 0, nil
-        for _, id in ipairs(copies) do
-            local c, r = set:GetChance(id)
-            chance, reason = chance + c, reason or r
+        local tbl, sums, top = set:GetWeightTable(), {}, 0
+        for i = 1, #tbl, 2 do
+            local primary = ns.PetCache:GetCopies(tbl[i + 1])[1]
+            sums[primary] = (sums[primary] or 0) + tbl[i]
+            if sums[primary] > top then top = sums[primary] end
         end
-        panel.chance:SetText(format(L["Chance in this set: %.1f%%"], chance * 100) .. (reason and ("\n|cffff8040" .. reason .. "|r") or ""))
+        local mine = sums[copies[1]] or 0
+        local chance = (tbl.total or 0) > 0 and mine / tbl.total or 0
+        local reason
+        for _, id in ipairs(copies) do reason = reason or select(2, set:GetChance(id)) end
+        panel.chanceBar:SetValue(top > 0 and mine / top or 0)
+        panel.chance:SetText(format("%.1f%%", chance * 100))
+        panel.reason:SetText(reason or "")
     end
     panel.fav:GetNormalTexture():SetDesaturated(not info.isFavorite)
     panel.fav:GetNormalTexture():SetAlpha(info.isFavorite and 1 or 0.4)

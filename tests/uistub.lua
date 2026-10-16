@@ -90,6 +90,8 @@ function Universal:SetValue(v)
     for _, c in ipairs(self._callbacks or {}) do c.fn(c.owner, v) end
 end
 function Universal:GetValue() return self._value or 0 end
+function Universal:LockHighlight() self._highlightLocked = true end
+function Universal:UnlockHighlight() self._highlightLocked = false end
 -- anchors are recorded so layout tests can check them
 function Universal:SetPoint(point, rel, relPoint, x, y)
     if type(rel) == "number" then rel, relPoint, x, y = nil, point, rel, relPoint end
