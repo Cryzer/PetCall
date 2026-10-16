@@ -60,13 +60,13 @@ function ns.UI.NewModelViewer(parent, opts)
     end
 
     function v:Load(info)
-        local displayID = select(12, C_PetJournal.GetPetInfoBySpeciesID(info.speciesID))
+        local displayID = info.displayID or select(12, C_PetJournal.GetPetInfoBySpeciesID(info.speciesID))
         if useScene then
             local sceneID = C_PetJournal.GetPetModelSceneInfoBySpeciesID(info.speciesID)
             self.frame:TransitionToModelSceneID(sceneID, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)
             self.actor = self.frame:GetActorByTag("unwrapped")
             if self.actor then
-                self.actor:SetModelByCreatureDisplayID(displayID)
+                self.actor:SetModelByCreatureDisplayID(displayID, true)
                 if Enum.ModelBlendOperation then self.actor:SetAnimationBlendOperation(Enum.ModelBlendOperation.None) end
             end
         else

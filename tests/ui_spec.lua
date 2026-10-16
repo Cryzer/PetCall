@@ -663,4 +663,15 @@ describe("UI smoke", function()
         ns.UI.Main:SelectSet("$Default")
         assert.is_false(ns.UI.RecipeGallery:IsShown())
     end)
+    it("the preview uses the pet's own look, not the species-wide one", function()
+        W.world.pets.v = { species = 7, name = "Variant", display = 4242 }
+        ns.PetCache:Rescan()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        ns.UI.Preview:SetSelected("v")
+        assert.equal(4242, ns.UI.Preview:GetViewer():ModelID())
+        ns.UI.Preview:SetSelected("a")                     -- no own look: the species display
+        assert.equal(5001, ns.UI.Preview:GetViewer():ModelID())
+    end)
 end)

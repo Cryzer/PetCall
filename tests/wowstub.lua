@@ -185,7 +185,7 @@ function W.reset()
         GetPetInfoByPetID = function(id)
             local p = w.pets[id]
             if not p then return nil end
-            return p.species, p.custom, p.level or 1, 0, 0, 0, w.favorites[id] or false,
+            return p.species, p.custom, p.level or 1, 0, 0, p.display or 0, w.favorites[id] or false,
                 p.name, "icon" .. p.species, p.type or 1, p.creature or (1000 + p.species)
         end,
         GetPetStats = function(id) local p = w.pets[id] return 100, 100, 10, 10, p and (p.quality or 2) end,

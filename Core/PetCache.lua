@@ -8,13 +8,16 @@ ns.PetCache = PetCache
 local ids, infos, loaded = {}, {}, false
 
 local function readInfo(petID)
-    local speciesID, customName, level, _, _, _, isFavorite, name, icon, petType, creatureID =
+    local speciesID, customName, level, _, _, displayID, isFavorite, name, icon, petType, creatureID =
         C_PetJournal.GetPetInfoByPetID(petID)
     if not speciesID then return nil end
     local _, _, _, _, quality = C_PetJournal.GetPetStats(petID)
     return {
         petID = petID, speciesID = speciesID, customName = customName, level = level or 1,
         name = name or "?", icon = icon, petType = petType, creatureID = creatureID,
+        -- this pet's own look: species with several looks (Trading Post pets) have no
+        -- textures on the species-wide display and render white
+        displayID = displayID ~= 0 and displayID or nil,
         isFavorite = isFavorite and true or false, quality = quality or 2,
         sortKey = format("%s\0%s\0%03d", strlower(name or ""), strlower(customName or ""), level or 0),
     }
