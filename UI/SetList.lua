@@ -11,17 +11,22 @@ local panel, rail, rows, newBox, nowCard = nil, nil, {}, nil, nil
 SetList._rows = rows      -- for tests
 local RAIL_W, PANEL_W = 34, 190
 local collapsedNow = false
-local STATUS = {
-    active = { "on", L["Active now"] },
-    waiting = { "off", L["Conditions not met"] },
-    empty = { "warn", L["No pets to choose from"] },
-    noConditions = { "warn", L["No conditions: this set is always active"] },
-    disabled = { nil, L["Disabled"] },
-}
+local function pauseMenu(root, set)
+    root:CreateButton(L["Pause"], function() set:Pause() end)
+    root:CreateButton(L["Pause for 1 hour"], function() set:Pause("hour") end)
+    root:CreateButton(L["Pause until logout"], function() set:Pause("session") end)
+end
+SetList.PauseMenu = pauseMenu
 
 local function setMenu(owner, root, set)
+    if set:IsPaused() then
+        root:CreateButton(L["Resume"], function() set:Resume() end)
+    else
+        pauseMenu(root:CreateButton(L["Pause"]), set)
+    end
     if not set:IsDefault() then
-        root:CreateButton(set.settings.enabled and L["Disable"] or L["Enable"], function() set:SetEnabled(not set.settings.enabled) end)
+        root:CreateButton(L["Move up"], function() ns.Sets:Move(set, -1) end)
+        root:CreateButton(L["Move down"], function() ns.Sets:Move(set, 1) end)
         root:CreateButton(L["Rename"], function() ns.UI.Main:SelectSet(set.name) ns.UI.Main:SelectTab("settings") end)
     end
     if ns.UI.Share then root:CreateButton(L["Export"], function() ns.UI.Share:ShowExport(set.name) end) end
@@ -53,14 +58,14 @@ local function stateLine(set)
     local status = set:GetStatus()
     if status == "active" then
         return format("|cff4cd964%s|r · %s", L["Active now"], format(L["%d pets"], (ns.UI.SetHeader.Counts(set))))
-    elseif status == "disabled" then
-        return "|cff808080" .. L["Turned off"] .. "|r"
+    elseif status == "paused" then
+        return "|cff808080" .. ns.UI.SetHeader.PauseText(set) .. "|r"
     elseif status == "empty" then
         return "|cffff9933" .. L["No pets to choose from"] .. "|r"
-    elseif status == "noConditions" then
-        return "|cffff9933" .. L["Always active"] .. "|r"
     elseif set:IsDefault() then
         return "|cff9d9d9d" .. L["When nothing else fits"] .. "|r"
+    elseif status == "outranked" then
+        return "|cff7fa8e0" .. ns.UI.SetHeader.OutrankedText(set) .. "|r"
     end
     local states = set:GetConditionStates()
     for _, g in ipairs(set:GetConditionModel().groups) do
@@ -99,6 +104,31 @@ local function row(i)
     r.state:SetWordWrap(false)
     r.prio = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     r.prio:SetPoint("TOPRIGHT", -6, -5)
+    -- on hover: move up / down and pause, so the order and pausing are one click away
+    r.controls = {}
+    local function control(texture, tip, onClick)
+        local b = CreateFrame("Button", nil, r)
+        b:SetSize(16, 16)
+        b:SetNormalTexture(texture)
+        b:SetHighlightTexture(texture, "ADD")
+        b:SetScript("OnClick", function(self) onClick(self) end)
+        b:HookScript("OnLeave", function() if not r:IsMouseOver() then SetList.ShowControls(r, false) end end)
+        ns.Widgets.Tooltip(b, tip)
+        b:Hide()
+        r.controls[#r.controls + 1] = b
+        return b
+    end
+    r.up = control("Interface\\Buttons\\Arrow-Up-Up", L["Move up"], function() ns.Sets:Move(r.set, -1) end)
+    r.up:SetPoint("TOPRIGHT", -3, -3)
+    r.down = control("Interface\\Buttons\\Arrow-Down-Up", L["Move down"], function() ns.Sets:Move(r.set, 1) end)
+    r.down:SetPoint("BOTTOMRIGHT", -3, 3)
+    r.pause = control("Interface\\TimeManager\\PauseButton", L["Pause or resume"], function(self)
+        if r.set:IsPaused() then r.set:Resume() return end
+        MenuUtil.CreateContextMenu(self, function(_, root) pauseMenu(root, r.set) end)
+    end)
+    r.pause:SetPoint("RIGHT", r.up, "LEFT", -2, -8)
+    r:HookScript("OnEnter", function() SetList.ShowControls(r, true) end)
+    r:HookScript("OnLeave", function() if not r:IsMouseOver() then SetList.ShowControls(r, false) end end)
     r:SetScript("OnClick", function(self, button)
         if button == "RightButton" then
             MenuUtil.CreateContextMenu(self, function(o, root) setMenu(o, root, self.set) end)
@@ -122,9 +152,11 @@ function SetList:Refresh()
         r:SetPoint("TOPLEFT", 4, -28 - (i - 1) * (CARD_H + 4))
         r:SetPoint("RIGHT", -4, 0)
         r.icon:SetTexture(setIcon(set))
-        r.icon:SetDesaturated(not set.settings.enabled)
+        local paused = set:IsPaused()
+        r.icon:SetDesaturated(paused)
         r.name:SetText(set:DisplayName())
-        r.name:SetFontObject(set.settings.enabled and "GameFontNormal" or "GameFontDisable")
+        r.name:SetFontObject(paused and "GameFontDisable" or "GameFontNormal")
+        r.pause:SetNormalTexture(paused and "Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up" or "Interface\\TimeManager\\PauseButton")
         r.state:SetText(stateLine(set))
         r.prio:SetText("")
         r.selected:SetShown(selected == set)
@@ -154,6 +186,16 @@ local function autoCollapse()
 end
 
 function SetList:IsCollapsed() return collapsedNow end
+
+-- arrows only where a move is possible; the default set has none
+function SetList.ShowControls(r, on)
+    local set = r.set
+    if not set then return end
+    local rank, n = set:GetRank()
+    r.pause:SetShown(on)
+    r.up:SetShown(on and not set:IsDefault() and rank > 1)
+    r.down:SetShown(on and not set:IsDefault() and rank < n - 1)
+end
 
 -- the pet that is out right now, large, at the foot of the sets panel
 function SetList:RefreshNow(blockers)

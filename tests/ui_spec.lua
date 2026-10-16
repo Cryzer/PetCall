@@ -782,4 +782,30 @@ describe("UI smoke", function()
         assert.is_true(f.content:IsShown())
         assert.is_false(f.Tabs[2]:IsShown())                 -- the default set has no When tab
     end)
+    it("set cards move and pause on hover; settings show the order and the pause state", function()
+        local a, b = ns.Sets:Create("A"), ns.Sets:Create("B")
+        ns.UI.Main:Show()
+        W.advance(1)
+        ns.UI.SetList:Refresh()
+        local rowA
+        for _, r in ipairs(ns.UI.SetList._rows) do if r:IsShown() and r.set == a then rowA = r end end
+        ns.UI.SetList.ShowControls(rowA, true)
+        assert.is_true(rowA.up:IsShown(), "up shown")       -- A is second: it can go up
+        rowA.up:Click()
+        assert.equal(1, a:GetRank())
+        for _, r in ipairs(ns.UI.SetList._rows) do if r:IsShown() and r.set == a then rowA = r end end   -- rows follow the order
+        rowA.pause:Click()                                  -- opens the pause choices
+        U.lastMenu:Find("Pause for 1 hour"):Click()
+        assert.is_true((a:IsPaused()), "paused")
+        ns.UI.Main:SelectSet("A")
+        ns.UI.Main:SelectTab("settings")
+        local page = ns.UI.SetSettingsPage
+        assert.is_true(page.pauseState:GetText():find("Paused for 60 min") ~= nil, page.pauseState:GetText())
+        assert.equal("1 of 2", page.order:GetText())
+        page.pauseButton:Click()                            -- Resume
+        assert.is_false((a:IsPaused()))
+        page.down:Click()
+        assert.equal(2, a:GetRank())
+        assert.equal(b, ns.Sets:List()[1])
+    end)
 end)

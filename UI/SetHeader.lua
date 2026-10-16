@@ -10,13 +10,27 @@ ns.UI.SetHeader = Header
 -- what it does, in one sentence a new player can read without knowing the addon.
 
 local STATUS = {
-    active       = { L["Active now"], 0.25, 0.75, 0.30 },
-    waiting      = { L["Conditions not met"], 0.45, 0.45, 0.45 },
-    empty        = { L["No pets to choose from"], 0.85, 0.45, 0.10 },
-    noConditions = { L["Always active"], 0.85, 0.45, 0.10 },
-    disabled     = { L["Disabled"], 0.30, 0.30, 0.30 },
-    standby      = { L["Standing by"], 0.45, 0.45, 0.45 },   -- the default set while another set is used
+    active    = { L["Active now"], 0.25, 0.75, 0.30 },
+    waiting   = { L["Conditions not met"], 0.45, 0.45, 0.45 },
+    empty     = { L["No pets to choose from"], 0.85, 0.45, 0.10 },
+    paused    = { L["Paused"], 0.30, 0.30, 0.30 },
+    outranked = { L["Another set comes first"], 0.25, 0.45, 0.75 },
+    standby   = { L["Standing by"], 0.45, 0.45, 0.45 },   -- the default set while another set is used
 }
+
+-- "Paused", "Paused for 47 min", "Paused until logout"
+function Header.PauseText(set)
+    local _, kind, left = set:IsPaused()
+    if kind == "timed" then return format(L["Paused for %d min"], math.max(1, math.ceil(left / 60))) end
+    if kind == "session" then return L["Paused until logout"] end
+    return L["Paused"]
+end
+
+-- "Fits now, but <set> comes first"
+function Header.OutrankedText(set)
+    local cur = ns.Sets:GetCurrent()
+    return format(L["Fits now, but %s comes first"], cur and cur:DisplayName() or "?")
+end
 
 local function describeConditions(set)
     local groups = {}
@@ -53,9 +67,12 @@ function Header:Refresh()
     if not set or set.deleted then return end
     header.title:SetText(set:DisplayName())
     local status = set:GetStatus()
-    if status == "waiting" and set:IsDefault() then status = "standby" end
+    if set:IsDefault() and (status == "waiting" or status == "outranked") then status = "standby" end
     local st = STATUS[status] or STATUS.waiting
-    header.status:SetText(st[1])
+    local text = st[1]
+    if status == "paused" then text = Header.PauseText(set) end
+    if status == "outranked" then text = Header.OutrankedText(set) end
+    header.status:SetText(text)
     header.pill:SetColorTexture(st[2], st[3], st[4], 0.85)
     header.pillFrame:SetWidth(header.status:GetStringWidth() + 16)
     header.summary:SetText(Header.Summary(set))

@@ -115,6 +115,7 @@ function W.reset()
     UISpecialFrames = {}
     -- game state
     GetTime = function() return w.time end
+    GetServerTime = function() return 1700000000 + math.floor(w.time) end
     GetGameTime = function() return w.gameHour, w.gameMinute end
     GetLocale = function() return w.locale end
     GetBuildInfo = function() return "12.1.5", "70100", "Oct 13 2026", 120105 end

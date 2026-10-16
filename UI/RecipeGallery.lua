@@ -80,7 +80,7 @@ local function cardTooltip(c)
     for _, e in ipairs(c.recipe.conditions) do lines[#lines + 1] = L["When"] .. ": " .. ns.Conditions.Describe(e) end
     if #c.recipe.conditions == 0 then lines[#lines + 1] = L["Used everywhere, before the Default set."] end
     local r = c.recipe
-    if r.lowest then lines[#lines + 1] = L["Priority"] .. ": " .. ns.Weights.PriorityLabel(r.priority) end
+    if r.lowest then lines[#lines + 1] = L["Placed last, just above the Default set."] end
     for _, e in ipairs(r.rules) do
         lines[#lines + 1] = format("%s: %s - %s", L["Pets"], ns.AutoRules.Describe(e), ns.Weights.Label(ns.AutoRules.Weight(e)))
     end

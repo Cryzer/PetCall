@@ -17,10 +17,64 @@ describe("Sets", function()
         W.advance(1)
     end)
 
-    it("lists Default first, then by priority and name", function()
+    it("orders 1.x sets by their old priority and name, the default set last", function()
         local names = {}
         for _, s in ipairs(ns.Sets:List()) do names[#names + 1] = s.name end
-        assert.same({ "$Default", "RaidOrZone", "City", "Deep", "Disabled", "NoTrigger" }, names)
+        assert.same({ "RaidOrZone", "City", "Deep", "Disabled", "NoTrigger", "$Default" }, names)
+        assert.equal(1, ns.Sets:Get("RaidOrZone").settings.order)      -- numbered on load
+    end)
+
+    it("moves sets up and down; new sets start at the top; the default set stays last", function()
+        local function names()
+            local out = {}
+            for _, s in ipairs(ns.Sets:List()) do out[#out + 1] = s.name end
+            return out
+        end
+        assert.is_true(ns.Sets:Move(ns.Sets:Get("City"), -1))
+        assert.equal("City", names()[1])
+        assert.is_false(ns.Sets:Move(ns.Sets:Get("NoTrigger"), 1))      -- never below Default
+        assert.is_false(ns.Sets:Move(ns.Sets:Get("$Default"), -1))
+        ns.Sets:Create("Fresh")
+        assert.equal("Fresh", names()[1])
+        ns.Sets:MoveToBottom(ns.Sets:Get("Fresh"))
+        local list = names()
+        assert.equal("Fresh", list[#list - 1])
+        assert.equal(1, ns.Sets:Get("City"):GetRank())
+    end)
+
+    it("when two sets fit, the one higher in the list is used; the other says it is outranked", function()
+        local a, b = ns.Sets:Create("A"), ns.Sets:Create("B")       -- B is created last: on top
+        a:SetPetWeight("BattlePet-0-0001", 1)
+        b:SetPetWeight("BattlePet-0-0001", 1)
+        W.advance(1)
+        assert.equal(b, ns.Sets:GetCurrent())
+        assert.equal("outranked", a:GetStatus())
+        ns.Sets:Move(a, -1)
+        assert.equal(a, ns.Sets:GetCurrent())
+    end)
+
+    it("pauses any set: until resumed, for an hour, until logout", function()
+        local d = ns.Sets:Get("$Default")
+        local a = ns.Sets:Create("A")
+        a:SetPetWeight("BattlePet-0-0001", 1)
+        W.advance(1)
+        assert.equal(a, ns.Sets:GetCurrent())
+        a:Pause("hour")
+        local paused, kind, left = a:IsPaused()
+        assert.is_true(paused)
+        assert.equal("timed", kind)
+        assert.is_true(left > 3500)
+        assert.is_false(ns.Sets:GetCurrent() == a)
+        W.advance(3602)
+        assert.is_false((a:IsPaused()))
+        assert.equal(a, ns.Sets:GetCurrent())                      -- back by itself
+        a:Pause("session")
+        assert.equal("paused", a:GetStatus())
+        a:Resume()
+        assert.is_false((a:IsPaused()))
+        d:Pause()                                                   -- the default set too
+        assert.equal("paused", d:GetStatus())
+        assert.is_false(d.settings.enabled)
     end)
 
     it("validates names", function()
@@ -45,12 +99,10 @@ describe("Sets", function()
         assert.equal("Town", ns.db.profile.sets.Town.name)
     end)
 
-    it("default set cannot be renamed, deleted or disabled", function()
+    it("default set cannot be renamed or deleted", function()
         local d = ns.Sets:Get("$Default")
         assert.is_false((d:Rename("X")))
         assert.is_false((d:Delete()))
-        d:SetEnabled(false)
-        assert.equal(true, d.settings.enabled)
     end)
 
     it("weights and chance", function()
@@ -75,8 +127,9 @@ describe("Sets", function()
     end)
 
     it("status reflects enabled/empty/noConditions", function()
-        assert.equal("disabled", ns.Sets:Get("Disabled"):GetStatus())
-        assert.equal("noConditions", ns.Sets:Get("NoTrigger"):GetStatus())
+        assert.equal("paused", ns.Sets:Get("Disabled"):GetStatus())
+        local nt = ns.Sets:Get("NoTrigger")
+        assert.is_true(nt:GetStatus() == "active" or nt:GetStatus() == "outranked")
         local e = ns.Sets:Create("Empty")
         assert.equal("empty", e:GetStatus())
     end)

@@ -190,7 +190,7 @@ function R.Create(r)
     wipe(trigger) wipe(filter)
     for _, e in ipairs(r.conditions) do trigger[#trigger + 1] = copy(e) end
     for _, e in ipairs(r.rules) do filter[#filter + 1] = copy(e) end
-    if r.priority then set:SetPriority(r.priority) end
+    if r.lowest then ns.Sets:MoveToBottom(set) end
     if r.immediate then set:SetImmediate(true) end
     set:FiltersChanged()
     set:ConditionsChanged()

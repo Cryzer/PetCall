@@ -6,14 +6,6 @@ local Tab = {}
 local page, set
 local SECTION_W = 560
 
-local function priorityMenu(owner, root)
-    for _, lvl in ipairs(ns.Weights.LEVELS) do
-        if lvl.value > 0 then
-            root:CreateRadio(lvl.priority, function() return set and ns.Weights.Nearest(set:GetPriority()) == lvl.value end,
-                function() set:SetPriority(lvl.value) end)
-        end
-    end
-end
 
 -- a titled block with a thin rule under the title; height is set by its builder
 local function section(title, danger)
@@ -59,9 +51,14 @@ function Tab:Refresh(newSet)
     page.behaviour:SetShown(not default)
     page.nameSection:SetShown(not default)
     page.danger:SetShown(not default)
-    page.enabled:SetChecked(set.settings.enabled)
+    local paused = set:IsPaused()
+    page.pauseState:SetText(paused and ("|cff808080" .. ns.UI.SetHeader.PauseText(set) .. "|r") or ("|cff4cd964" .. L["Running"] .. "|r"))
+    page.pauseButton:SetText(paused and L["Resume"] or L["Pause"])
+    local rank, n = set:GetRank()
+    page.order:SetText(format(L["%d of %d"], rank, n - 1))
+    page.up:SetEnabled(rank > 1)
+    page.down:SetEnabled(rank < n - 1)
     page.immediate:SetChecked(set.settings.immediate and true or false)
-    page.priority:GenerateMenu()
     page.defaultWeight:GenerateMenu()
     page.name:SetText(set.name)
     stack()
@@ -84,18 +81,31 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     -- when and how the set is used
     local b = section(L["Behaviour"])
     page.behaviour = b
-    page.enabled = ns.Widgets.Checkbox(b, L["Enabled"], function() return set and set.settings.enabled end, function(v) set:SetEnabled(v) end)
-    page.enabled:SetPoint("TOPLEFT", b.rule, "BOTTOMLEFT", -4, -6)
-    local prioLabel = ns.Widgets.Label(b, L["Priority"])
-    prioLabel:SetPoint("TOPLEFT", page.enabled, "BOTTOMLEFT", 4, -12)
-    page.priority = ns.Widgets.Dropdown(b, 180, priorityMenu)
-    page.priority:SetPoint("LEFT", prioLabel, "LEFT", LABEL_COL, 0)
-    local prioHelp = help(b, L["When several sets match, the one with the highest priority is used."])
-    prioHelp:SetPoint("TOPLEFT", page.priority, "BOTTOMLEFT", 0, -4)
+    -- running or paused, with the pause choices one click away
+    local stateLabel = ns.Widgets.Label(b, L["State"])
+    stateLabel:SetPoint("TOPLEFT", b.rule, "BOTTOMLEFT", 0, -14)
+    page.pauseState = ns.Widgets.Label(b, "", "GameFontHighlight")
+    page.pauseState:SetPoint("LEFT", stateLabel, "LEFT", LABEL_COL, 0)
+    page.pauseButton = ns.Widgets.Button(b, L["Pause"], function(self)
+        if set:IsPaused() then set:Resume() return end
+        MenuUtil.CreateContextMenu(self, function(_, root) ns.UI.SetList.PauseMenu(root, set) end)
+    end)
+    page.pauseButton:SetPoint("LEFT", page.pauseState, "RIGHT", 12, 0)
+    -- place in the list: the first set that fits is used
+    local prioLabel = ns.Widgets.Label(b, L["Order"])
+    prioLabel:SetPoint("TOPLEFT", stateLabel, "BOTTOMLEFT", 0, -18)
+    page.order = ns.Widgets.Label(b, "", "GameFontHighlight")
+    page.order:SetPoint("LEFT", prioLabel, "LEFT", LABEL_COL, 0)
+    page.up = ns.Widgets.Button(b, L["Move up"], function() ns.Sets:Move(set, -1) end)
+    page.up:SetPoint("LEFT", page.order, "LEFT", 60, 0)
+    page.down = ns.Widgets.Button(b, L["Move down"], function() ns.Sets:Move(set, 1) end)
+    page.down:SetPoint("LEFT", page.up, "RIGHT", 6, 0)
+    local prioHelp = help(b, L["When several sets fit, the one higher in the list is used. The Default set is always last."])
+    prioHelp:SetPoint("TOPLEFT", page.order, "BOTTOMLEFT", 0, -8)
     page.immediate = ns.Widgets.Checkbox(b, L["Summon immediately when this set becomes active"],
         function() return set and set.settings.immediate end, function(v) set:SetImmediate(v) end)
-    page.immediate:SetPoint("TOPLEFT", prioLabel, "BOTTOMLEFT", -4, -30)
-    b:SetHeight(122)
+    page.immediate:SetPoint("TOPLEFT", prioLabel, "BOTTOMLEFT", -4, -34)
+    b:SetHeight(134)
     tinsert(page.sections, b)
 
     -- which pets and how often, for pets nobody set by hand

@@ -9,6 +9,8 @@ Sets.DEFAULT = "$Default"
 
 local cache = {}          -- name -> set object
 local current
+local sessionPaused = {}  -- name -> true: paused until logout (not saved)
+local pauseTimers = {}    -- name -> timer that ends a timed pause
 
 local SetMixin = {}
 SetMixin.__index = SetMixin
@@ -33,6 +35,7 @@ function SetMixin:Rename(name)
     sets[self.name] = nil
     cache[self.name] = nil
     cache[name] = self
+    sessionPaused[name], sessionPaused[self.name] = sessionPaused[self.name], nil
     self.name = name
     self.settings.name = name
     changed(self)
@@ -43,6 +46,8 @@ function SetMixin:Delete()
     if self:IsDefault() then return false, L["The default set cannot be deleted."] end
     ns.db.profile.sets[self.name] = nil
     cache[self.name] = nil
+    sessionPaused[self.name] = nil
+    if pauseTimers[self.name] then pauseTimers[self.name]:Cancel() pauseTimers[self.name] = nil end
     if self.watcher then self.watcher:Free() self.watcher = nil end
     self.deleted = true
     ns:Fire("SetsChanged", self.name)
@@ -51,9 +56,57 @@ function SetMixin:Delete()
 end
 
 function SetMixin:SetEnabled(v)
-    if self:IsDefault() then return end
     self.settings.enabled = v and true or false
+    if v then self.settings.pausedUntil, sessionPaused[self.name] = nil, nil end
     changed(self)
+end
+
+-- Pausing: "forever" is the 1.x "enabled = false" (saved), "hour" ends by itself
+-- (saved as server time), "session" lasts until logout or /reload.
+local function schedulePauseEnd(set)
+    local name = set.name
+    if pauseTimers[name] then pauseTimers[name]:Cancel() pauseTimers[name] = nil end
+    local untilTime = set.settings.pausedUntil
+    if not untilTime then return end
+    local left = untilTime - GetServerTime()
+    if left <= 0 then set.settings.pausedUntil = nil return end
+    pauseTimers[name] = ns:After(left + 1, function()
+        pauseTimers[name] = nil
+        local s = cache[name]
+        if s and not s.deleted then changed(s) end
+    end)
+end
+
+function SetMixin:Pause(kind)
+    if kind == "hour" then
+        self.settings.pausedUntil = GetServerTime() + 3600
+        schedulePauseEnd(self)
+    elseif kind == "session" then
+        sessionPaused[self.name] = true
+    else
+        self.settings.enabled = false
+    end
+    changed(self)
+end
+
+function SetMixin:Resume()
+    self.settings.enabled = true
+    self.settings.pausedUntil = nil
+    sessionPaused[self.name] = nil
+    schedulePauseEnd(self)
+    changed(self)
+end
+
+-- paused?, how ("forever" | "session" | "timed"), seconds left for a timed pause
+function SetMixin:IsPaused()
+    if not self.settings.enabled then return true, "forever" end
+    if sessionPaused[self.name] then return true, "session" end
+    local untilTime = self.settings.pausedUntil
+    if untilTime then
+        local left = untilTime - GetServerTime()
+        if left > 0 then return true, "timed", left end
+    end
+    return false
 end
 
 function SetMixin:SetPriority(w) if not self:IsDefault() then self.settings.priority = w changed(self) end end
@@ -112,7 +165,7 @@ function SetMixin:ConditionsMet()
 end
 
 function SetMixin:IsActive()
-    if self.deleted or not self.settings.enabled then return false end
+    if self.deleted or self:IsPaused() then return false end
     if not self:ConditionsMet() then return false end
     return self:GetWeightTable().total > 0
 end
@@ -121,12 +174,18 @@ function SetMixin:GetPriority()
     return self:IsDefault() and -1 or (self.settings.priority or 1)
 end
 
+-- "outranked": the set could be used right now, but a set above it in the list is
 function SetMixin:GetStatus()
-    if not self.settings.enabled then return "disabled" end
+    if self:IsPaused() then return "paused" end
     if self:GetWeightTable().total <= 0 then return "empty" end
     if current == self then return "active" end
-    if not self:IsDefault() and not self:HasConditions() then return "noConditions" end
+    if self:ConditionsMet() then return "outranked" end
     return "waiting"
+end
+
+-- place in the list (1 = first) and how many sets take part in the order
+function SetMixin:GetRank()
+    for i, s in ipairs(Sets:List()) do if s == self then return i, #Sets:List() end end
 end
 
 function SetMixin:GetConditionModel() return ns.Conditions.ToModel(self.settings.trigger) end
@@ -168,7 +227,7 @@ end
 
 -- A set object outlives its data when it is deleted or the profile changes; its
 -- mutators must not touch the (new) profile's tables or revive its freed watcher.
-for _, method in ipairs({ "Rename", "Delete", "SetEnabled", "SetPriority", "SetImmediate", "SetDefaultWeight",
+for _, method in ipairs({ "Rename", "Delete", "SetEnabled", "Pause", "Resume", "SetPriority", "SetImmediate", "SetDefaultWeight",
     "SetPetWeight", "SetPetWeights", "ClearPetWeights", "FiltersChanged", "SetConditionModel", "ConditionsChanged",
     "ApplyTemplate" }) do
     local original = SetMixin[method]
@@ -201,17 +260,53 @@ function Sets:Get(name)
     if rawget(ns.db.profile.sets, name) then return newSet(name) end
 end
 
+-- The list is the order: when several sets fit, the first one is used. The default
+-- set is always last. Sets from 1.x (or imports) without a place are put in by their
+-- old priority, then by name.
 function Sets:List()
     local out = {}
     for name in pairs(ns.db.profile.sets) do
         out[#out + 1] = self:Get(name)
     end
+    local huge = math.huge
     sort(out, function(a, b)
-        if a:IsDefault() ~= b:IsDefault() then return a:IsDefault() end
+        if a:IsDefault() ~= b:IsDefault() then return b:IsDefault() end
+        local oa, ob = a.settings.order or huge, b.settings.order or huge
+        if oa ~= ob then return oa < ob end
         if a:GetPriority() ~= b:GetPriority() then return a:GetPriority() > b:GetPriority() end
         return a.name < b.name
     end)
     return out
+end
+
+-- numbers the sets 1..n in list order, so every set has its own place
+function Sets:Renumber()
+    for i, s in ipairs(self:List()) do
+        if not s:IsDefault() then s.settings.order = i end
+    end
+end
+
+-- moves a set up (delta -1) or down (+1); the default set stays last
+function Sets:Move(set, delta)
+    if set:IsDefault() or set.deleted then return false end
+    local list = self:List()
+    local i
+    for k, s in ipairs(list) do if s == set then i = k end end
+    local j = i + delta
+    if not list[j] or list[j]:IsDefault() then return false end
+    list[i], list[j] = list[j], list[i]
+    for k, s in ipairs(list) do if not s:IsDefault() then s.settings.order = k end end
+    ns:Fire("SetsChanged", set.name)
+    self:Update()
+    return true
+end
+
+-- just above the default set: for sets meant as a better Default
+function Sets:MoveToBottom(set)
+    set.settings.order = math.huge
+    self:Renumber()
+    ns:Fire("SetsChanged", set.name)
+    self:Update()
 end
 
 function Sets:ValidateName(name, except)
@@ -231,7 +326,9 @@ function Sets:Create(name)
     name = strtrim(name)
     local settings = ns.db.profile.sets[name]   -- wildcard defaults create it
     settings.name = name
+    settings.order = 0                            -- a new set goes to the top of the list
     local set = newSet(name)
+    self:Renumber()
     ns:Fire("SetsChanged", name)
     self:Update()
     return set, true
@@ -243,8 +340,13 @@ function Sets:Reload()
         set.deleted = true
     end
     wipe(cache)
+    for _, t in pairs(pauseTimers) do t:Cancel() end
+    wipe(pauseTimers)
     current = nil
     rawget(ns.db.profile.sets, Sets.DEFAULT)
+    -- give 1.x sets (priority only) their place in the order; restart timed pauses
+    self:Renumber()
+    for _, set in ipairs(self:List()) do schedulePauseEnd(set) end
     ns:Fire("SetsChanged", nil)
     self:Update()
 end
@@ -254,9 +356,7 @@ function Sets:GetCurrent() return current end
 function Sets:Update()
     local best
     for _, set in ipairs(self:List()) do
-        if set:IsActive() and (not best or set:GetPriority() > best:GetPriority()) then
-            best = set
-        end
+        if set:IsActive() then best = set break end
     end
     if best ~= current then
         current = best
