@@ -13,7 +13,10 @@ ns.UI.RecipeGallery = G
 local ROW_H, HEADER_H, TWO_COLUMNS_FROM = 76, 28, 860
 local PET_ICONS = 5
 local SECTIONS = {
-    { key = "everyday", label = L["Every day"] },
+    { key = "places", label = L["Places"] },
+    { key = "moments", label = L["Moments"] },
+    { key = "company", label = L["Company"] },
+    { key = "collections", label = L["Collections"] },
     { key = "class", label = L["Your class"] },
     { key = "holiday", label = L["Holidays"] },
 }
@@ -76,7 +79,13 @@ local function cardTooltip(c)
     local lines = {}
     for _, e in ipairs(c.recipe.conditions) do lines[#lines + 1] = L["When"] .. ": " .. ns.Conditions.Describe(e) end
     if #c.recipe.conditions == 0 then lines[#lines + 1] = L["Used everywhere, before the Default set."] end
-    for _, e in ipairs(c.recipe.rules) do lines[#lines + 1] = L["Pets"] .. ": " .. ns.AutoRules.Describe(e) end
+    local r = c.recipe
+    if r.lowest then lines[#lines + 1] = L["Priority"] .. ": " .. ns.Weights.PriorityLabel(r.priority) end
+    for _, e in ipairs(r.rules) do
+        lines[#lines + 1] = format("%s: %s - %s", L["Pets"], ns.AutoRules.Describe(e), ns.Weights.Label(ns.AutoRules.Weight(e)))
+    end
+    lines[#lines + 1] = format("%s: %s", L["Other pets"], ns.Weights.Label(r.defaultValue or 0))
+    if r.immediate then lines[#lines + 1] = L["Summons as soon as the set becomes active."] end
     return table.concat(lines, "\n")
 end
 

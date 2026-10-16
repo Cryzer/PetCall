@@ -8,8 +8,22 @@ ns.Recipes = R
 -- Ready-made sets: conditions plus pet rules. A recipe only ever creates a new,
 -- ordinary set; it never touches the sets the player already has.
 
-local NORMAL = 1
-local function types(...) return { "petType", NORMAL, petTypes = { ... } } end
+-- weights by name, so recipes read like the buttons in the preview
+local function weight(key)
+    for _, lvl in ipairs(ns.Weights.LEVELS) do if lvl.key == key then return lvl.value end end
+end
+local NORMAL, OFTEN, VERY_OFTEN, RARELY, VERY_RARELY =
+    weight("NORMAL"), weight("HIGH"), weight("EXTRA_HIGH"), weight("LOW"), weight("EXTRA_LOW")
+
+local function types(w, ...) return { "petType", w, petTypes = { ... } } end
+-- several condition groups, any of which is enough ("or")
+local function anyOf(...)
+    local items = {}
+    for i, g in ipairs({ ... }) do items[i] = { "AND", items = g } end
+    return { { "OR", items = items } }
+end
+local CITY = { "specialLocation", locs = { "city" } }
+local WORLD = { "specialLocation", locs = { "world" } }
 
 -- pet types: 1 Humanoid 2 Dragonkin 3 Flying 4 Undead 5 Critter 6 Magic 7 Elemental 8 Beast 9 Aquatic 10 Mechanical
 local CLASS_TYPES = {
@@ -18,22 +32,75 @@ local CLASS_TYPES = {
     DEMONHUNTER = { 6, 4 }, EVOKER = { 2 },
 }
 
+local I = "Interface\\Icons\\"
 local FIXED = {
-    { key = "swimming", icon = "Interface\\Icons\\Spell_Frost_SummonWaterElemental", title = L["Water pets while swimming"], hint = L["When you swim. Aquatic pets."],
-      conditions = { { "activity", swimming = true } }, rules = { types(9) } },
-    { key = "outdoors", icon = "Interface\\Icons\\Ability_Mount_Gryphon_01", title = L["Flyers in the open world"], hint = L["Outdoors in the open world. Flying pets."],
-      conditions = { { "specialLocation", locs = { "world" } }, { "activity", outdoors = true } }, rules = { types(3) } },
-    { key = "zone", icon = "Interface\\Icons\\INV_Misc_Map_01", title = L["Pets from this zone"], hint = L["Everywhere, before the Default set. Pets native to the zone you are in."],
+    -- places
+    { key = "showoff", category = "places", icon = I .. "INV_Misc_Gem_Diamond_01", immediate = true,
+      title = L["Where people can see you"], hint = L["In cities or at a friend's house: rare pets very often, summoned the moment you arrive."],
+      conditions = anyOf({ CITY }, { { "housing", otherHome = true } }),
+      rules = { { "rare", VERY_OFTEN }, { "favorites", NORMAL } } },
+    { key = "outdoors", category = "places", icon = I .. "Ability_Mount_Gryphon_01", title = L["Flyers in the open world"],
+      hint = L["Outdoors in the open world. Flying pets."],
+      conditions = { WORLD, { "activity", outdoors = true } }, rules = { types(NORMAL, 3) } },
+    { key = "zone", category = "places", icon = I .. "INV_Misc_Map_01", title = L["Pets from this zone"],
+      hint = L["Everywhere, before the Default set. Pets native to the zone you are in."],
       conditions = {}, rules = { { "nativeZone", NORMAL } }, lowest = true },
-    { key = "home", icon = "Interface\\Icons\\INV_Misc_Rune_01", title = L["At my house"], hint = L["At your house and plot. Favorites and critters."],
-      conditions = { { "housing", ownHome = true } }, rules = { { "favorites", NORMAL }, types(5) } },
-    { key = "instances", icon = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01", title = L["Dungeons and raids"], hint = L["In dungeons and raids. Your rare level 25 pets."],
+    { key = "home", category = "places", icon = I .. "INV_Misc_Rune_01", title = L["At my house"],
+      hint = L["At your house and plot. Favorites and critters."],
+      conditions = { { "housing", ownHome = true } }, rules = { { "favorites", NORMAL }, types(NORMAL, 5) } },
+    { key = "visit", category = "places", icon = I .. "INV_Misc_Note_01", title = L["Visiting friends"],
+      hint = L["At someone else's house: mostly favorites, now and then any other pet."],
+      conditions = { { "housing", otherHome = true } }, rules = { { "favorites", VERY_OFTEN } }, defaultValue = VERY_RARELY },
+    { key = "instances", category = "places", icon = I .. "INV_Misc_Bone_HumanSkull_01", title = L["Dungeons and raids"],
+      hint = L["In dungeons and raids. Your rare level 25 pets."],
       conditions = { { "specialLocation", locs = { "dungeon", "raid" } } },
       rules = { { "AND", NORMAL, items = { { "level", operator = ">=", level = "25" }, { "rare" } } } } },
-    { key = "night", icon = "Interface\\Icons\\Spell_Shadow_Twilight", title = L["Night owls"], hint = L["From 20:00 to 06:00. Undead and magic pets."],
-      conditions = { { "timeOfDay", from = 20 * 60, to = 6 * 60 } }, rules = { types(4, 6) } },
-    { key = "afk", icon = "Interface\\Icons\\Spell_Nature_Sleep", title = L["Favorites while AFK"], hint = L["While you are AFK. Your favorites."],
+    { key = "delve", category = "places", icon = I .. "INV_Pick_02", title = L["Delve crew"],
+      hint = L["In delves. Mechanical pets often, critters now and then."],
+      conditions = { { "specialLocation", locs = { "delve" } } }, rules = { types(OFTEN, 10), types(RARELY, 5) } },
+    -- moments
+    { key = "swimming", category = "moments", icon = I .. "Spell_Frost_SummonWaterElemental", title = L["Water pets while swimming"],
+      hint = L["When you swim. Aquatic pets."],
+      conditions = { { "activity", swimming = true } }, rules = { types(NORMAL, 9) } },
+    { key = "morning", category = "moments", icon = I .. "INV_Drink_05", title = L["Morning critters"],
+      hint = L["From 06:00 to 10:00. Small critters to start the day."],
+      conditions = { { "timeOfDay", from = 6 * 60, to = 10 * 60 } }, rules = { types(NORMAL, 5) } },
+    { key = "night", category = "moments", icon = I .. "Spell_Shadow_Twilight", title = L["Night owls"],
+      hint = L["From 20:00 to 06:00. Undead and magic pets."],
+      conditions = { { "timeOfDay", from = 20 * 60, to = 6 * 60 } }, rules = { types(NORMAL, 4, 6) } },
+    { key = "witching", category = "moments", icon = I .. "Spell_Shadow_RaiseDead", title = L["Witching hour"],
+      hint = L["From midnight to 03:00. Undead very often, magic pets sometimes."],
+      conditions = { { "timeOfDay", from = 0, to = 3 * 60 } }, rules = { types(VERY_OFTEN, 4), types(RARELY, 6) } },
+    { key = "indoors", category = "moments", icon = I .. "INV_Misc_Lantern_01", title = L["Indoor company"],
+      hint = L["Indoors. Critters and humanoids that fit under a roof."],
+      conditions = { { "activity", indoors = true } }, rules = { types(NORMAL, 5, 1) } },
+    { key = "form", category = "moments", icon = I .. "Ability_Druid_TravelForm", title = L["Pack of the wild"],
+      hint = L["While in a shapeshift form: beasts run with you."],
+      conditions = { { "activity", form = true } }, rules = { types(OFTEN, 8) } },
+    { key = "afk", category = "moments", icon = I .. "Spell_Nature_Sleep", title = L["Favorites while AFK"],
+      hint = L["While you are AFK. Your favorites."],
       conditions = { { "activity", afk = true } }, rules = { { "favorites", NORMAL } } },
+    -- company
+    { key = "solo", category = "company", icon = I .. "Ability_Hunter_Pathfinding", title = L["Lone wanderer"],
+      hint = L["Playing alone in the open world: beasts and flyers keep you company."],
+      conditions = { { "groupType", solo = true }, WORLD }, rules = { types(NORMAL, 8, 3) } },
+    { key = "party", category = "company", icon = I .. "Spell_Holy_PrayerOfFortitude", title = L["Party mascots"],
+      hint = L["In a party or raid: favorites very often, other level 25 pets sometimes."],
+      conditions = { { "groupType", party = true, raid = true } },
+      rules = { { "favorites", VERY_OFTEN }, { "level", RARELY, operator = ">=", level = "25" } } },
+    -- collections
+    { key = "favfirst", category = "collections", icon = I .. "Spell_Holy_SealOfSacrifice", title = L["Favorites first"],
+      hint = L["Everywhere, before the Default set: favorites very often, every other pet very rarely."],
+      conditions = {}, rules = { { "favorites", VERY_OFTEN } }, defaultValue = VERY_RARELY, lowest = true },
+    { key = "little", category = "collections", icon = I .. "INV_Egg_03", title = L["Walk the little ones"],
+      hint = L["In the open world: pets below level 10 very often, the rest rarely."],
+      conditions = { WORLD }, rules = { { "level", VERY_OFTEN, operator = "<", level = "10" } }, defaultValue = RARELY },
+    { key = "tradingpost", category = "collections", icon = I .. "INV_Misc_Coin_01", title = L["Trading Post finds"],
+      hint = L["In cities. Pets from the Trading Post."],
+      conditions = { CITY }, rules = { { "source", NORMAL, text = "Trading Post" } } },
+    { key = "festive", category = "collections", icon = I .. "INV_Misc_Gift_01", title = L["Festive mood"],
+      hint = L["During any holiday. Every world event pet you own."],
+      conditions = { { "holiday", holidayIDs = { 0 } } }, rules = { { "source", NORMAL, text = "World Event" } } },
 }
 
 local function copy(v)
@@ -46,7 +113,7 @@ end
 -- a recipe without conditions must not take over: it gets the lowest priority
 local function finish(r)
     r.priority = r.lowest and ns.Weights.LEVELS[2].value or nil
-    r.category = r.category or "everyday"
+    r.category = r.category or "places"
     return r
 end
 
@@ -56,7 +123,7 @@ local function classRecipe()
     if not list then return nil end
     return finish({ key = "class", category = "class", atlas = "classicon-" .. strlower(class), title = format(L["%s theme"], className),
         hint = format(L["On your %s characters. Pets that suit the class."], className),
-        conditions = { { "specialization", class = class, spec = -1 } }, rules = { types(unpack(list)) } })
+        conditions = { { "specialization", class = class, spec = -1 } }, rules = { types(NORMAL, unpack(list)) } })
 end
 
 local function holidayRecipe(h)
@@ -69,7 +136,7 @@ end
 
 -- how many tiles (copies grouped) the set would draw from, and up to four of them, most likely first
 function R.Count(r)
-    local tbl = ns.Weights.Build({ pets = {}, defaultValue = 0, filter = r.rules })
+    local tbl = ns.Weights.Build({ pets = {}, defaultValue = r.defaultValue or 0, filter = r.rules })
     local found = {}
     for _, id in ns.PetCache:IteratePetIDs() do
         if ns.PetCache:IsPrimary(id) then
@@ -117,13 +184,14 @@ end
 function R.Create(r)
     local set = ns.Sets:Create(R.UniqueName(r.title))
     if not set then return nil end
-    set.settings.defaultValue = 0
+    set.settings.defaultValue = r.defaultValue or 0
     -- fill the set's own tables: its condition watcher already holds the trigger table
     local trigger, filter = set.settings.trigger, set.settings.filter
     wipe(trigger) wipe(filter)
     for _, e in ipairs(r.conditions) do trigger[#trigger + 1] = copy(e) end
     for _, e in ipairs(r.rules) do filter[#filter + 1] = copy(e) end
     if r.priority then set:SetPriority(r.priority) end
+    if r.immediate then set:SetImmediate(true) end
     set:FiltersChanged()
     set:ConditionsChanged()
     return set

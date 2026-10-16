@@ -61,4 +61,27 @@ describe("Recipes", function()
         W.advance(2)
         assert.equal("active", set:GetStatus())
     end)
+    it("recipes can use either-or conditions, a default weight, immediate summons and weights per rule", function()
+        W.world.pets.fish.quality = 4                       -- a rare pet for the show-off set
+        ns.PetCache:Rescan()
+        local showoff = R.Create(byKey("showoff"))
+        assert.is_true(showoff.settings.immediate)
+        assert.equal("OR", showoff.settings.trigger[1][1])
+        W.world.resting = false
+        W.fire("PLAYER_UPDATE_RESTING")
+        W.advance(2)
+        assert.equal("waiting", showoff:GetStatus())
+        W.world.home.any = true                             -- visiting a friend: the second group
+        W.fire("HOUSE_PLOT_ENTERED")
+        W.advance(2)
+        assert.equal("active", showoff:GetStatus())
+        local fav = R.Create(byKey("favfirst"))
+        assert.equal(ns.Weights.LEVELS[2].value, fav.settings.defaultValue)   -- every other pet: very rarely
+        assert.equal(ns.Weights.LEVELS[6].value, fav.settings.filter[1][2])   -- favorites: very often
+        assert.is_true(R.Count(byKey("favfirst")) == 3)
+    end)
+    it("every recipe has a section the gallery knows", function()
+        local known = { places = true, moments = true, company = true, collections = true, class = true, holiday = true }
+        for _, r in ipairs(R.List()) do assert.is_true(known[r.category], r.key) end
+    end)
 end)
