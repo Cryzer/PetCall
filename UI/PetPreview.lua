@@ -40,6 +40,13 @@ function Preview:Attach(parent)
     panel.source:SetPoint("TOPLEFT", panel.sub, "BOTTOMLEFT", 0, -4)
     panel.source:SetPoint("RIGHT", -6, 0)
     panel.source:SetWordWrap(true)
+    -- long lists of zones would push the controls into the Summon button: three lines, the rest on hover
+    panel.source:SetMaxLines(3)
+    local sourceHit = CreateFrame("Frame", nil, panel)
+    sourceHit:SetAllPoints(panel.source)
+    sourceHit:EnableMouse(true)
+    ns.Widgets.Tooltip(sourceHit, function() return panel.name:GetText() end,
+        function() return panel.source:GetText() end)
 
     -- how often: six named steps in two rows instead of an unlabelled slider
     panel.weight = ns.Widgets.Label(panel, L["How often"], "GameFontNormalSmall")
@@ -83,7 +90,7 @@ function Preview:Attach(parent)
     panel.summon = ns.Widgets.Button(panel, L["Summon"], function()
         if shownID then ns:SummonPet(shownID) end
     end)
-    panel.summon:SetPoint("BOTTOMLEFT", 6, 6)
+    panel.summon:SetPoint("BOTTOMLEFT", 6, 8)
     panel.fav = CreateFrame("Button", nil, panel)
     panel.fav:SetSize(22, 22)
     panel.fav:SetPoint("LEFT", panel.summon, "RIGHT", 6, 0)
