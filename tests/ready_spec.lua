@@ -58,6 +58,23 @@ describe("Ready", function()
         assert.equal(1, n)
     end)
 
+    it("leaves a hidden (secret) aura payload alone and reads the auras after combat", function()
+        local SECRET = {}
+        issecretvalue = function(v) return v == SECRET end
+        local n = 0
+        ns:RegisterCallback({}, "ReadyChanged", function() n = n + 1 end)
+        W.world.auras[5384] = true                 -- feign death
+        W.fire("PLAYER_REGEN_DISABLED")
+        n = 0
+        W.fire("UNIT_AURA", "player", { isFullUpdate = SECRET, addedAuras = SECRET })
+        assert.equal(0, n)
+        W.fire("PLAYER_REGEN_ENABLED")
+        local feigned = false
+        for _, b in ipairs(ns.Ready:GetBlockers()) do if b.key == "feigned" then feigned = true end end
+        assert.is_true(feigned)
+        issecretvalue = nil
+    end)
+
     it("detects sitting on a bench from the standing error text", function()
         ns.Ready._last_summon_time = W.world.time
         W.fire("UI_ERROR_MESSAGE", 999, ERR_MUST_BE_STANDING)

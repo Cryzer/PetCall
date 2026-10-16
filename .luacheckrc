@@ -51,7 +51,7 @@ read_globals = {
 
     -- WoW C_ namespaces
     "C_PetJournal", "C_Timer", "C_AddOns", "C_Item", "C_Map", "C_Housing", "C_Calendar", "C_DateAndTime",
-    "C_QuestLog", "C_SettingsUtil", "C_Spell", "C_UnitAuras",
+    "C_QuestLog", "C_SettingsUtil", "C_Spell", "C_UnitAuras", "issecretvalue",
     "C_ChatInfo", "C_SpecializationInfo",
 
     -- WoW UI
@@ -101,7 +101,7 @@ read_globals = {
     "CLASS", "SPECIALIZATION", "ITEMS",
 }
 
-files["tests/"] = { std = "+busted", globals = { "PetCall3DB", "PetLeash3DB", "PetCall", "assert" }, allow_defined_top = true }
+files["tests/"] = { std = "+busted", globals = { "PetCall3DB", "PetLeash3DB", "PetCall", "assert", "issecretvalue" }, allow_defined_top = true }
 -- the stub exists to define WoW globals
 files["tests/wowstub.lua"] = { ignore = { "1" } }
 files["tests/uistub.lua"] = { ignore = { "1" } }

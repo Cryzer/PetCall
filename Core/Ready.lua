@@ -28,7 +28,15 @@ local LABELS = {
     resting = L["Outside a city"], near_pew = L["Waiting for a zone change"], addon_ready = L["Loading"],
 }
 
-local function PlayerHasAura(id) return C_UnitAuras.GetPlayerAuraBySpellID(id) ~= nil end
+-- 12.x hides some values from addons in combat ("secret" values): any test on one
+-- is an error, so they are checked first and treated as unknown
+local function isSecret(v) return issecretvalue ~= nil and issecretvalue(v) end
+
+local function PlayerHasAura(id)
+    local aura = C_UnitAuras.GetPlayerAuraBySpellID(id)
+    if isSecret(aura) then return false end
+    return aura ~= nil
+end
 local function PlayerHasAuraInList(list)
     for _, id in ipairs(list) do if PlayerHasAura(id) then return true end end
     return false
@@ -290,7 +298,10 @@ function Ready:PLAYER_DEAD() self:SetReady("alive", false) end
 function Ready:PLAYER_UNGHOST() self:SetReady("alive", true) end
 function Ready:CONFIRM_XP_LOSS() self:SetReady("alive", true) end
 function Ready:PLAYER_REGEN_DISABLED() self:SetReady("combat", false) end
-function Ready:PLAYER_REGEN_ENABLED() self:SetReady("combat", true) end
+function Ready:PLAYER_REGEN_ENABLED()
+    self:SetReady("combat", true)
+    self:CheckAuras()       -- aura updates during combat may have been unreadable
+end
 function Ready:ZONE_CHANGED_NEW_AREA() self:SetReady("in_battleground", not ns.InBattlegroundOrArena()) end
 function Ready:UNIT_ENTERED_VEHICLE() self:SetReady("vehicle", false) end
 function Ready:UNIT_EXITED_VEHICLE() self:SetReady("vehicle", true) end
@@ -301,7 +312,16 @@ end
 
 function Ready:UNIT_AURA(_, unit, info)
     if unit ~= "player" then return end
-    if info and not info.isFullUpdate and not info.addedAuras and not info.removedAuraInstanceIDs then return end
+    if info then
+        -- a hidden payload (combat): leave it, combat blocks summoning and the auras
+        -- are read again when it ends
+        if isSecret(info.isFullUpdate) or isSecret(info.addedAuras) or isSecret(info.removedAuraInstanceIDs) then return end
+        if not info.isFullUpdate and not info.addedAuras and not info.removedAuraInstanceIDs then return end
+    end
+    self:CheckAuras()
+end
+
+function Ready:CheckAuras()
     self:SetReady("invisible", not PlayerHasAuraInList(INVIS_SPELLS))
     self:SetReady("camo", not PlayerHasAuraInList(CAMO_SPELLS))
     self:SetReady("thunderisle_saurok", not PlayerHasAura(136461))
