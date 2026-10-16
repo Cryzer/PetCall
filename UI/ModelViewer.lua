@@ -17,6 +17,17 @@ ns.UI = ns.UI or {}
 
 local SCENE_TEMPLATE = "WrappedAndUnwrappedModelScene"
 local HOLD, EASE = 0.8, 1.0
+local FILL = 0.8          -- part of the frame a fitted model may take
+
+-- How far the camera must be to see a model whole in a frame of this shape. The
+-- journal's camera is set up for the journal's frame; big pets (Willie, mounts-sized
+-- pets) overflow a narrower or a square frame.
+function ns.UI.FitDistance(dx, dy, dz, aspect, vfov)
+    local tv = math.tan((vfov or 0.9) / 2)
+    local th = tv * (aspect or 1)
+    local wide = math.max(dx, dy)
+    return math.max(dz / 2 / tv, wide / 2 / th) / FILL + wide / 2
+end
 
 local function sceneAvailable()
     return C_PetJournal.GetPetModelSceneInfoBySpeciesID ~= nil and C_XMLUtil ~= nil
@@ -54,6 +65,26 @@ function ns.UI.NewModelViewer(parent, opts)
         end
     end
 
+    -- only ever moves the camera back: small pets keep the journal's framing
+    function v:Fit()
+        if not useScene or not self.actor or not self.actor.GetActiveBoundingBox then return end
+        local cam = self.frame.GetActiveCamera and self.frame:GetActiveCamera()
+        if not cam or not cam.SetZoomDistance or not cam.GetZoomDistance then return end
+        local x1, y1, z1, x2, y2, z2 = self.actor:GetActiveBoundingBox()
+        if not (x1 and x2) then return end
+        local scale = self.actor.GetScale and self.actor:GetScale() or 1
+        local w, h = self.frame:GetWidth(), self.frame:GetHeight()
+        if not (w and h) or h <= 0 then return end
+        local fov = cam.GetFieldOfView and cam:GetFieldOfView() or nil
+        local want = ns.UI.FitDistance((x2 - x1) * scale, (y2 - y1) * scale, (z2 - z1) * scale, w / h, fov)
+        if want > cam:GetZoomDistance() then
+            if cam.GetMaxZoomDistance and cam.SetMaxZoomDistance and cam:GetMaxZoomDistance() < want then
+                cam:SetMaxZoomDistance(want)
+            end
+            cam:SetZoomDistance(want)
+        end
+    end
+
     function v:FaceFront()
         self.angle, self.holdUntil = 0, GetTime() + HOLD
         self:SetYaw(0)
@@ -66,6 +97,10 @@ function ns.UI.NewModelViewer(parent, opts)
             self.frame:TransitionToModelSceneID(sceneID, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)
             self.actor = self.frame:GetActorByTag("unwrapped")
             if self.actor then
+                if not self.actor.petcallFit then
+                    self.actor.petcallFit = true
+                    self.actor:HookScript("OnModelLoaded", function() v:Fit() end)
+                end
                 self.actor:SetModelByCreatureDisplayID(displayID, true)
                 if Enum.ModelBlendOperation then self.actor:SetAnimationBlendOperation(Enum.ModelBlendOperation.None) end
             end
@@ -74,6 +109,8 @@ function ns.UI.NewModelViewer(parent, opts)
             if displayID and displayID > 0 then self.frame:SetDisplayInfo(displayID) else self.frame:SetCreature(info.creatureID) end
         end
         self:FaceFront()
+        -- a model already in memory may be ready before the hook fires
+        if useScene then ns:After(0.1, function() v:Fit() end) end
     end
 
     function v:Clear()

@@ -826,4 +826,32 @@ describe("UI smoke", function()
         assert.equal(2, a:GetRank())
         assert.equal(b, ns.Sets:List()[1])
     end)
+    it("a big pet moves the camera back so it fits the frame; a small one keeps the journal framing", function()
+        local Fit = ns.UI.FitDistance
+        assert.is_true(Fit(1, 1, 1, 0.75) > Fit(1, 1, 1, 1.5))      -- a narrow frame needs more room
+        assert.is_true(Fit(4, 4, 3, 1) > Fit(1, 1, 1, 1))
+        W.world.pets.big = { species = 9, name = "Big" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local viewer = ns.UI.Preview:GetViewer()
+        local cam = { zoom = 3, max = 5 }
+        function cam:GetZoomDistance() return self.zoom end
+        function cam:SetZoomDistance(d) self.zoom = d end
+        function cam:GetMaxZoomDistance() return self.max end
+        function cam:SetMaxZoomDistance(d) self.max = d end
+        viewer.frame.GetActiveCamera = function() return cam end
+        viewer.frame.GetWidth = function() return 230 end
+        viewer.frame.GetHeight = function() return 300 end
+        ns.UI.Preview:SetSelected("big")
+        viewer.actor.GetActiveBoundingBox = function() return -2, -2, 0, 2, 2, 3 end
+        viewer.actor.GetScale = function() return 1 end
+        viewer:Fit()
+        assert.is_true(cam.zoom > 3)
+        assert.is_true(cam.max >= cam.zoom)
+        cam.zoom = 50
+        viewer:Fit()
+        assert.equal(50, cam.zoom)                                   -- never pulled closer
+    end)
 end)
