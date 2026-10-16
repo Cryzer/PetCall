@@ -74,7 +74,7 @@ function ns.UI.DumpModel()
         ns:Printf("camera %.2f (journal %.2f), frame %dx%d", cam:GetZoomDistance(), last.baseZoom or -1,
             last.frame:GetWidth() or 0, last.frame:GetHeight() or 0)
     end
-    ns:Printf("fit wants %.2f%s", last.want or -1, last.oddBox and " (odd box: journal framing kept)"
+    ns:Printf("fitted to box %s, wants %.2f%s", last.fitBox or "?", last.want or -1, last.oddBox and " (odd box: journal framing kept)"
         or last.standIn and " (stand-in box: journal framing kept)" or "")
 end
 
@@ -118,6 +118,7 @@ function ns.UI.NewModelViewer(parent, opts)
         if self.actor.IsLoaded and not self.actor:IsLoaded() then return end
         local x1, y1, z1, x2, y2, z2 = self.actor:GetActiveBoundingBox()
         if not (x1 and x2) or x2 - x1 <= 0 then return end
+        self.fitBox = format("%.2f x %.2f x %.2f", x2 - x1, y2 - y1, z2 - z1)
         -- measured, but not worth fitting to: the journal's framing stays
         if ns.UI.IsStandInBox(x2 - x1, y2 - y1, z2 - z1) then self.standIn = true return true end
         local scale = self.actor.GetScale and self.actor:GetScale() or 1
@@ -147,8 +148,25 @@ function ns.UI.NewModelViewer(parent, opts)
     -- have no load script to hook), for about a second at most
     function v:FitWhenLoaded(token, tries)
         if self.loadedAt ~= token then return end           -- another pet was loaded since
-        if self:Fit() or tries >= 12 then return end
+        if self:Fit() then
+            ns:After(0.5, function() v:Recheck(token) end)
+            return
+        end
+        if tries >= 12 then return end
         ns:After(0.1, function() v:FitWhenLoaded(token, tries + 1) end)
+    end
+
+    -- a model can report a box while it is still loading, then another one: measure
+    -- once more, and if the box changed, go back to the journal's framing and fit again
+    function v:Recheck(token)
+        if self.loadedAt ~= token or not self.actor then return end
+        local seen = self.fitBox
+        local x1, y1, z1, x2, y2, z2 = self.actor:GetActiveBoundingBox()
+        if not x1 or format("%.2f x %.2f x %.2f", x2 - x1, y2 - y1, z2 - z1) == seen then return end
+        local cam = self.frame:GetActiveCamera()
+        if cam and self.baseZoom then cam:SetZoomDistance(self.baseZoom) end
+        self.oddBox, self.standIn, self.want = nil, nil, nil
+        self:Fit()
     end
 
     function v:FaceFront()
@@ -172,7 +190,7 @@ function ns.UI.NewModelViewer(parent, opts)
             if displayID and displayID > 0 then self.frame:SetDisplayInfo(displayID) else self.frame:SetCreature(info.creatureID) end
         end
         self:FaceFront()
-        self.baseZoom, self.oddBox, self.want, self.standIn = nil, nil, nil, nil
+        self.baseZoom, self.oddBox, self.want, self.standIn, self.fitBox = nil, nil, nil, nil, nil
         -- a model already in memory may be ready before the hook fires
         if useScene then
             local token = self.loadedAt

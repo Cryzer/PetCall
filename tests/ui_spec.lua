@@ -878,6 +878,12 @@ describe("UI smoke", function()
         assert.equal(14, cam.zoom)
         assert.is_true(viewer.standIn)
         assert.is_true(not viewer.oddBox)
+        -- the box changes after the first fit (still loading): back to the journal, fit again
+        viewer.standIn, viewer.fitBox, viewer.baseZoom = nil, "1.00 x 1.00 x 3.00", 14
+        cam.zoom = 40
+        viewer:Recheck(viewer.loadedAt)
+        assert.equal(14, cam.zoom)
+        assert.is_true(viewer.standIn)
         viewer.actor.GetScale = function() return 1 end
         -- a box mostly made of empty space (Murkastrasza): journal framing, standing still
         ns.UI.Preview:SetSelected("a")
