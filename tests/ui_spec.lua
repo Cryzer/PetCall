@@ -854,5 +854,8 @@ describe("UI smoke", function()
         cam.zoom = 50
         viewer:Fit()
         assert.equal(50, cam.zoom)                                   -- never pulled closer
+        local before = #W.world.printed
+        SlashCmdList.PETCALL("model")
+        assert.is_true(#W.world.printed - before >= 3)
     end)
 end)

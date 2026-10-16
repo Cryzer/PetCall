@@ -37,9 +37,38 @@ local function sceneAvailable()
         and C_XMLUtil.GetTemplateInfo ~= nil and C_XMLUtil.GetTemplateInfo(SCENE_TEMPLATE) ~= nil
 end
 
+local viewers = setmetatable({}, { __mode = "k" })
+
+-- /pcall model: the numbers behind the model shown last, for odd models
+function ns.UI.DumpModel()
+    local last
+    for v in pairs(viewers) do if v.info and (not last or v.loadedAt > last.loadedAt) then last = v end end
+    if not last then return ns:Print("no model shown yet") end
+    local info = last.info
+    ns:Printf("%s: species %s, display %s", info.name or "?", tostring(info.speciesID), tostring(last.displayID))
+    local actor = last.actor
+    if actor and actor.GetActiveBoundingBox then
+        local x1, y1, z1, x2, y2, z2 = actor:GetActiveBoundingBox()
+        if x1 then
+            ns:Printf("box %.2f x %.2f x %.2f, centre %.2f, %.2f, %.2f", x2 - x1, y2 - y1, z2 - z1,
+                (x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2)
+        end
+        local px, py, pz = actor:GetPosition()
+        if type(px) == "number" then ns:Printf("actor position %.2f, %.2f, %.2f", px, py, pz) end
+        local scale = actor:GetScale()
+        if type(scale) == "number" then ns:Printf("actor scale %.2f", scale) end
+    end
+    local cam = last.frame.GetActiveCamera and last.frame:GetActiveCamera()
+    if cam and cam.GetZoomDistance then
+        ns:Printf("camera %.2f (journal %.2f), frame %dx%d", cam:GetZoomDistance(), last.baseZoom or -1,
+            last.frame:GetWidth() or 0, last.frame:GetHeight() or 0)
+    end
+end
+
 function ns.UI.NewModelViewer(parent, opts)
     opts = opts or {}
     local v = { angle = 0, holdUntil = 0, turnSpeed = opts.turnSpeed or 0.3 }
+    viewers[v] = true
     local useScene = sceneAvailable()
     local dragging, lastX = false, nil
 
@@ -98,6 +127,7 @@ function ns.UI.NewModelViewer(parent, opts)
 
     function v:Load(info)
         local displayID = info.displayID or select(12, C_PetJournal.GetPetInfoBySpeciesID(info.speciesID))
+        self.info, self.displayID, self.loadedAt = info, displayID, GetTime()
         if useScene then
             local sceneID = C_PetJournal.GetPetModelSceneInfoBySpeciesID(info.speciesID)
             self.frame:TransitionToModelSceneID(sceneID, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)

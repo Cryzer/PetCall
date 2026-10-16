@@ -23,6 +23,7 @@ local list = {
         ns.Ready:DumpDebugState()
     end },
     { "holidays", nil, function() ns.Conditions.DumpHolidays() end },
+    { "model", nil, function() if ns.UI.DumpModel then ns.UI.DumpModel() end end },
     { "help", L["List commands"], function()
         for _, line in ipairs(Commands:HelpLines()) do ns:Print(line) end
     end },
