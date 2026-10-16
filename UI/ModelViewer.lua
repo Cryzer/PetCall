@@ -65,6 +65,7 @@ function ns.UI.DumpModel()
         ns:Printf("camera %.2f (journal %.2f), frame %dx%d", cam:GetZoomDistance(), last.baseZoom or -1,
             last.frame:GetWidth() or 0, last.frame:GetHeight() or 0)
     end
+    ns:Printf("fit wants %.2f%s", last.want or -1, last.oddBox and " (odd box: journal framing kept)" or "")
 end
 
 function ns.UI.NewModelViewer(parent, opts)
@@ -114,6 +115,7 @@ function ns.UI.NewModelViewer(parent, opts)
         local want = ns.UI.FitDistance((x2 - x1) * scale, (y2 - y1) * scale, (z2 - z1) * scale, w / h, fov)
         -- the journal's distance for this pet, read once per load before we move it
         self.baseZoom = self.baseZoom or cam:GetZoomDistance()
+        self.want = want
         if want > self.baseZoom * MAX_BACK then
             self.oddBox = true
             self.angle = 0
@@ -158,7 +160,7 @@ function ns.UI.NewModelViewer(parent, opts)
             if displayID and displayID > 0 then self.frame:SetDisplayInfo(displayID) else self.frame:SetCreature(info.creatureID) end
         end
         self:FaceFront()
-        self.baseZoom, self.oddBox = nil, nil
+        self.baseZoom, self.oddBox, self.want = nil, nil, nil
         -- a model already in memory may be ready before the hook fires
         if useScene then
             local token = self.loadedAt
