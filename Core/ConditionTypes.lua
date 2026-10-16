@@ -348,7 +348,7 @@ function C.KnownHolidays()
             dayHolidays(offset, day, function(ev)
                 local h = seen[ev.eventID]
                 if not h then
-                    h = { value = ev.eventID, label = ev.title, icon = ev.iconTexture }
+                    h = { value = ev.eventID, label = ev.title }
                     seen[ev.eventID] = h
                     out[#out + 1] = h
                 end

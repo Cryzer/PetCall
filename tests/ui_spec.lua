@@ -756,4 +756,22 @@ describe("UI smoke", function()
         assert.equal(set, ns.UI.Main:GetSelectedSet())
         assert.equal(1, #ns.Sets:List() - 1)                -- no second copy was made
     end)
+    it("the recipe page replaces the set pages and Back brings them back", function()
+        ns.Sets:Create("Other")
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Other")
+        local f = ns.UI.Main:GetFrame()
+        ns.UI.RecipeGallery:Show()
+        assert.is_false(f.header:IsShown())
+        assert.is_false(f.content:IsShown())
+        assert.is_false(f.Tabs[1]:IsShown())
+        ns.UI.RecipeGallery:Hide()
+        assert.is_true(f.header:IsShown())
+        assert.is_true(f.content:IsShown())
+        assert.is_true(f.Tabs[2]:IsShown())                  -- When is back for a set with conditions
+        ns.UI.RecipeGallery:Show()
+        ns.UI.Main:SelectSet("$Default")                     -- picking a set also closes the page
+        assert.is_true(f.content:IsShown())
+        assert.is_false(f.Tabs[2]:IsShown())                 -- the default set has no When tab
+    end)
 end)

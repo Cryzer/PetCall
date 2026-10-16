@@ -6,9 +6,9 @@ ns.UI = ns.UI or {}
 local G = {}
 ns.UI.RecipeGallery = G
 
--- "+ New > From a recipe...": ready-made sets drawn over the tab area; the sets
--- panel and the status bar stay visible. Cards come in sections, two per row when
--- the window is wide enough.
+-- "+ New > From a recipe...": a page of ready-made sets that takes the place of the
+-- set header, tabs and pages; the sets panel and the status bar stay. Cards come in
+-- sections, two per row when the window is wide enough.
 
 local ROW_H, HEADER_H, TWO_COLUMNS_FROM = 76, 28, 860
 local PET_ICONS = 5
@@ -33,8 +33,13 @@ end
 local function initCard(card, recipe)
     card.recipe = recipe
     card:Show()
+    local n, sample = ns.Recipes.Count(recipe)
+    local firstPet = sample[1] and ns.PetCache:GetInfo(sample[1])
     if recipe.atlas then
         card.icon:SetAtlas(recipe.atlas)
+    elseif not recipe.icon and firstPet then
+        card.icon:SetTexture(firstPet.icon)                   -- an event without a picture: one of its pets
+        card.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     else
         card.icon:SetTexture(recipe.icon or "Interface\\Icons\\INV_Pet_BabyBlizzardBear")
         local c = recipe.iconCoords
@@ -42,7 +47,6 @@ local function initCard(card, recipe)
     end
     card.title:SetText(recipe.title)
     card.hint:SetText(recipe.hint)
-    local n, sample = ns.Recipes.Count(recipe)
     -- only real pets: no placeholder icons for the slots a small recipe does not fill
     local last
     for i = 1, PET_ICONS do
@@ -173,15 +177,9 @@ end
 local function build()
     local f = ns.UI.Main:GetFrame()
     gallery = CreateFrame("Frame", nil, f.Inset)
-    -- covers the header, the tab row and the pages
+    -- the area of the header, the tab row and the pages, which hide while it is open
     gallery:SetPoint("TOPLEFT", f.header, "TOPLEFT", 0, 0)
     gallery:SetPoint("BOTTOMRIGHT", f.content, "BOTTOMRIGHT", 0, 0)
-    -- well above the pets grid: the scroll box nests its tiles many levels deep
-    gallery:SetFrameLevel(f:GetFrameLevel() + 200)
-    gallery:EnableMouse(true)
-    gallery.bg = gallery:CreateTexture(nil, "BACKGROUND")
-    gallery.bg:SetAllPoints()
-    gallery.bg:SetColorTexture(0.05, 0.05, 0.06, 1)
     local title = ns.Widgets.Label(gallery, L["New set from a recipe"], "GameFontNormalHuge")
     title:SetPoint("TOPLEFT", 10, -8)
     local sub = ns.Widgets.Label(gallery, L["Pick one; afterwards it is an ordinary set and you can change everything."], "GameFontHighlightSmall")
@@ -209,11 +207,16 @@ end
 
 function G:Show()
     if not gallery then build() end
+    ns.UI.Main:SetSetPagesShown(false)
     gallery:Show()
     scrollBox:SetDataProvider(CreateDataProvider(elements()))
 end
 
-function G:Hide() if gallery then gallery:Hide() end end
+function G:Hide()
+    if not gallery or not gallery:IsShown() then return end
+    gallery:Hide()
+    ns.UI.Main:SetSetPagesShown(true)
+end
 function G:IsShown() return gallery ~= nil and gallery:IsShown() end
 
 ns:RegisterCallback(G, "SelectedSetChanged", function() G:Hide() end)

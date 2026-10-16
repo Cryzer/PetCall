@@ -175,6 +175,16 @@ function Main:SelectSet(name)
     self:SelectTab(selectedTab or "pets")
 end
 
+-- another page (the recipe gallery) takes the place of the set header, tabs and
+-- pages; showing them again restores the tabs this set has
+function Main:SetSetPagesShown(shown)
+    frame.header:SetShown(shown)
+    frame.content:SetShown(shown)
+    for key, t in pairs(tabs) do
+        if t.button then t.button:SetShown(shown and not (key == "when" and selectedSet and selectedSet:IsDefault())) end
+    end
+end
+
 function Main:GetSelectedSet() return selectedSet end
 function Main:GetSelectedTab() return selectedTab end
 function Main:GetFrame() self:Build() return frame end
