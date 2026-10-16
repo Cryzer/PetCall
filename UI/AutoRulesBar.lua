@@ -18,6 +18,29 @@ local function chipText(chip)
 end
 
 local function closeEditor() if editor then editor:Hide() end end
+function Bar.GetEditor() return editor end      -- for tests
+
+-- A popover under the chip, part of the main window: it closes with it, takes its
+-- scale and skin, and every change applies at once, so it needs no Okay button.
+local function buildEditor()
+    editor = CreateFrame("Frame", nil, bar, "TooltipBackdropTemplate")
+    editor:SetFrameStrata("DIALOG")
+    editor:SetToplevel(true)
+    editor:EnableMouse(true)
+    editor:SetClampedToScreen(true)
+    ns.Skin:Apply("Panel", editor)
+    editor.close = CreateFrame("Button", nil, editor, "UIPanelCloseButtonNoScripts")
+    editor.close:SetSize(20, 20)
+    editor.close:SetPoint("TOPRIGHT", -4, -4)
+    editor.close:SetScript("OnClick", closeEditor)
+    ns.Skin:Apply("CloseButton", editor.close)
+    editor.done = ns.Widgets.Button(editor, L["Done"], closeEditor)
+    editor.done:SetWidth(90)
+    editor.done:SetPoint("BOTTOMRIGHT", -12, 10)
+    -- the main window closing, or the tab changing, takes the popover with it
+
+    bar:HookScript("OnHide", closeEditor)
+end
 
 local function fieldControl(parent, leaf, field)
     if field.kind == "multiChoice" then
@@ -70,17 +93,15 @@ local function fieldControl(parent, leaf, field)
 end
 
 local function openEditor(anchor, chip)
-    editor = editor or CreateFrame("Frame", "PetCallRuleEditor", UIParent, "DialogBoxFrame")
-    editor:SetFrameStrata("DIALOG")
-    editor:SetSize(420, 120)
+    if not editor then buildEditor() end
+    editor:SetSize(460, 120)
     editor:ClearAllPoints()
     editor:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
     if editor.content then editor.content:Hide() end
     local c = CreateFrame("Frame", nil, editor)
     c:SetPoint("TOPLEFT", 12, -12)
-    c:SetPoint("BOTTOMRIGHT", -12, 40)
+    c:SetPoint("BOTTOMRIGHT", -32, 40)
     editor.content = c
-    ns.Skin:Apply("Panel", editor)
     local y = 0
     if chip.legacy then
         local t = ns.Widgets.Label(c, ns.AutoRules.Describe(chip.entry))
@@ -99,7 +120,8 @@ local function openEditor(anchor, chip)
             row:SetHeight(26)
             local label = ns.Widgets.Label(row, ns.AutoRules.Label(leaf[1]))
             label:SetPoint("LEFT")
-            label:SetWidth(90)
+            label:SetWidth(110)
+            label:SetWordWrap(false)
             local prev = label
             for _, def in ipairs(ns.AutoRules.Types()) do
                 if def.key == leaf[1] then
@@ -110,11 +132,14 @@ local function openEditor(anchor, chip)
                     end
                 end
             end
-            local remove = ns.Widgets.Button(row, "×", function()
+            -- the same small × the chips use
+            local remove = CreateFrame("Button", nil, row, "UIPanelCloseButtonNoScripts")
+            remove:SetSize(18, 18)
+            remove:SetPoint("RIGHT")
+            remove:SetScript("OnClick", function()
                 ns.AutoRules.RemoveCriterion(list(), chip.index, ci) commit() closeEditor()
             end)
-            remove:SetWidth(24)
-            remove:SetPoint("RIGHT")
+            ns.Widgets.Tooltip(remove, L["Remove criterion"])
             y = y - 28
         end
         local match = ns.Widgets.Dropdown(c, 140, function(owner, root)
@@ -138,7 +163,7 @@ local function openEditor(anchor, chip)
         end
     end)
     weight:SetPoint("TOPLEFT", 0, y - 4)
-    editor:SetHeight(-y + 90)
+    editor:SetHeight(-y + 84)
     editor:Show()
 end
 

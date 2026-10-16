@@ -450,3 +450,5 @@ L["Pets from rules:"] = true
 L["None"] = true
 L["Pet rules"] = true
 L["Edit rules"] = true
+L["Done"] = true
+L["Remove criterion"] = true

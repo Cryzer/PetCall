@@ -47,6 +47,12 @@ describe("UI smoke", function()
             chips[1]:Click()      -- editor for a simple chip
             chips[2]:Click()      -- editor for a legacy chip
             chips[1]:Click()
+            -- the editor belongs to the main window, so it closes with it
+            local editor = ns.UI.AutoRulesBar.GetEditor()
+            assert.equal(ns.UI.PetsTabRulesBar, editor:GetParent())
+            assert.is_true(editor:IsShown())
+            editor.done:Click()
+            assert.is_false(editor:IsShown())
             chips[1].remove:Click()
             assert.equal(1, #set.settings.filter)
         end)
