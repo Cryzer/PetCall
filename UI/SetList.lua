@@ -7,7 +7,7 @@ local SetList = {}
 ns.UI.SetList = SetList
 
 local COLLAPSE_BELOW = 700
-local panel, rail, rows, newBox = nil, nil, {}, nil
+local panel, rail, rows, newBox, nowCard = nil, nil, {}, nil, nil
 SetList._rows = rows      -- for tests
 local RAIL_W, PANEL_W = 34, 190
 local collapsedNow = false
@@ -142,6 +142,7 @@ function SetList:SetCollapsed(collapsed, user)
     rail:SetShown(collapsed)
     f.left:SetWidth(collapsed and RAIL_W or PANEL_W)
     if user then ns.db.global.window.setsCollapsed = collapsed end
+    if ns.UI.StatusBar then ns.UI.StatusBar:Refresh() end
 end
 
 local function autoCollapse()
@@ -153,6 +154,82 @@ local function autoCollapse()
 end
 
 function SetList:IsCollapsed() return collapsedNow end
+
+-- the pet that is out right now, large, at the foot of the sets panel
+function SetList:RefreshNow(blockers)
+    if not nowCard then return end
+    local pet = ns:GetCurrentPet()
+    local info = pet and ns.PetCache:GetInfo(pet)
+    local set = ns.Sets:GetCurrent()
+    nowCard.petID, nowCard.setName = info and pet or nil, set and set.name
+    if info then
+        local r, g, b = ns.Widgets.QualityColor(info.quality)
+        nowCard.icon:SetTexture(info.icon)
+        nowCard.icon:SetDesaturated(false)
+        nowCard.border:SetVertexColor(r, g, b)
+        nowCard.border:Show()
+        nowCard.name:SetText(info.customName or info.name)
+        nowCard.name:SetTextColor(r, g, b)
+        nowCard.from:SetText(format(L["from %s"], set and set:DisplayName() or NONE))
+    else
+        nowCard.icon:SetTexture("Interface\\Icons\\Tracking_WildPet")
+        nowCard.icon:SetDesaturated(true)
+        nowCard.border:Hide()
+        nowCard.name:SetText(L["No pet out"])
+        nowCard.name:SetTextColor(0.6, 0.6, 0.6)
+        nowCard.from:SetText(set and format(L["next from %s"], set:DisplayName()) or "")
+    end
+    blockers = blockers or ns.Ready:GetBlockers()
+    if #blockers == 0 then
+        nowCard.state:SetText("|cff4cd964" .. L["Ready"] .. "|r")
+    else
+        nowCard.state:SetText("|cffffb040" .. format(L["Paused: %s"], blockers[1].label) .. "|r")
+    end
+end
+
+local function buildNowCard()
+    local c = CreateFrame("Button", nil, panel)
+    c:SetHeight(62)
+    c:SetPoint("BOTTOMLEFT", 4, 58)
+    c:SetPoint("BOTTOMRIGHT", -4, 58)
+    c.bg = c:CreateTexture(nil, "BACKGROUND")
+    c.bg:SetAllPoints()
+    c.bg:SetAtlas("PetList-ButtonBackground")
+    c:SetHighlightAtlas("PetList-ButtonHighlight", "ADD")
+    c.caption = ns.Widgets.Label(panel, L["Out now"], "GameFontNormal")
+    c.caption:SetPoint("BOTTOMLEFT", c, "TOPLEFT", 2, 4)
+    c.icon = c:CreateTexture(nil, "ARTWORK")
+    c.icon:SetSize(42, 42)
+    c.icon:SetPoint("LEFT", 8, 0)
+    c.border = c:CreateTexture(nil, "OVERLAY")
+    c.border:SetTexture("Interface\\Common\\WhiteIconFrame")
+    c.border:SetAllPoints(c.icon)
+    c.name = ns.Widgets.Label(c, "", "GameFontNormalLarge")
+    c.name:SetPoint("TOPLEFT", c.icon, "TOPRIGHT", 8, 1)
+    c.name:SetPoint("RIGHT", -6, 0)
+    c.name:SetWordWrap(false)
+    c.from = ns.Widgets.Label(c, "", "GameFontHighlightSmall")
+    c.from:SetPoint("TOPLEFT", c.name, "BOTTOMLEFT", 0, -3)
+    c.from:SetPoint("RIGHT", -6, 0)
+    c.from:SetWordWrap(false)
+    c.state = ns.Widgets.Label(c, "", "GameFontNormalSmall")
+    c.state:SetPoint("TOPLEFT", c.from, "BOTTOMLEFT", 0, -3)
+    c.state:SetPoint("RIGHT", -6, 0)
+    c.state:SetWordWrap(false)
+    -- open the set it came from with the pet selected
+    c:SetScript("OnClick", function(self)
+        if not self.petID then return end
+        if self.setName then ns.UI.Main:SelectSet(self.setName) end
+        ns.UI.Main:SelectTab("pets")
+        ns.UI.Preview:SetSelected(self.petID)
+    end)
+    ns.Widgets.Tooltip(c, function(self) return self.name:GetText() end, function(self)
+        local lines = { self.from:GetText(), self.state:GetText() }
+        if self.petID then lines[#lines + 1] = L["Click to show this pet in its set."] end
+        return table.concat(lines, "\n")
+    end)
+    return c
+end
 function SetList:GetRail() return rail end
 
 ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
@@ -199,6 +276,9 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     new:SetPoint("BOTTOMLEFT", 4, 4)
     local import = ns.Widgets.Button(panel, L["Import"], function() if ns.UI.Share then ns.UI.Share:ShowImport() end end)
     import:SetPoint("LEFT", new, "RIGHT", 4, 0)
+
+    nowCard = buildNowCard()
+    SetList._nowCard = nowCard
 
     rail = CreateFrame("Button", nil, frame.left)
     rail:SetAllPoints()

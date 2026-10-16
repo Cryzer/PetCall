@@ -540,13 +540,21 @@ describe("UI smoke", function()
         assert.is_true(byName.Raid.state:GetText():find("Waiting for") ~= nil, byName.Raid.state:GetText())
     end)
 
-    it("the status bar reads as a sentence", function()
+    it("the pet out now has a card in the sets panel; the bar says the rest when the panel is folded", function()
         W.world.summoned = "a"
         ns.UI.Main:Show()
+        ns.UI.SetList:SetCollapsed(false, true)
         ns.UI.StatusBar:Refresh()
+        local card = ns.UI.SetList._nowCard
+        assert.equal("A", card.name:GetText())
+        assert.is_true(card.from:GetText():find("from") ~= nil)
         local bar = ns.UI.Main:GetFrame().status
-        assert.is_true(bar.left:GetText():find("^Now: A") ~= nil, bar.left:GetText())
+        assert.is_nil(bar.left:GetText():find("Now:"))
         assert.is_not_nil(bar.auto)
+        card:Click()
+        assert.equal("a", ns.UI.Preview:GetSelected())
+        ns.UI.SetList:SetCollapsed(true, true)
+        assert.is_true(bar.left:GetText():find("^Now: A") ~= nil, bar.left:GetText())
     end)
     it("a set without pets says what to do and can take them all in one click", function()
         local set = ns.Sets:Create("Empty")

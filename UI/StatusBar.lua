@@ -29,8 +29,19 @@ function Bar:Refresh()
         for i = 1, math.min(2, #blockers) do labels[i] = blockers[i].label end
         state = "|cffffb040" .. L["paused"] .. ":|r " .. table.concat(labels, ", ") .. (#blockers > 2 and " ..." or "")
     end
-    bar.left:SetText(now .. "  ·  " .. state)
+    -- the sets panel shows the pet in its "Out now" card; the bar then only says
+    -- whether PetCall can act. With the panel folded away the bar says it all.
+    local cardShown = ns.UI.SetList and not ns.UI.SetList:IsCollapsed()
+    bar.icon:SetShown(not cardShown)
+    if cardShown then
+        bar.left:SetPoint("LEFT", bar, "LEFT", 4, 0)
+        bar.left:SetText(L["Auto-summon"] .. ": " .. state)
+    else
+        bar.left:SetPoint("LEFT", bar.icon, "RIGHT", 6, 0)
+        bar.left:SetText(now .. "  ·  " .. state)
+    end
     bar.blockers = blockers
+    if ns.UI.SetList then ns.UI.SetList:RefreshNow(blockers) end
     bar.auto:SetChecked(ns:IsAutoSummon())
 end
 
