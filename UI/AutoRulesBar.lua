@@ -30,11 +30,6 @@ local function buildEditor()
     editor:EnableMouse(true)
     editor:SetClampedToScreen(true)
     ns.Skin:Apply("Panel", editor)
-    editor.close = CreateFrame("Button", nil, editor, "UIPanelCloseButtonNoScripts")
-    editor.close:SetSize(20, 20)
-    editor.close:SetPoint("TOPRIGHT", -4, -4)
-    editor.close:SetScript("OnClick", closeEditor)
-    ns.Skin:Apply("CloseButton", editor.close)
     editor.done = ns.Widgets.Button(editor, L["Done"], closeEditor)
     editor.done:SetWidth(90)
     editor.done:SetPoint("BOTTOMRIGHT", -12, 10)
@@ -93,7 +88,15 @@ local function fieldControl(parent, leaf, field)
     end
 end
 
-local function openEditor(anchor, chip)
+local openEditor
+
+-- the bar is rebuilt after every change; open the editor again on the same rule
+local function reopen(index)
+    local b, data = chips[index], set:GetAutoRules()
+    if b and b:IsShown() and data[index] then openEditor(b, data[index]) end
+end
+
+function openEditor(anchor, chip)
     if not editor then buildEditor() end
     editor:SetSize(460, 120)
     editor:ClearAllPoints()
@@ -101,7 +104,7 @@ local function openEditor(anchor, chip)
     if editor.content then editor.content:Hide() end
     local c = CreateFrame("Frame", nil, editor)
     c:SetPoint("TOPLEFT", 12, -12)
-    c:SetPoint("BOTTOMRIGHT", -32, 40)
+    c:SetPoint("BOTTOMRIGHT", -12, 40)
     editor.content = c
     local y = 0
     if chip.legacy then
@@ -133,37 +136,50 @@ local function openEditor(anchor, chip)
                     end
                 end
             end
-            -- the same small × the chips use
-            local remove = CreateFrame("Button", nil, row, "UIPanelCloseButtonNoScripts")
-            remove:SetSize(18, 18)
-            remove:SetPoint("RIGHT")
-            remove:SetScript("OnClick", function()
-                ns.AutoRules.RemoveCriterion(list(), chip.index, ci) commit() closeEditor()
-            end)
-            ns.Widgets.Tooltip(remove, L["Remove criterion"])
+            -- a rule with one condition is removed with the × on its chip
+            if #chip.criteria > 1 then
+                local remove = CreateFrame("Button", nil, row, "UIPanelCloseButtonNoScripts")
+                remove:SetSize(18, 18)
+                remove:SetPoint("LEFT", prev, "RIGHT", 6, 0)
+                remove:SetScript("OnClick", function()
+                    ns.AutoRules.RemoveCriterion(list(), chip.index, ci) commit() reopen(chip.index)
+                end)
+                ns.Widgets.Tooltip(remove, L["Remove this condition"])
+            end
             y = y - 28
         end
-        local match = ns.Widgets.Dropdown(c, 140, function(owner, root)
-            root:CreateRadio(L["All criteria"], function() return chip.match == "all" end, function() ns.AutoRules.SetMatch(list(), chip.index, "all") commit() end)
-            root:CreateRadio(L["Any criterion"], function() return chip.match == "any" end, function() ns.AutoRules.SetMatch(list(), chip.index, "any") commit() end)
-        end)
-        match:SetPoint("TOPLEFT", 0, y - 4)
-        local add = ns.Widgets.Dropdown(c, 140, function(owner, root)
+        -- with several conditions: must a pet meet all of them, or one is enough
+        if #chip.criteria > 1 then
+            local matchLabel = ns.Widgets.Label(c, L["Pets must match"])
+            matchLabel:SetPoint("TOPLEFT", 0, y - 9)
+            matchLabel:SetWidth(110)
+            local match = ns.Widgets.Dropdown(c, 160, function(owner, root)
+                root:CreateRadio(L["All of these"], function() return chip.match == "all" end, function() ns.AutoRules.SetMatch(list(), chip.index, "all") commit() reopen(chip.index) end)
+                root:CreateRadio(L["Any one of these"], function() return chip.match == "any" end, function() ns.AutoRules.SetMatch(list(), chip.index, "any") commit() reopen(chip.index) end)
+            end)
+            match:SetPoint("LEFT", matchLabel, "RIGHT", 6, 0)
+            y = y - 30
+        end
+        local add = ns.Widgets.Dropdown(c, 160, function(owner, root)
             for _, def in ipairs(ns.AutoRules.Types()) do
-                root:CreateButton(def.label, function() ns.AutoRules.AddCriterion(list(), chip.index, def.key) commit() closeEditor() end)
+                root:CreateButton(def.label, function() ns.AutoRules.AddCriterion(list(), chip.index, def.key) commit() reopen(chip.index) end)
             end
         end)
-        add:SetDefaultText(L["+ Criterion"])
-        add:SetPoint("LEFT", match, "RIGHT", 8, 0)
+        add:SetDefaultText(L["+ Another condition"])
+        add:SetPoint("TOPLEFT", 116, y - 4)
+        ns.Widgets.Tooltip(add, L["+ Another condition"], L["Narrow the rule down, for example: source mentions Trading Post and the pet is a Beast."])
         y = y - 30
     end
+    local weightLabel = ns.Widgets.Label(c, L["How often"])
+    weightLabel:SetPoint("TOPLEFT", 0, y - 9)
+    weightLabel:SetWidth(110)
     local weight = ns.Widgets.Dropdown(c, 160, function(owner, root)
         for _, lvl in ipairs(ns.Weights.LEVELS) do
             root:CreateRadio(lvl.label, function() return ns.Weights.Nearest(ns.AutoRules.Weight(chip.entry)) == lvl.value end,
-                function() ns.AutoRules.SetChipWeight(list(), chip.index, lvl.value) commit() end)
+                function() ns.AutoRules.SetChipWeight(list(), chip.index, lvl.value) commit() reopen(chip.index) end)
         end
     end)
-    weight:SetPoint("TOPLEFT", 0, y - 4)
+    weight:SetPoint("LEFT", weightLabel, "RIGHT", 6, 0)
     editor:SetHeight(-y + 84)
     editor:Show()
 end
