@@ -112,8 +112,11 @@ function R.Create(r)
     local set = ns.Sets:Create(R.UniqueName(r.title))
     if not set then return nil end
     set.settings.defaultValue = 0
-    set.settings.trigger = copy(r.conditions)
-    set.settings.filter = copy(r.rules)
+    -- fill the set's own tables: its condition watcher already holds the trigger table
+    local trigger, filter = set.settings.trigger, set.settings.filter
+    wipe(trigger) wipe(filter)
+    for _, e in ipairs(r.conditions) do trigger[#trigger + 1] = copy(e) end
+    for _, e in ipairs(r.rules) do filter[#filter + 1] = copy(e) end
     if r.priority then set:SetPriority(r.priority) end
     set:FiltersChanged()
     set:ConditionsChanged()
