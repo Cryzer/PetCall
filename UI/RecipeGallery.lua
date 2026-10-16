@@ -7,28 +7,65 @@ local G = {}
 ns.UI.RecipeGallery = G
 
 -- "+ New > From a recipe...": ready-made sets drawn over the tab area; the sets
--- panel and the status bar stay visible.
+-- panel and the status bar stay visible. Cards come in sections, two per row when
+-- the window is wide enough.
 
-local CARD_H = 64
-local QUESTION = "Interface\\Icons\\INV_Misc_QuestionMark"
+local ROW_H, HEADER_H, TWO_COLUMNS_FROM = 76, 28, 860
+local PET_ICONS = 5
+local SECTIONS = {
+    { key = "everyday", label = L["Every day"] },
+    { key = "class", label = L["Your class"] },
+    { key = "holiday", label = L["Holidays"] },
+}
 local gallery, scrollBox, cards = nil, nil, {}
 G._cards = cards
 
+local function petsText(n) return format(n == 1 and L["%d pet"] or L["%d pets"], n) end
+
+local function openOrCreate(card)
+    local set = card.existing or ns.Recipes.Create(card.recipe)
+    if not set then return end
+    G:Hide()
+    ns.UI.Main:SelectSet(set.name)
+    ns.UI.Main:SelectTab("pets")
+end
+
 local function initCard(card, recipe)
     card.recipe = recipe
+    card:Show()
+    if recipe.atlas then
+        card.icon:SetAtlas(recipe.atlas)
+    else
+        card.icon:SetTexture(recipe.icon or "Interface\\Icons\\INV_Pet_BabyBlizzardBear")
+        local c = recipe.iconCoords
+        if c then card.icon:SetTexCoord(c[1], c[2], c[3], c[4]) else card.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
+    end
     card.title:SetText(recipe.title)
     card.hint:SetText(recipe.hint)
     local n, sample = ns.Recipes.Count(recipe)
-    card.count:SetText(format(L["%d pets"], n))
-    for i = 1, 4 do
+    -- only real pets: no placeholder icons for the slots a small recipe does not fill
+    local last
+    for i = 1, PET_ICONS do
         local info = sample[i] and ns.PetCache:GetInfo(sample[i])
-        card.icons[i]:SetTexture(info and info.icon or QUESTION)
-        card.icons[i]:SetDesaturated(n == 0)
+        card.pets[i]:SetShown(info ~= nil)
+        if info then card.pets[i]:SetTexture(info.icon) last = card.pets[i] end
     end
+    card.count:ClearAllPoints()
+    if last then card.count:SetPoint("LEFT", last, "RIGHT", 6, 0) else card.count:SetPoint("LEFT", card.pets[1], "LEFT", 0, 0) end
+    card.existing = ns.Recipes.Existing(recipe)
     local ok, reason = ns.Recipes.Usable(recipe)
-    card.create:SetEnabled(ok)
-    card.reason:SetText(reason or "")
-    card:SetAlpha(ok and 1 or 0.55)
+    if card.existing then
+        card.count:SetText("|cff4cd964" .. L["You have this set"] .. "|r")
+        card.create:SetText(L["Open"])
+        card.create:SetEnabled(true)
+        card.reason:SetText("")
+    else
+        card.count:SetText(n > 0 and petsText(n) or "")
+        card.create:SetText(L["Create"])
+        card.create:SetEnabled(ok)
+        card.reason:SetText(reason or "")
+    end
+    card:SetAlpha((ok or card.existing) and 1 or 0.55)
 end
 
 local function cardTooltip(c)
@@ -41,41 +78,96 @@ end
 
 local function createCard(parent)
     local c = CreateFrame("Frame", nil, parent)
-    c:SetPoint("TOPLEFT", 0, 0)
-    c:SetPoint("BOTTOMRIGHT", 0, 4)
     c.bg = c:CreateTexture(nil, "BACKGROUND")
     c.bg:SetAllPoints()
     c.bg:SetAtlas("PetList-ButtonBackground")
-    c.icons = {}
-    for i = 1, 4 do
-        local t = c:CreateTexture(nil, "ARTWORK")
-        t:SetSize(26, 26)
-        t:SetPoint("LEFT", 6 + (i - 1) * 28, 0)
-        ns.Skin:Apply("SquareIcon", t, c)
-        c.icons[i] = t
-    end
-    c.create = ns.Widgets.Button(c, L["Create"], function()
-        local set = ns.Recipes.Create(c.recipe)
-        if not set then return end
-        G:Hide()
-        ns.UI.Main:SelectSet(set.name)
-        ns.UI.Main:SelectTab("pets")
-    end)
+    c.icon = c:CreateTexture(nil, "ARTWORK")
+    c.icon:SetSize(44, 44)
+    c.icon:SetPoint("LEFT", 8, 0)
+    c.create = ns.Widgets.Button(c, L["Create"], function() openOrCreate(c) end)
     c.create:SetPoint("RIGHT", -8, 0)
-    c.count = ns.Widgets.Label(c, "", "GameFontNormal")
-    c.count:SetPoint("RIGHT", c.create, "LEFT", -10, 0)
     c.title = ns.Widgets.Label(c, "", "GameFontNormalLarge")
-    c.title:SetPoint("TOPLEFT", 128, -8)
+    c.title:SetPoint("TOPLEFT", c.icon, "TOPRIGHT", 10, 2)
+    c.title:SetPoint("RIGHT", c.create, "LEFT", -8, 0)
+    c.title:SetWordWrap(false)
     c.hint = ns.Widgets.Label(c, "", "GameFontHighlightSmall")
-    c.hint:SetPoint("TOPLEFT", c.title, "BOTTOMLEFT", 0, -4)
-    c.hint:SetPoint("RIGHT", c.count, "LEFT", -10, 0)
+    c.hint:SetPoint("TOPLEFT", c.title, "BOTTOMLEFT", 0, -3)
+    c.hint:SetPoint("RIGHT", c.create, "LEFT", -8, 0)
     c.hint:SetWordWrap(false)
+    c.pets = {}
+    for i = 1, PET_ICONS do
+        local t = c:CreateTexture(nil, "ARTWORK")
+        t:SetSize(20, 20)
+        t:SetPoint("TOPLEFT", c.hint, "BOTTOMLEFT", (i - 1) * 22, -5)
+        c.pets[i] = t
+    end
+    c.count = ns.Widgets.Label(c, "", "GameFontNormalSmall")
     c.reason = ns.Widgets.Label(c, "", "GameFontDisableSmall")
-    c.reason:SetPoint("TOPLEFT", c.hint, "BOTTOMLEFT", 0, -3)
+    c.reason:SetPoint("TOPLEFT", c.hint, "BOTTOMLEFT", 0, -8)
     c:EnableMouse(true)
     ns.Widgets.Tooltip(c, function() return c.recipe.title end, function() return cardTooltip(c) end)
     cards[#cards + 1] = c
     return c
+end
+
+local function columns() return gallery:GetWidth() >= TWO_COLUMNS_FROM and 2 or 1 end
+
+local function initRow(frame, data)
+    if data.header then
+        frame.label = frame.label or ns.Widgets.Label(frame, "", "GameFontNormalMed2")
+        frame.label:SetPoint("BOTTOMLEFT", 4, 4)
+        frame.label:SetText(data.header)
+        frame.label:Show()
+        for _, c in ipairs(frame.cards or {}) do c:Hide() end
+        return
+    end
+    if frame.label then frame.label:Hide() end
+    frame.cards = frame.cards or {}
+    local n = #data.items
+    for i = 1, 2 do
+        local c = frame.cards[i]
+        if data.items[i] then
+            c = c or createCard(frame)
+            frame.cards[i] = c
+            c:ClearAllPoints()
+            c:SetPoint("TOP", 0, 0)
+            c:SetPoint("BOTTOM", 0, 6)
+            if n == 1 and data.cols == 1 then
+                c:SetPoint("LEFT", 0, 0) c:SetPoint("RIGHT", 0, 0)
+            elseif i == 1 then
+                c:SetPoint("LEFT", 0, 0) c:SetPoint("RIGHT", frame, "CENTER", -3, 0)
+            else
+                c:SetPoint("LEFT", frame, "CENTER", 3, 0) c:SetPoint("RIGHT", 0, 0)
+            end
+            initCard(c, data.items[i])
+        elseif c then
+            c:Hide()
+        end
+    end
+end
+
+-- section headers, then the recipes of each section in rows of one or two cards;
+-- inside a section usable recipes come first
+local function elements()
+    local cols, out = columns(), {}
+    local bySection = {}
+    for _, r in ipairs(ns.Recipes.List()) do
+        bySection[r.category] = bySection[r.category] or { usable = {}, rest = {} }
+        local b = bySection[r.category]
+        if ns.Recipes.Usable(r) or ns.Recipes.Existing(r) then b.usable[#b.usable + 1] = r else b.rest[#b.rest + 1] = r end
+    end
+    for _, s in ipairs(SECTIONS) do
+        local b = bySection[s.key]
+        if b then
+            out[#out + 1] = { header = s.label }
+            local list = b.usable
+            for _, r in ipairs(b.rest) do list[#list + 1] = r end
+            for i = 1, #list, cols do
+                out[#out + 1] = { items = { list[i], cols == 2 and list[i + 1] or nil }, cols = cols }
+            end
+        end
+    end
+    return out
 end
 
 local function build()
@@ -96,32 +188,28 @@ local function build()
     local back = ns.Widgets.Button(gallery, L["Back"], function() G:Hide() end)
     back:SetPoint("TOPRIGHT", -8, -8)
     scrollBox = CreateFrame("Frame", nil, gallery, "WowScrollBoxList")
-    scrollBox:SetPoint("TOPLEFT", 6, -54)
+    scrollBox:SetPoint("TOPLEFT", 6, -48)
     scrollBox:SetPoint("BOTTOMRIGHT", -26, 6)
     local bar = CreateFrame("EventFrame", nil, gallery, "MinimalScrollBar")
     bar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 6, 0)
     bar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 6, 0)
     local view = CreateScrollBoxListLinearView()
-    view:SetElementExtent(CARD_H)
-    view:SetElementInitializer("Frame", function(frame, recipe)
-        frame.card = frame.card or createCard(frame)
-        initCard(frame.card, recipe)
-    end)
+    view:SetElementExtentCalculator(function(_, data) return data.header and HEADER_H or ROW_H end)
+    view:SetElementInitializer("Frame", initRow)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, bar, view)
     ns.Skin:Apply("ScrollBar", bar)
     gallery:Hide()
 end
 
+function G:Refresh()
+    if not self:IsShown() then return end
+    scrollBox:SetDataProvider(CreateDataProvider(elements()), ScrollBoxConstants.RetainScrollPosition)
+end
+
 function G:Show()
     if not gallery then build() end
-    -- usable first, then greyed; recipe order kept inside each group
-    local usable, rest = {}, {}
-    for _, r in ipairs(ns.Recipes.List()) do
-        if ns.Recipes.Usable(r) then usable[#usable + 1] = r else rest[#rest + 1] = r end
-    end
-    for _, r in ipairs(rest) do usable[#usable + 1] = r end
     gallery:Show()
-    scrollBox:SetDataProvider(CreateDataProvider(usable))
+    scrollBox:SetDataProvider(CreateDataProvider(elements()))
 end
 
 function G:Hide() if gallery then gallery:Hide() end end
@@ -129,3 +217,6 @@ function G:IsShown() return gallery ~= nil and gallery:IsShown() end
 
 ns:RegisterCallback(G, "SelectedSetChanged", function() G:Hide() end)
 ns:RegisterCallback(G, "WindowHidden", function() G:Hide() end)
+-- one or two columns follow the window width once a resize settles
+local refreshSoon = ns.Debounce(0.12, function() G:Refresh() end)
+ns:RegisterCallback(G, "WindowResized", refreshSoon)

@@ -19,20 +19,20 @@ local CLASS_TYPES = {
 }
 
 local FIXED = {
-    { key = "swimming", title = L["Water pets while swimming"], hint = L["When you swim. Aquatic pets."],
+    { key = "swimming", icon = "Interface\\Icons\\Spell_Frost_SummonWaterElemental", title = L["Water pets while swimming"], hint = L["When you swim. Aquatic pets."],
       conditions = { { "activity", swimming = true } }, rules = { types(9) } },
-    { key = "outdoors", title = L["Flyers in the open world"], hint = L["Outdoors in the open world. Flying pets."],
+    { key = "outdoors", icon = "Interface\\Icons\\Ability_Mount_Gryphon_01", title = L["Flyers in the open world"], hint = L["Outdoors in the open world. Flying pets."],
       conditions = { { "specialLocation", locs = { "world" } }, { "activity", outdoors = true } }, rules = { types(3) } },
-    { key = "zone", title = L["Pets from this zone"], hint = L["Everywhere, before the Default set. Pets native to the zone you are in."],
+    { key = "zone", icon = "Interface\\Icons\\INV_Misc_Map_01", title = L["Pets from this zone"], hint = L["Everywhere, before the Default set. Pets native to the zone you are in."],
       conditions = {}, rules = { { "nativeZone", NORMAL } }, lowest = true },
-    { key = "home", title = L["At my house"], hint = L["At your house and plot. Favorites and critters."],
+    { key = "home", icon = "Interface\\Icons\\INV_Misc_Rune_01", title = L["At my house"], hint = L["At your house and plot. Favorites and critters."],
       conditions = { { "housing", ownHome = true } }, rules = { { "favorites", NORMAL }, types(5) } },
-    { key = "instances", title = L["Dungeons and raids"], hint = L["In dungeons and raids. Your rare level 25 pets."],
+    { key = "instances", icon = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01", title = L["Dungeons and raids"], hint = L["In dungeons and raids. Your rare level 25 pets."],
       conditions = { { "specialLocation", locs = { "dungeon", "raid" } } },
       rules = { { "AND", NORMAL, items = { { "level", operator = ">=", level = "25" }, { "rare" } } } } },
-    { key = "night", title = L["Night owls"], hint = L["From 20:00 to 06:00. Undead and magic pets."],
+    { key = "night", icon = "Interface\\Icons\\Spell_Shadow_Twilight", title = L["Night owls"], hint = L["From 20:00 to 06:00. Undead and magic pets."],
       conditions = { { "timeOfDay", from = 20 * 60, to = 6 * 60 } }, rules = { types(4, 6) } },
-    { key = "afk", title = L["Favorites while AFK"], hint = L["While you are AFK. Your favorites."],
+    { key = "afk", icon = "Interface\\Icons\\Spell_Nature_Sleep", title = L["Favorites while AFK"], hint = L["While you are AFK. Your favorites."],
       conditions = { { "activity", afk = true } }, rules = { { "favorites", NORMAL } } },
 }
 
@@ -46,6 +46,7 @@ end
 -- a recipe without conditions must not take over: it gets the lowest priority
 local function finish(r)
     r.priority = r.lowest and ns.Weights.LEVELS[2].value or nil
+    r.category = r.category or "everyday"
     return r
 end
 
@@ -53,13 +54,15 @@ local function classRecipe()
     local className, class = UnitClass("player")
     local list = CLASS_TYPES[class]
     if not list then return nil end
-    return finish({ key = "class", title = format(L["%s theme"], className),
+    return finish({ key = "class", category = "class", atlas = "classicon-" .. strlower(class), title = format(L["%s theme"], className),
         hint = format(L["On your %s characters. Pets that suit the class."], className),
         conditions = { { "specialization", class = class, spec = -1 } }, rules = { types(unpack(list)) } })
 end
 
 local function holidayRecipe(h)
-    return finish({ key = "holiday:" .. h.value, title = h.label, holiday = true,
+    -- calendar art has a frame around it; the event picture is the top-left part
+    return finish({ key = "holiday:" .. h.value, category = "holiday", icon = h.icon, iconCoords = { 0, 0.7109375, 0, 0.7109375 },
+        title = h.label, holiday = true,
         hint = format(L["During %s. Pets from the event."], h.label),
         conditions = { { "holiday", holidayIDs = { h.value } } }, rules = { { "source", NORMAL, text = h.label } } })
 end
@@ -100,6 +103,9 @@ function R.List()
     end
     return out
 end
+
+-- the set this recipe made earlier, found by its name
+function R.Existing(r) return ns.Sets:Get(r.title) end
 
 function R.UniqueName(base)
     if not ns.Sets:Get(base) then return base end

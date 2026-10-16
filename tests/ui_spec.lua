@@ -737,4 +737,23 @@ describe("UI smoke", function()
         set:SetPetWeight("b", 0)                            -- a manual Never does not hide a rule pet
         assert.equal("auto", select(2, ns.PetGridModel.Badge(set, "b")))
     end)
+    it("recipe cards: sections, no placeholder pet icons, Open for a set you already have", function()
+        ns.UI.Main:Show()
+        local G = ns.UI.RecipeGallery
+        G:Show()
+        local swim
+        for _, c in ipairs(G._cards) do if c.recipe.key == "swimming" then swim = c end end
+        assert.is_false(swim.pets[1]:IsShown())             -- no aquatic pets: no icons at all
+        local afk
+        for _, c in ipairs(G._cards) do if c.recipe.key == "afk" then afk = c end end
+        W.world.favorites.a = true
+        ns.PetCache:Rescan()
+        local set = ns.Recipes.Create(afk.recipe)
+        G:Show()
+        for _, c in ipairs(G._cards) do if c.recipe.key == "afk" and c:IsShown() then afk = c end end
+        assert.equal("Open", afk.create:GetText())
+        afk.create:Click()
+        assert.equal(set, ns.UI.Main:GetSelectedSet())
+        assert.equal(1, #ns.Sets:List() - 1)                -- no second copy was made
+    end)
 end)
