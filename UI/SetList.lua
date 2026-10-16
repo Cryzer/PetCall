@@ -29,6 +29,10 @@ local function setMenu(owner, root, set)
         root:CreateButton(L["Move down"], function() ns.Sets:Move(set, 1) end)
         root:CreateButton(L["Rename"], function() ns.UI.Main:SelectSet(set.name) ns.UI.Main:SelectTab("settings") end)
     end
+    root:CreateButton(L["Duplicate"], function()
+        local copy = ns.Sets:Duplicate(set)
+        if copy then ns.UI.Main:SelectSet(copy.name) end
+    end)
     if ns.UI.Share then root:CreateButton(L["Export"], function() ns.UI.Share:ShowExport(set.name) end) end
     if not set:IsDefault() then
         root:CreateButton(DELETE, function()
@@ -57,6 +61,7 @@ end
 local function stateLine(set)
     local status = set:GetStatus()
     if status == "active" then
+        if set:IsNoPet() then return format("|cff4cd964%s|r · %s", L["Active now"], L["no pet"]) end
         return format("|cff4cd964%s|r · %s", L["Active now"], format(L["%d pets"], (ns.UI.SetHeader.Counts(set))))
     elseif status == "paused" then
         return "|cff808080" .. ns.UI.SetHeader.PauseText(set) .. "|r"
@@ -108,7 +113,8 @@ local function row(i)
     r.controls = {}
     local function control(texture, tip, onClick)
         local b = CreateFrame("Button", nil, r)
-        b:SetSize(16, 16)
+        b:SetSize(22, 20)
+        b:SetFrameLevel(r:GetFrameLevel() + 2)
         b:SetNormalTexture(texture)
         b:SetHighlightTexture(texture, "ADD")
         b:SetScript("OnClick", function(self) onClick(self) end)
@@ -119,14 +125,26 @@ local function row(i)
         return b
     end
     r.up = control("Interface\\Buttons\\Arrow-Up-Up", L["Move up"], function() ns.Sets:Move(r.set, -1) end)
-    r.up:SetPoint("TOPRIGHT", -3, -3)
+    r.up:SetPoint("TOPRIGHT", -2, -1)
     r.down = control("Interface\\Buttons\\Arrow-Down-Up", L["Move down"], function() ns.Sets:Move(r.set, 1) end)
-    r.down:SetPoint("BOTTOMRIGHT", -3, 3)
+    r.down:SetPoint("BOTTOMRIGHT", -2, 1)
     r.pause = control("Interface\\TimeManager\\PauseButton", L["Pause or resume"], function(self)
         if r.set:IsPaused() then r.set:Resume() return end
         MenuUtil.CreateContextMenu(self, function(_, root) pauseMenu(root, r.set) end)
     end)
-    r.pause:SetPoint("RIGHT", r.up, "LEFT", -2, -8)
+    r.pause:SetSize(26, 26)
+    r.pause:SetPoint("RIGHT", -28, 0)
+    -- a dark strip behind the controls so they read on any card
+    -- (a frame above the card, so it also covers the card's text)
+    r.ctrlBg = CreateFrame("Frame", nil, r)
+    r.ctrlBg:SetFrameLevel(r:GetFrameLevel() + 1)
+    r.ctrlBg:SetPoint("TOPRIGHT", 0, 0)
+    r.ctrlBg:SetPoint("BOTTOMRIGHT", 0, 0)
+    r.ctrlBg:SetWidth(58)
+    r.ctrlBg.tex = r.ctrlBg:CreateTexture(nil, "BACKGROUND")
+    r.ctrlBg.tex:SetAllPoints()
+    r.ctrlBg.tex:SetColorTexture(0, 0, 0, 0.8)
+    r.ctrlBg:Hide()
     r:HookScript("OnEnter", function() SetList.ShowControls(r, true) end)
     r:HookScript("OnLeave", function() if not r:IsMouseOver() then SetList.ShowControls(r, false) end end)
     r:SetScript("OnClick", function(self, button)
@@ -193,6 +211,7 @@ function SetList.ShowControls(r, on)
     if not set then return end
     local rank, n = set:GetRank()
     r.pause:SetShown(on)
+    r.ctrlBg:SetShown(on)
     r.up:SetShown(on and not set:IsDefault() and rank > 1)
     r.down:SetShown(on and not set:IsDefault() and rank < n - 1)
 end

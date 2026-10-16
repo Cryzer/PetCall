@@ -58,7 +58,10 @@ function Tab:Refresh(newSet)
     page.order:SetText(format(L["%d of %d"], rank, n - 1))
     page.up:SetEnabled(rank > 1)
     page.down:SetEnabled(rank < n - 1)
-    page.immediate:SetChecked(set.settings.immediate and true or false)
+    page.onActivate:GenerateMenu()
+    page.switch:GenerateMenu()
+    page.announce:GenerateMenu()
+    page.noPet:SetChecked(set:IsNoPet())
     page.defaultWeight:GenerateMenu()
     page.name:SetText(set.name)
     stack()
@@ -102,10 +105,40 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     page.down:SetPoint("LEFT", page.up, "RIGHT", 6, 0)
     local prioHelp = help(b, L["When several sets fit, the one higher in the list is used. The Default set is always last."])
     prioHelp:SetPoint("TOPLEFT", page.order, "BOTTOMLEFT", 0, -8)
-    page.immediate = ns.Widgets.Checkbox(b, L["Summon immediately when this set becomes active"],
-        function() return set and set.settings.immediate end, function(v) set:SetImmediate(v) end)
-    page.immediate:SetPoint("TOPLEFT", prioLabel, "BOTTOMLEFT", -4, -34)
-    b:SetHeight(134)
+    -- one row per choice: label in the first column, the control in the second
+    local function row(label, anchor, gap, control)
+        local l = ns.Widgets.Label(b, label)
+        l:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -gap)
+        control:SetPoint("LEFT", l, "LEFT", LABEL_COL, 0)
+        return l
+    end
+    local function radios(root, items, get, setter)
+        for _, it in ipairs(items) do
+            root:CreateRadio(it[2], function() return set and get() == it[1] end, function() setter(it[1]) end)
+        end
+    end
+    page.onActivate = ns.Widgets.Dropdown(b, 260, function(_, root)
+        radios(root, { { "keep", L["Keep the pet that is out"] }, { "fits", L["New pet, unless the one out fits"] },
+            { "new", L["Always a new pet"] } }, function() return set:GetOnActivate() end, function(v) set:SetOnActivate(v) end)
+    end)
+    local startLabel = row(L["When this set starts"], prioLabel, 40, page.onActivate)
+    page.switch = ns.Widgets.Dropdown(b, 260, function(_, root)
+        radios(root, { { false, L["Like the settings"] }, { 5, format(L["%d minutes"], 5) }, { 10, format(L["%d minutes"], 10) },
+            { 15, format(L["%d minutes"], 15) }, { 30, format(L["%d minutes"], 30) }, { 60, format(L["%d minutes"], 60) } },
+            function() return set.settings.switchMinutes or false end, function(v) set:SetSwitchMinutes(v or nil) end)
+    end)
+    local switchLabel = row(L["Switch pet every"], startLabel, 18, page.switch)
+    page.announce = ns.Widgets.Dropdown(b, 260, function(_, root)
+        radios(root, { { false, L["Like the settings"] }, { "on", L["Always"] }, { "off", L["Never"] } },
+            function() return set.settings.announce or false end, function(v) set:SetAnnounce(v or nil) end)
+    end)
+    local announceLabel = row(L["Chat message on summon"], switchLabel, 18, page.announce)
+    page.noPet = ns.Widgets.Checkbox(b, L["No pet while this set is used"],
+        function() return set and set:IsNoPet() end, function(v) set:SetNoPet(v) end)
+    page.noPet:SetPoint("TOPLEFT", announceLabel, "BOTTOMLEFT", -4, -12)
+    local noPetHelp = help(b, L["Dismisses your pet instead of summoning one, e.g. for raids or arenas."])
+    noPetHelp:SetPoint("TOPLEFT", page.noPet, "BOTTOMLEFT", 28, 2)
+    b:SetHeight(244)
     tinsert(page.sections, b)
 
     -- which pets and how often, for pets nobody set by hand
@@ -147,6 +180,11 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
         page.name:ClearFocus()
     end)
     rename:SetPoint("LEFT", page.name, "RIGHT", 8, 0)
+    page.duplicate = ns.Widgets.Button(n, L["Duplicate"], function()
+        local copy = ns.Sets:Duplicate(set)
+        if copy then ns.UI.Main:SelectSet(copy.name) ns.UI.Main:SelectTab("settings") end
+    end)
+    page.duplicate:SetPoint("LEFT", rename, "RIGHT", 8, 0)
     page.name:SetScript("OnEnterPressed", function() rename:Click() end)
     n:SetHeight(50)
     tinsert(page.sections, n)

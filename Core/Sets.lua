@@ -111,6 +111,28 @@ end
 
 function SetMixin:SetPriority(w) if not self:IsDefault() then self.settings.priority = w changed(self) end end
 function SetMixin:SetImmediate(v) self.settings.immediate = v and true or nil changed(self) end
+
+-- what happens when the set starts being used: "keep" the pet that is out, a new pet
+-- unless the one out "fits", or always a "new" one
+function SetMixin:GetOnActivate()
+    if not self.settings.immediate then return "keep" end
+    return self.settings.alwaysNew and "new" or "fits"
+end
+function SetMixin:SetOnActivate(mode)
+    self.settings.immediate = mode ~= "keep" or nil
+    self.settings.alwaysNew = mode == "new" or nil
+    changed(self)
+end
+
+-- a set that keeps the pet away (raids, arenas...): it dismisses instead of summoning
+function SetMixin:SetNoPet(v) self.settings.noPet = v and true or nil changed(self) end
+function SetMixin:IsNoPet() return self.settings.noPet == true end
+
+-- its own pet-switch interval in minutes, or nil for the one in the settings
+function SetMixin:SetSwitchMinutes(m) self.settings.switchMinutes = m changed(self) end
+
+-- chat message on summon: nil = like the settings, "on", "off"
+function SetMixin:SetAnnounce(v) self.settings.announce = v changed(self) end
 function SetMixin:SetDefaultWeight(w) self.settings.defaultValue = w changed(self) end
 
 function SetMixin:GetPetWeight(petID) return ns.Weights.PetWeight(self.settings, petID) end
@@ -167,6 +189,7 @@ end
 function SetMixin:IsActive()
     if self.deleted or self:IsPaused() then return false end
     if not self:ConditionsMet() then return false end
+    if self:IsNoPet() then return true end
     return self:GetWeightTable().total > 0
 end
 
@@ -177,7 +200,7 @@ end
 -- "outranked": the set could be used right now, but a set above it in the list is
 function SetMixin:GetStatus()
     if self:IsPaused() then return "paused" end
-    if self:GetWeightTable().total <= 0 then return "empty" end
+    if not self:IsNoPet() and self:GetWeightTable().total <= 0 then return "empty" end
     if current == self then return "active" end
     if self:ConditionsMet() then return "outranked" end
     return "waiting"
@@ -228,6 +251,7 @@ end
 -- A set object outlives its data when it is deleted or the profile changes; its
 -- mutators must not touch the (new) profile's tables or revive its freed watcher.
 for _, method in ipairs({ "Rename", "Delete", "SetEnabled", "Pause", "Resume", "SetPriority", "SetImmediate", "SetDefaultWeight",
+    "SetOnActivate", "SetNoPet", "SetSwitchMinutes", "SetAnnounce",
     "SetPetWeight", "SetPetWeights", "ClearPetWeights", "FiltersChanged", "SetConditionModel", "ConditionsChanged",
     "ApplyTemplate" }) do
     local original = SetMixin[method]
@@ -332,6 +356,32 @@ function Sets:Create(name)
     ns:Fire("SetsChanged", name)
     self:Update()
     return set, true
+end
+
+local function deepCopy(v)
+    if type(v) ~= "table" then return v end
+    local c = {}
+    for k, x in pairs(v) do c[k] = deepCopy(x) end
+    return c
+end
+
+-- a copy right below the original, named "<name> copy" (then "<name> copy 2"...)
+function Sets:Duplicate(set)
+    if set.deleted then return nil end
+    local base = format(L["%s copy"], set:DisplayName())
+    local name, i = base, 2
+    while rawget(ns.db.profile.sets, name) do name, i = base .. " " .. i, i + 1 end
+    local new = self:Create(name)
+    local st = new.settings
+    for k, v in pairs(set.settings) do
+        if k ~= "name" and k ~= "order" and k ~= "trigger" then st[k] = deepCopy(v) end
+    end
+    if set:IsDefault() then st.priority = nil end
+    for _, e in ipairs(set.settings.trigger or {}) do st.trigger[#st.trigger + 1] = deepCopy(e) end
+    st.order = (set:IsDefault() and math.huge) or ((set.settings.order or 0) + 0.5)
+    self:Renumber()
+    new:ConditionsChanged()
+    return new
 end
 
 function Sets:Reload()

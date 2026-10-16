@@ -11,6 +11,10 @@ function SwitchTimer:OnInitialize()
         SwitchTimer:Stop()
         if ns:GetCurrentPet() then SwitchTimer:Start() end
     end)
+    -- each set may have its own interval
+    ns:RegisterCallback(self, "CurrentSetChanged", function()
+        if ns:GetCurrentPet() then SwitchTimer:Start() else SwitchTimer:Stop() end
+    end)
 end
 
 function SwitchTimer:Start(noRestart)
@@ -20,8 +24,12 @@ function SwitchTimer:Start(noRestart)
         self.timer = nil
     end
     local cfg = ns.db.profile.autoSwitch
-    if cfg.timer then
-        self.timer = ns:After(cfg.timerValue, function() SwitchTimer:Fire() end)
+    local set = ns.Sets and ns.Sets:GetCurrent()
+    local minutes = set and set.settings.switchMinutes
+    local seconds = minutes and minutes * 60 or (cfg.timer and cfg.timerValue)
+    if seconds then
+        self.interval = seconds
+        self.timer = ns:After(seconds, function() SwitchTimer:Fire() end)
     end
 end
 

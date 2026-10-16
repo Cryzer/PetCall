@@ -33,8 +33,17 @@ function ns:GetRecentPets()
     return out
 end
 
+-- the set's own choice wins over the setting
+local function announce()
+    local set = ns.Sets:GetCurrent()
+    local own = set and set.settings.announce
+    if own == "on" then return true end
+    if own == "off" then return false end
+    return ns.db.profile.verbose
+end
+
 local function doSummon(petID)
-    if ns.db.profile.verbose then
+    if announce() then
         local info = ns.PetCache:GetInfo(petID)
         ns:Printf(L["SUMMONING_MSG"], info and (info.customName or info.name) or "?")
     end
@@ -45,6 +54,7 @@ end
 
 function Summon:SummonRandom()
     local set = ns.Sets:GetCurrent()
+    if set and set:IsNoPet() then return false end
     -- never "summon" the pet that is already out: that would dismiss it
     local petID = set and set:PickPet(ns:GetCurrentPet())
     if not petID then return false end
@@ -87,7 +97,8 @@ function Summon:Dismiss(disable, verify)
 end
 
 function Summon:OnImmediateSet(set)
-    if not set:Contains(ns:GetCurrentPet()) then ns.Ready:QueueResummon() end
+    if set:IsNoPet() then return end
+    if set.settings.alwaysNew or not set:Contains(ns:GetCurrentPet()) then ns.Ready:QueueResummon() end
 end
 
 -- Compatibility API (Bindings.xml and 1.x macros call these on the global)

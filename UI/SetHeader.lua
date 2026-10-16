@@ -54,6 +54,7 @@ function Header.Counts(set) return counts(set) end
 function Header.Summary(set)
     local inSet = counts(set)
     local picks = format(L["PetCall picks one of %d checked pets."], inSet)
+    if set:IsNoPet() then picks = L["While it is used, PetCall keeps your pet away."] end
     if set:IsDefault() then return L["Used when no other set is active."] .. " " .. picks end
     if not set:HasConditions() then return L["No conditions yet, so this set is always active."] .. " " .. picks end
     return format(L["When: %s."], describeConditions(set)) .. " " .. picks

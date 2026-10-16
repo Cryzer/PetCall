@@ -235,7 +235,12 @@ function Tab:Rebuild()
     local inSet, leftOut = ns.UI.SetHeader.Counts(set)
     page.count:SetText(format(L["%d in this set · %d left out"], inSet, leftOut))
     -- a set nobody picked pets for yet says what to do instead of only "0 in this set"
-    local empty = inSet == 0 and ns.PetCache:NumPets() > 0
+    -- a "no pet" set says so instead; the pets below are not used while it is
+    local noPet = set:IsNoPet()
+    local empty = noPet or (inSet == 0 and ns.PetCache:NumPets() > 0)
+    page.emptyBanner.text:SetText(noPet and L["This set keeps your pet away. The pets below are not used while it is."]
+        or L["No pets in this set yet. Tick the ones you want, or include them all."])
+    page.emptyBanner.all:SetShown(not noPet)
     page.emptyBanner:SetShown(empty)
     grid:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -GRID_TOP - (empty and BANNER_H + 6 or 0))
     page.show:Refresh()

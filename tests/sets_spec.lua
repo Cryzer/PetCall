@@ -204,4 +204,84 @@ describe("Sets", function()
         W.fire("ZONE_CHANGED_NEW_AREA")
         assert.equal(0, refreshed)
     end)
+    it("a no-pet set is used without pets and blocks summoning", function()
+        local raid = ns.Sets:Create("No pet")
+        raid:SetNoPet(true)
+        W.advance(1)
+        assert.equal(raid, ns.Sets:GetCurrent())                   -- no pets, still used
+        assert.equal("active", raid:GetStatus())
+        local keys = {}
+        for _, b in ipairs(ns.Ready:GetBlockers()) do keys[b.key] = true end
+        assert.is_true(keys.no_pet_set)
+        assert.is_false(ns.Summon:SummonRandom())
+        raid:SetNoPet(false)
+        keys = {}
+        for _, b in ipairs(ns.Ready:GetBlockers()) do keys[b.key] = true end
+        assert.is_nil(keys.no_pet_set)
+    end)
+
+    it("on start: keep, new unless it fits, always new", function()
+        local s = ns.Sets:Create("S")
+        assert.equal("keep", s:GetOnActivate())
+        s:SetOnActivate("new")
+        assert.is_true(s.settings.immediate and s.settings.alwaysNew)
+        s:SetOnActivate("fits")
+        assert.equal("fits", s:GetOnActivate())
+        assert.is_nil(s.settings.alwaysNew)
+        W.world.summoned = "BattlePet-0-0001"
+        s:SetPetWeight("BattlePet-0-0001", 1)
+        local queued = 0
+        local orig = ns.Ready.QueueResummon
+        ns.Ready.QueueResummon = function() queued = queued + 1 end
+        ns.Summon:OnImmediateSet(s)
+        assert.equal(0, queued)                                     -- the pet out fits: kept
+        s:SetOnActivate("new")
+        ns.Summon:OnImmediateSet(s)
+        assert.equal(1, queued)
+        ns.Ready.QueueResummon = orig
+    end)
+
+    it("a set's own switch interval wins over the setting", function()
+        local s = ns.Sets:Create("Quick")
+        s:SetPetWeight("BattlePet-0-0001", 1)
+        s:SetSwitchMinutes(5)
+        W.advance(1)
+        assert.equal(s, ns.Sets:GetCurrent())
+        W.world.summoned = "BattlePet-0-0001"
+        ns.SwitchTimer:Start()
+        assert.equal(300, ns.SwitchTimer.interval)
+    end)
+
+    it("duplicates a set right below it with all its settings", function()
+        local city = ns.Sets:Get("City")
+        city:SetNoPet(true)
+        local copy = ns.Sets:Duplicate(city)
+        assert.equal("City copy", copy.name)
+        assert.is_true(copy:IsNoPet())
+        assert.same(city.settings.trigger, copy.settings.trigger)
+        assert.is_false(copy.settings.trigger == city.settings.trigger)
+        assert.equal(city:GetRank() + 1, copy:GetRank())
+        assert.equal("City copy 2", ns.Sets:Duplicate(city).name)
+        local d = ns.Sets:Duplicate(ns.Sets:Get("$Default"))
+        assert.equal("Default copy", d.name)
+        assert.is_nil(d.settings.priority)
+    end)
+
+    it("a set's chat-message choice wins over the setting", function()
+        local s = ns.Sets:Create("Loud")
+        s:SetPetWeight("BattlePet-0-0001", 1)
+        s:SetAnnounce("on")
+        ns.db.profile.verbose = false
+        W.advance(1)
+        W.world.summoned = nil
+        local before = #W.world.printed
+        assert.is_true(ns.Summon:SummonRandom())
+        assert.is_true(#W.world.printed > before)
+        s:SetAnnounce("off")
+        ns.db.profile.verbose = true
+        before = #W.world.printed
+        W.world.summoned = nil
+        ns.Summon:SummonRandom()
+        assert.equal(before, #W.world.printed)
+    end)
 end)

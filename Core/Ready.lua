@@ -15,12 +15,12 @@ local CAMO_SPELLS = { 198783, 199483 }
 local FOOD_SPELLS = { 430, 433, 167152, 160598, 160599 }
 
 local BLOCKER_ORDER = {
-    "addon_enabled", "have_pets", "combat", "alive", "flying", "mounted", "vehicle", "stealthed", "invisible", "camo",
+    "addon_enabled", "no_pet_set", "have_pets", "combat", "alive", "flying", "mounted", "vehicle", "stealthed", "invisible", "camo",
     "feigned", "sitting", "casting", "looting", "barbar", "thunderisle_saurok", "in_battleground", "in_pve",
     "resting", "near_pew", "addon_ready",
 }
 local LABELS = {
-    addon_enabled = L["Auto-summon is off"], have_pets = L["No pets"], combat = L["In combat"],
+    addon_enabled = L["Auto-summon is off"], no_pet_set = L["This set keeps the pet away"], have_pets = L["No pets"], combat = L["In combat"],
     alive = L["Dead"], flying = L["Flying"], mounted = L["Mounted"], vehicle = L["In a vehicle"], stealthed = L["Stealthed"],
     invisible = L["Invisible"], camo = L["Camouflaged"], feigned = L["Feigning death"], sitting = L["Sitting"],
     casting = L["Casting"], looting = L["Looting"], barbar = L["At the barber"], thunderisle_saurok = L["Transformed"],
@@ -83,6 +83,10 @@ function Ready:OnEnable()
     self:SetReady("vehicle", not UnitInVehicle("player"))
     self:SetReady("flying", not IsFlying())
     self:SetReady("mounted", not IsMounted())
+    self:CheckNoPetSet()
+    -- a "no pet" set dismisses the pet while it is used
+    ns:RegisterCallback(self, "CurrentSetChanged", function() Ready:CheckNoPetSet() end)
+    ns:RegisterCallback(self, "SetsChanged", function() Ready:CheckNoPetSet() end)
     self:UNIT_AURA(nil, "player")
     self:UPDATE_STEALTH()
     self:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", "CheckFlying")
@@ -125,6 +129,7 @@ function Ready:UpdateChecks()
     self:EnableCheck("invisible", true, p.dismissWhenStealthed)
     self:EnableCheck("flying", true)
     self:EnableCheck("mounted", p.noSummonMounted)
+    self:EnableCheck("no_pet_set", true, true)
     self:EnableCheck("near_pew", p.nearPEWOnly)
     self:EnableCheck("alive", true)
     self:EnableCheck("camo", true, p.dismissWhenStealthed)
@@ -237,6 +242,11 @@ end
 function Ready:QueueResummon(nowait)
     self.force = true
     self:_CheckSummon(nowait)
+end
+
+function Ready:CheckNoPetSet()
+    local set = ns.Sets and ns.Sets:GetCurrent()
+    self:SetReady("no_pet_set", not (set and set:IsNoPet()))
 end
 
 function Ready:PetListUpdated() self:SetReady("have_pets", ns.PetCache:NumPets() > 0) end
