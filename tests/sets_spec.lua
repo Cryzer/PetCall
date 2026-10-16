@@ -40,6 +40,11 @@ describe("Sets", function()
         local list = names()
         assert.equal("Fresh", list[#list - 1])
         assert.equal(1, ns.Sets:Get("City"):GetRank())
+        ns.Sets:MoveTo(ns.Sets:Get("City"), 3)                      -- dropped between the 3rd and 4th
+        assert.equal(2, ns.Sets:Get("City"):GetRank())
+        ns.Sets:MoveTo(ns.Sets:Get("City"), 99)                     -- below everything: still above Default
+        list = names()
+        assert.equal("City", list[#list - 1])
     end)
 
     it("when two sets fit, the one higher in the list is used; the other says it is outranked", function()

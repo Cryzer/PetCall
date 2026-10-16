@@ -325,6 +325,23 @@ function Sets:Move(set, delta)
     return true
 end
 
+-- puts a set at a place in the list (1 = first), as a drag and drop does
+function Sets:MoveTo(set, slot)
+    if set:IsDefault() or set.deleted then return false end
+    local list = {}
+    for _, s in ipairs(self:List()) do if not s:IsDefault() then list[#list + 1] = s end end
+    local from
+    for k, s in ipairs(list) do if s == set then from = k end end
+    table.remove(list, from)
+    if slot > from then slot = slot - 1 end
+    slot = math.max(1, math.min(#list + 1, slot))
+    table.insert(list, slot, set)
+    for k, s in ipairs(list) do s.settings.order = k end
+    ns:Fire("SetsChanged", set.name)
+    self:Update()
+    return true
+end
+
 -- just above the default set: for sets meant as a better Default
 function Sets:MoveToBottom(set)
     set.settings.order = math.huge

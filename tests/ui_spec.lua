@@ -782,21 +782,24 @@ describe("UI smoke", function()
         assert.is_true(f.content:IsShown())
         assert.is_false(f.Tabs[2]:IsShown())                 -- the default set has no When tab
     end)
-    it("set cards move and pause on hover; settings show the order and the pause state", function()
-        local a, b = ns.Sets:Create("A"), ns.Sets:Create("B")
+    it("set cards are dragged into order and show their place; settings show the order and the pause state", function()
+        local a, b = ns.Sets:Create("A"), ns.Sets:Create("B")       -- B on top, then A
         ns.UI.Main:Show()
         W.advance(1)
         ns.UI.SetList:Refresh()
+        assert.equal(1, ns.UI.SetList.DropSlot(500, { 400, 300 }))  -- above both cards
+        assert.equal(2, ns.UI.SetList.DropSlot(350, { 400, 300 }))
+        assert.equal(3, ns.UI.SetList.DropSlot(100, { 400, 300 }))
+        ns.Sets:MoveTo(a, 1)                                        -- what dropping A on top does
+        assert.equal(1, a:GetRank())
         local rowA
         for _, r in ipairs(ns.UI.SetList._rows) do if r:IsShown() and r.set == a then rowA = r end end
-        ns.UI.SetList.ShowControls(rowA, true)
-        assert.is_true(rowA.up:IsShown(), "up shown")       -- A is second: it can go up
-        rowA.up:Click()
-        assert.equal(1, a:GetRank())
-        for _, r in ipairs(ns.UI.SetList._rows) do if r:IsShown() and r.set == a then rowA = r end end   -- rows follow the order
-        rowA.pause:Click()                                  -- opens the pause choices
-        U.lastMenu:Find("Pause for 1 hour"):Click()
+        assert.equal("1", tostring(rowA.rank:GetText()))
+        rowA:Click("RightButton")
+        U.lastMenu:Find("Pause"):Find("Pause for 1 hour"):Click()
         assert.is_true((a:IsPaused()), "paused")
+        ns.UI.SetList:Refresh()
+        assert.is_true(rowA.pausedMark:IsShown())
         ns.UI.Main:SelectSet("A")
         ns.UI.Main:SelectTab("settings")
         local page = ns.UI.SetSettingsPage

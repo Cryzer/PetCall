@@ -43,6 +43,7 @@ local function setMenu(owner, root, set)
 end
 
 local CARD_H = 42
+local LIST_TOP = 40          -- below the title and the hint
 local FALLBACK_ICON = "Interface\\Icons\\Tracking_WildPet"
 
 -- the pet a set is most likely to summon stands for the set
@@ -70,7 +71,8 @@ local function stateLine(set)
     elseif set:IsDefault() then
         return "|cff9d9d9d" .. L["When nothing else fits"] .. "|r"
     elseif status == "outranked" then
-        return "|cff7fa8e0" .. ns.UI.SetHeader.OutrankedText(set) .. "|r"
+        local cur = ns.Sets:GetCurrent()
+        return "|cff7fa8e0" .. format(L["Fits, behind %s"], cur and cur:DisplayName() or "?") .. "|r"
     end
     local states = set:GetConditionStates()
     for _, g in ipairs(set:GetConditionModel().groups) do
@@ -107,46 +109,16 @@ local function row(i)
     r.state:SetPoint("RIGHT", -6, 0)
     r.state:SetJustifyH("LEFT")
     r.state:SetWordWrap(false)
-    r.prio = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    r.prio:SetPoint("TOPRIGHT", -6, -5)
-    -- on hover: move up / down and pause, so the order and pausing are one click away
-    r.controls = {}
-    local function control(texture, tip, onClick)
-        local b = CreateFrame("Button", nil, r)
-        b:SetSize(22, 20)
-        b:SetFrameLevel(r:GetFrameLevel() + 2)
-        b:SetNormalTexture(texture)
-        b:SetHighlightTexture(texture, "ADD")
-        b:SetScript("OnClick", function(self) onClick(self) end)
-        b:HookScript("OnLeave", function() if not r:IsMouseOver() then SetList.ShowControls(r, false) end end)
-        ns.Widgets.Tooltip(b, tip)
-        b:Hide()
-        r.controls[#r.controls + 1] = b
-        return b
-    end
-    r.up = control("Interface\\Buttons\\Arrow-Up-Up", L["Move up"], function() ns.Sets:Move(r.set, -1) end)
-    r.up:SetPoint("TOPRIGHT", -2, -1)
-    r.down = control("Interface\\Buttons\\Arrow-Down-Up", L["Move down"], function() ns.Sets:Move(r.set, 1) end)
-    r.down:SetPoint("BOTTOMRIGHT", -2, 1)
-    r.pause = control("Interface\\TimeManager\\PauseButton", L["Pause or resume"], function(self)
-        if r.set:IsPaused() then r.set:Resume() return end
-        MenuUtil.CreateContextMenu(self, function(_, root) pauseMenu(root, r.set) end)
-    end)
-    r.pause:SetSize(26, 26)
-    r.pause:SetPoint("RIGHT", -28, 0)
-    -- a dark strip behind the controls so they read on any card
-    -- (a frame above the card, so it also covers the card's text)
-    r.ctrlBg = CreateFrame("Frame", nil, r)
-    r.ctrlBg:SetFrameLevel(r:GetFrameLevel() + 1)
-    r.ctrlBg:SetPoint("TOPRIGHT", 0, 0)
-    r.ctrlBg:SetPoint("BOTTOMRIGHT", 0, 0)
-    r.ctrlBg:SetWidth(58)
-    r.ctrlBg.tex = r.ctrlBg:CreateTexture(nil, "BACKGROUND")
-    r.ctrlBg.tex:SetAllPoints()
-    r.ctrlBg.tex:SetColorTexture(0, 0, 0, 0.8)
-    r.ctrlBg:Hide()
-    r:HookScript("OnEnter", function() SetList.ShowControls(r, true) end)
-    r:HookScript("OnLeave", function() if not r:IsMouseOver() then SetList.ShowControls(r, false) end end)
+    -- place in the list, on the icon; the default set has none (it is always last)
+    r.rank = r:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    r.rank:SetPoint("BOTTOMRIGHT", r.icon, "BOTTOMRIGHT", 2, -2)
+    r.pausedMark = r:CreateTexture(nil, "OVERLAY")
+    r.pausedMark:SetSize(18, 18)
+    r.pausedMark:SetPoint("TOPRIGHT", -4, -4)
+    r.pausedMark:SetTexture("Interface\\TimeManager\\PauseButton")
+    r:RegisterForDrag("LeftButton")
+    r:SetScript("OnDragStart", function(self) SetList.StartDrag(self) end)
+    r:SetScript("OnDragStop", function(self) SetList.StopDrag(self) end)
     r:SetScript("OnClick", function(self, button)
         if button == "RightButton" then
             MenuUtil.CreateContextMenu(self, function(o, root) setMenu(o, root, self.set) end)
@@ -154,7 +126,6 @@ local function row(i)
             ns.UI.Main:SelectSet(self.set.name)
         end
     end)
-    ns.Widgets.Tooltip(r, function(self) return self.set:DisplayName() end, function(self) return stateLine(self.set) end)
     rows[i] = r
     return r
 end
@@ -167,16 +138,16 @@ function SetList:Refresh()
         local r = row(i)
         r.set = set
         r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", 4, -28 - (i - 1) * (CARD_H + 4))
+        r:SetPoint("TOPLEFT", 4, -LIST_TOP - (i - 1) * (CARD_H + 4))
         r:SetPoint("RIGHT", -4, 0)
         r.icon:SetTexture(setIcon(set))
         local paused = set:IsPaused()
         r.icon:SetDesaturated(paused)
         r.name:SetText(set:DisplayName())
         r.name:SetFontObject(paused and "GameFontDisable" or "GameFontNormal")
-        r.pause:SetNormalTexture(paused and "Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up" or "Interface\\TimeManager\\PauseButton")
+        r.pausedMark:SetShown(paused)
+        r.rank:SetText(set:IsDefault() and "" or i)
         r.state:SetText(stateLine(set))
-        r.prio:SetText("")
         r.selected:SetShown(selected == set)
         r.selected:SetVertexColor(ns.Skin:Accent())
         r:Show()
@@ -205,15 +176,59 @@ end
 
 function SetList:IsCollapsed() return collapsedNow end
 
--- arrows only where a move is possible; the default set has none
-function SetList.ShowControls(r, on)
-    local set = r.set
-    if not set then return end
-    local rank, n = set:GetRank()
-    r.pause:SetShown(on)
-    r.ctrlBg:SetShown(on)
-    r.up:SetShown(on and not set:IsDefault() and rank > 1)
-    r.down:SetShown(on and not set:IsDefault() and rank < n - 1)
+-- Drag and drop: the card fades, a line shows where it will land, the drop moves it.
+-- slot = 1 + the number of other cards whose middle is above the cursor
+function SetList.DropSlot(cursorY, centers)
+    local slot = 1
+    for _, y in ipairs(centers) do if y > cursorY then slot = slot + 1 end end
+    return slot
+end
+
+local dragging, dropLine
+
+local function orderRows()
+    local out = {}
+    for _, r in ipairs(rows) do if r:IsShown() and r.set and not r.set:IsDefault() then out[#out + 1] = r end end
+    return out
+end
+
+local function cursorSlot()
+    local list = orderRows()
+    local _, y = GetCursorPosition()
+    y = y / panel:GetEffectiveScale()
+    local centers = {}
+    for k, r in ipairs(list) do centers[k] = select(2, r:GetCenter()) or 0 end
+    return SetList.DropSlot(y, centers), list
+end
+
+local function placeLine()
+    local slot, list = cursorSlot()
+    dropLine:ClearAllPoints()
+    if list[slot] then
+        dropLine:SetPoint("BOTTOMLEFT", list[slot], "TOPLEFT", 0, 1)
+        dropLine:SetPoint("BOTTOMRIGHT", list[slot], "TOPRIGHT", 0, 1)
+    elseif list[#list] then
+        dropLine:SetPoint("TOPLEFT", list[#list], "BOTTOMLEFT", 0, -1)
+        dropLine:SetPoint("TOPRIGHT", list[#list], "BOTTOMRIGHT", 0, -1)
+    end
+end
+
+function SetList.StartDrag(r)
+    if not r.set or r.set:IsDefault() then return end
+    dragging = r
+    r:SetAlpha(0.45)
+    dropLine:SetColorTexture(ns.Skin:Accent())
+    dropLine:Show()
+    panel:SetScript("OnUpdate", placeLine)
+end
+
+function SetList.StopDrag(r)
+    if dragging ~= r then return end
+    dragging = nil
+    r:SetAlpha(1)
+    dropLine:Hide()
+    panel:SetScript("OnUpdate", nil)
+    ns.Sets:MoveTo(r.set, (cursorSlot()))
 end
 
 -- the pet that is out right now, large, at the foot of the sets panel
@@ -298,6 +313,13 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     panel:SetAllPoints()
     local title = ns.Widgets.Label(panel, L["Sets"], "GameFontNormal")
     title:SetPoint("TOPLEFT", 6, -6)
+    local hint = ns.Widgets.Label(panel, L["The top one that fits is used. Drag to reorder."], "GameFontDisableSmall")
+    hint:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
+    hint:SetPoint("RIGHT", -6, 0)
+    hint:SetWordWrap(false)
+    dropLine = panel:CreateTexture(nil, "OVERLAY")
+    dropLine:SetHeight(2)
+    dropLine:Hide()
     local collapse = CreateFrame("Button", nil, panel)
     collapse:SetSize(20, 20)
     collapse:SetPoint("TOPRIGHT", -2, -2)
