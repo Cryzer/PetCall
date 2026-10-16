@@ -346,10 +346,14 @@ function C.KnownHolidays()
         local info = C_Calendar.GetMonthInfo(offset)
         for day = 1, info and info.numDays or 0 do
             dayHolidays(offset, day, function(ev)
-                if not seen[ev.eventID] then
-                    seen[ev.eventID] = true
-                    out[#out + 1] = { value = ev.eventID, label = ev.title, icon = ev.iconTexture }
+                local h = seen[ev.eventID]
+                if not h then
+                    h = { value = ev.eventID, label = ev.title, icon = ev.iconTexture }
+                    seen[ev.eventID] = h
+                    out[#out + 1] = h
                 end
+                -- the start day carries the event's picture; ongoing and end days show strips
+                if ev.sequenceType == "START" and not h.started then h.icon, h.started = ev.iconTexture, true end
             end)
         end
     end
@@ -359,6 +363,8 @@ end
 local ANY_HOLIDAY = 0
 local function holidayLabel(id)
     if id == ANY_HOLIDAY then return L["Any holiday"] end
+    -- names are learned while reading the calendar: read it once when a name is missing
+    if not holidayNames[id] then C.KnownHolidays() end
     return holidayNames[id] or ("#" .. id)
 end
 

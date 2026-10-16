@@ -224,4 +224,14 @@ describe("Conditions", function()
         assert.equal(479, known[1].value)
         assert.equal("Darkmoon Faire", known[1].label)
     end)
+    it("holiday names and start-day pictures come from the calendar", function()
+        local start = { eventID = 372, title = "Brewfest", calendarType = "HOLIDAY", sequenceType = "START", iconTexture = 111 }
+        local ending = { eventID = 372, title = "Brewfest", calendarType = "HOLIDAY", sequenceType = "END", iconTexture = 222 }
+        W.world.calEvents[6] = { ending }
+        W.world.calEvents[11 * 100 + 20] = { start }        -- next year's start, eleven months on
+        assert.equal("Holiday: Brewfest", C.Describe({ "holiday", holidayIDs = { 372 } }))
+        W.advance(31)
+        local known = C.KnownHolidays()
+        assert.equal(111, known[1].icon)
+    end)
 end)
