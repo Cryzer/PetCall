@@ -8,6 +8,7 @@ ns.UI.SetList = SetList
 
 local COLLAPSE_BELOW = 700
 local panel, rail, rows, newBox = nil, nil, {}, nil
+SetList._rows = rows      -- for tests
 local RAIL_W, PANEL_W = 34, 190
 local collapsedNow = false
 local STATUS = {
@@ -32,24 +33,72 @@ local function setMenu(owner, root, set)
     end
 end
 
+local CARD_H = 42
+local FALLBACK_ICON = "Interface\\Icons\\Tracking_WildPet"
+
+-- the pet a set is most likely to summon stands for the set
+local function setIcon(set)
+    local tbl, sums, best, bestW = set:GetWeightTable(), {}, nil, 0
+    for i = 1, #tbl, 2 do
+        local id = tbl[i + 1]
+        sums[id] = (sums[id] or 0) + tbl[i]
+        if sums[id] > bestW then best, bestW = id, sums[id] end
+    end
+    local info = best and ns.PetCache:GetInfo(best)
+    return info and info.icon or FALLBACK_ICON
+end
+
+-- one line in words: what the set is doing right now
+local function stateLine(set)
+    local status = set:GetStatus()
+    if status == "active" then
+        return format("|cff4cd964%s|r · %s", L["Active now"], format(L["%d pets"], (ns.UI.SetHeader.Counts(set))))
+    elseif status == "disabled" then
+        return "|cff808080" .. L["Turned off"] .. "|r"
+    elseif status == "empty" then
+        return "|cffff9933" .. L["No pets to choose from"] .. "|r"
+    elseif status == "noConditions" then
+        return "|cffff9933" .. L["Always active"] .. "|r"
+    elseif set:IsDefault() then
+        return "|cff9d9d9d" .. L["When nothing else fits"] .. "|r"
+    end
+    local states = set:GetConditionStates()
+    for _, g in ipairs(set:GetConditionModel().groups) do
+        for _, e in ipairs(g.rows) do
+            local st = states[e]
+            if st and not st.value then return "|cff9d9d9d" .. format(L["Waiting for: %s"], ns.Conditions.Describe(e)) .. "|r" end
+        end
+    end
+    return "|cff9d9d9d" .. L["Conditions not met"] .. "|r"
+end
+
 local function row(i)
     if rows[i] then return rows[i] end
     local r = CreateFrame("Button", nil, panel)
-    r:SetHeight(24)
+    r:SetHeight(CARD_H)
     r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     r:SetHighlightAtlas("PetList-ButtonHighlight", "ADD")
+    r.bg = r:CreateTexture(nil, "BACKGROUND", nil, -2)
+    r.bg:SetAllPoints()
+    r.bg:SetAtlas("PetList-ButtonBackground")
     r.selected = r:CreateTexture(nil, "BACKGROUND")
     r.selected:SetAllPoints()
     r.selected:SetAtlas("PetList-ButtonSelect")
-    r.dot = r:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    r.dot:SetPoint("LEFT", 6, 0)
-    r.name = r:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    r.name:SetPoint("LEFT", r.dot, "RIGHT", 6, 0)
-    r.name:SetPoint("RIGHT", -34, 0)
+    r.icon = r:CreateTexture(nil, "ARTWORK")
+    r.icon:SetSize(32, 32)
+    r.icon:SetPoint("LEFT", 5, 0)
+    r.name = r:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 7, -2)
+    r.name:SetPoint("RIGHT", -24, 0)
     r.name:SetJustifyH("LEFT")
     r.name:SetWordWrap(false)
+    r.state = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    r.state:SetPoint("BOTTOMLEFT", r.icon, "BOTTOMRIGHT", 7, 2)
+    r.state:SetPoint("RIGHT", -6, 0)
+    r.state:SetJustifyH("LEFT")
+    r.state:SetWordWrap(false)
     r.prio = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    r.prio:SetPoint("RIGHT", -6, 0)
+    r.prio:SetPoint("TOPRIGHT", -6, -5)
     r:SetScript("OnClick", function(self, button)
         if button == "RightButton" then
             MenuUtil.CreateContextMenu(self, function(o, root) setMenu(o, root, self.set) end)
@@ -57,7 +106,7 @@ local function row(i)
             ns.UI.Main:SelectSet(self.set.name)
         end
     end)
-    ns.Widgets.Tooltip(r, function(self) return self.set:DisplayName() end, function(self) return STATUS[self.set:GetStatus()][2] end)
+    ns.Widgets.Tooltip(r, function(self) return self.set:DisplayName() end, function(self) return stateLine(self.set) end)
     rows[i] = r
     return r
 end
@@ -70,13 +119,14 @@ function SetList:Refresh()
         local r = row(i)
         r.set = set
         r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", 0, -28 - (i - 1) * 26)
-        r:SetPoint("RIGHT")
-        local st = STATUS[set:GetStatus()]
-        r.dot:SetText(st[1] and ns.Widgets.Dot(st[1]) or "")
-        r.name:SetText(set:DisplayName() .. (set.settings.enabled and "" or (" (" .. L["off"] .. ")")))
-        r.name:SetFontObject(set.settings.enabled and "GameFontHighlight" or "GameFontDisable")
-        r.prio:SetText(set:IsDefault() and "" or (ns.Weights.Short(set:GetPriority()) or ""))
+        r:SetPoint("TOPLEFT", 4, -28 - (i - 1) * (CARD_H + 4))
+        r:SetPoint("RIGHT", -4, 0)
+        r.icon:SetTexture(setIcon(set))
+        r.icon:SetDesaturated(not set.settings.enabled)
+        r.name:SetText(set:DisplayName())
+        r.name:SetFontObject(set.settings.enabled and "GameFontNormal" or "GameFontDisable")
+        r.state:SetText(stateLine(set))
+        r.prio:SetText("")
         r.selected:SetShown(selected == set)
         r.selected:SetVertexColor(ns.Skin:Accent())
         r:Show()

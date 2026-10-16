@@ -7,42 +7,50 @@ ns.UI.StatusBar = Bar
 
 local bar
 
+-- one sentence: which pet is out and from which set, then whether PetCall can act
 function Bar:Refresh()
     if not bar or not bar:IsVisible() then return end
     local set = ns.Sets:GetCurrent()
     local pet = ns:GetCurrentPet()
     local info = pet and ns.PetCache:GetInfo(pet)
-    bar.left:SetText(format("%s: %s · %s: %s", L["Active"], set and set:DisplayName() or NONE,
-        L["Pet"], info and (info.customName or info.name) or L["none"]))
+    bar.icon:SetTexture(info and info.icon or "Interface\\Icons\\Tracking_WildPet")
+    local now
+    if info then
+        now = format(L["Now: %s, from %s"], info.customName or info.name, set and set:DisplayName() or NONE)
+    else
+        now = L["Now: no pet out"]
+    end
     local blockers = ns.Ready:GetBlockers()
+    local state
     if #blockers == 0 then
-        bar.mid:SetText("|cff40ff40" .. L["Ready"] .. "|r")
+        state = "|cff40ff40" .. L["ready"] .. "|r"
     else
         local labels = {}
-        for i = 1, math.min(3, #blockers) do labels[i] = blockers[i].label end
-        bar.mid:SetText("|cffffb040" .. L["Paused by"] .. ":|r " .. table.concat(labels, ", ") .. (#blockers > 3 and " ..." or ""))
+        for i = 1, math.min(2, #blockers) do labels[i] = blockers[i].label end
+        state = "|cffffb040" .. L["paused"] .. ":|r " .. table.concat(labels, ", ") .. (#blockers > 2 and " ..." or "")
     end
+    bar.left:SetText(now .. "  ·  " .. state)
     bar.blockers = blockers
-    bar.auto:SetText(ns:IsAutoSummon() and L["Auto-summon: ON"] or L["Auto-summon: OFF"])
-    bar.auto:SetWidth(bar.auto:GetFontString():GetStringWidth() + 24)
+    bar.auto:SetChecked(ns:IsAutoSummon())
 end
 
 ns:RegisterCallback(Bar, "WindowBuilt", function(_, frame)
     bar = frame.status
-    bar.left = ns.Widgets.Label(bar, "", "GameFontHighlightSmall")
-    bar.left:SetPoint("LEFT")
-    bar.left:SetWidth(260)
-    bar.left:SetWordWrap(false)
-    bar.auto = ns.Widgets.Button(bar, "", function() ns:SetAutoSummon(not ns:IsAutoSummon()) end)
-    bar.auto:SetPoint("RIGHT")
+    bar.icon = bar:CreateTexture(nil, "ARTWORK")
+    bar.icon:SetSize(18, 18)
+    bar.icon:SetPoint("LEFT", 2, 0)
+    bar.auto = ns.Widgets.Checkbox(bar, L["Auto-summon"], function() return ns:IsAutoSummon() end,
+        function(v) ns:SetAutoSummon(v) end)
+    bar.auto:SetPoint("RIGHT", -bar.auto.text:GetStringWidth() - 6, 0)
+    ns.Widgets.Tooltip(bar.auto, L["Auto-summon"], L["Automatically summon a companion pet when entering a new area or when idle."])
     bar.another = ns.Widgets.Button(bar, L["Summon another"], function() ns:SummonAnother() end)
-    bar.another:SetPoint("RIGHT", bar.auto, "LEFT", -4, 0)
-    bar.mid = ns.Widgets.Label(bar, "", "GameFontHighlightSmall")
-    bar.mid:SetPoint("LEFT", bar.left, "RIGHT", 8, 0)
-    bar.mid:SetPoint("RIGHT", bar.another, "LEFT", -8, 0)
-    bar.mid:SetWordWrap(false)
+    bar.another:SetPoint("RIGHT", bar.auto, "LEFT", -12, 0)
+    bar.left = ns.Widgets.Label(bar, "", "GameFontHighlightSmall")
+    bar.left:SetPoint("LEFT", bar.icon, "RIGHT", 6, 0)
+    bar.left:SetPoint("RIGHT", bar.another, "LEFT", -8, 0)
+    bar.left:SetWordWrap(false)
     local hit = CreateFrame("Frame", nil, bar)
-    hit:SetAllPoints(bar.mid)
+    hit:SetAllPoints(bar.left)
     hit:EnableMouse(true)
     ns.Widgets.Tooltip(hit, L["Why is no pet summoned?"], function()
         if not bar.blockers or #bar.blockers == 0 then return L["Nothing is blocking PetCall."] end

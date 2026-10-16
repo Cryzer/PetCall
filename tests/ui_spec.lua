@@ -524,4 +524,26 @@ describe("UI smoke", function()
         ns.PetGridModel.Rows = orig
         assert.equal(1, rows)
     end)
+    it("set cards show a pet icon and say in words what each set is doing", function()
+        ns.UI.Main:Show()
+        local town = ns.Sets:Create("Raid")
+        town:ApplyTemplate("instance")
+        town:SetPetWeight("a", 1)
+        W.advance(1)
+        ns.UI.SetList:Refresh()
+        local byName = {}
+        for _, r in ipairs(ns.UI.SetList._rows) do if r:IsShown() then byName[r.set.name] = r end end
+        assert.equal("icon1", byName["$Default"].icon._texture)
+        assert.is_true(byName["$Default"].state:GetText():find("Active now") ~= nil, byName["$Default"].state:GetText())
+        assert.is_true(byName.Raid.state:GetText():find("Waiting for") ~= nil, byName.Raid.state:GetText())
+    end)
+
+    it("the status bar reads as a sentence", function()
+        W.world.summoned = "a"
+        ns.UI.Main:Show()
+        ns.UI.StatusBar:Refresh()
+        local bar = ns.UI.Main:GetFrame().status
+        assert.is_true(bar.left:GetText():find("^Now: A") ~= nil, bar.left:GetText())
+        assert.is_not_nil(bar.auto)
+    end)
 end)
