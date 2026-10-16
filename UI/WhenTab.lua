@@ -253,6 +253,7 @@ local function buildRow(parent, group, index, e, y)
         row.negate = negate
         local prev = negate
         for _, field in ipairs(def.fields) do prev = buildField(row, e, field, prev) end
+        row.last = prev
         if row.codeEditor then height = 28 + codeEditor(parent, e, row) end
     end
     local remove = track(ns.Widgets.Button(row, "×", function()
@@ -260,7 +261,9 @@ local function buildRow(parent, group, index, e, y)
         save() Tab:Refresh(set)
     end))
     remove:SetWidth(24)
-    remove:SetPoint("RIGHT")
+    -- next to what it removes, not at the far edge of a wide window
+    if row.last then remove:SetPoint("LEFT", row.last, "RIGHT", 12, 0) else remove:SetPoint("RIGHT") end
+    ns.Widgets.Tooltip(remove, L["Remove condition"])
     return height
 end
 

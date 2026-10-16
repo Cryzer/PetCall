@@ -509,7 +509,7 @@ describe("UI smoke", function()
         local page = ns.UI.PetsTabPage
         local panel = ns.UI.Preview:GetPanel()
         assert.is_true(panel._points.TOPRIGHT.rel == page, "preview anchored to the page edge")
-        assert.is_true(page.count._points.BOTTOMRIGHT.rel == page.grid, "count sits on the grid")
+        assert.is_true(page.count._points.BOTTOMRIGHT.rel == page.emptyBanner, "count sits above the grid area")
     end)
 
     it("dragging the window size rebuilds the grid once it settles, not on every step", function()
@@ -555,6 +555,9 @@ describe("UI smoke", function()
         W.advance(1)
         local page = ns.UI.PetsTabPage
         assert.is_true(page.emptyBanner:IsShown())
+        page.show.buttons[2]:Click()                        -- In this set: nothing to show
+        assert.equal("No pets to show with these filters.", page.emptyText:GetText())
+        page.show.buttons[1]:Click()
         page.emptyBanner.all:Click()
         W.advance(1)
         assert.equal(1, set:GetPetWeight("a"))

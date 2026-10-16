@@ -306,3 +306,6 @@ L["New pets you collect get this too. \"Never\" means only the pets you tick are
 L["Danger zone"] = true
 L["Copy this set as text to share it or keep a backup."] = true
 L["Removes the set with its conditions and weights."] = true
+L["No pets to show with these filters."] = true
+L["none chosen yet"] = true
+L["Remove condition"] = true

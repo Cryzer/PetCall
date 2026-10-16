@@ -200,7 +200,7 @@ function Tab:Rebuild()
         emptyText:SetText(L["You have no pets yet."])
         page.openJournal:Show()
     elseif #ids == 0 then
-        emptyText:SetText(format(L["No pets match \"%s\"."], state.search))
+        emptyText:SetText(state.search ~= "" and format(L["No pets match \"%s\"."], state.search) or L["No pets to show with these filters."])
         page.openJournal:Hide()
     else
         emptyText:SetText("")
@@ -333,7 +333,6 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     grid:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -GRID_TOP)
     grid:SetClipsChildren(true)
     page.grid = grid
-    page.count:SetPoint("BOTTOMRIGHT", grid, "TOPRIGHT", 0, 8)
     scrollBox = CreateFrame("Frame", nil, grid, "WowScrollBoxList")
     scrollBox:SetAllPoints()
     scrollBar = CreateFrame("EventFrame", nil, page, "MinimalScrollBar")
@@ -365,8 +364,11 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     page.emptyBanner.text:SetPoint("RIGHT", page.emptyBanner.all, "LEFT", -8, 0)
     page.emptyBanner.text:SetWordWrap(false)
     page.emptyBanner:Hide()
+    -- the count stays on the line above the grid area even when the banner pushes the grid down
+    page.count:SetPoint("BOTTOMRIGHT", page.emptyBanner, "TOPRIGHT", 0, 8)
 
     emptyText = ns.Widgets.Label(grid, "", "GameFontDisableLarge")
+    page.emptyText = emptyText
     emptyText:SetPoint("CENTER")
     page.openJournal = ns.Widgets.Button(grid, L["Open Pet Journal"], function() ToggleCollectionsJournal(2) end)
     page.openJournal:SetPoint("TOP", emptyText, "BOTTOM", 0, -10)

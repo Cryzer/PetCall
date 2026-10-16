@@ -24,17 +24,21 @@ local function section(title, danger)
     if danger then f.title:SetTextColor(1, 0.35, 0.3) end
     f.rule = f:CreateTexture(nil, "ARTWORK")
     f.rule:SetPoint("TOPLEFT", f.title, "BOTTOMLEFT", 0, -4)
-    f.rule:SetPoint("RIGHT", 0, 0)
-    f.rule:SetHeight(1)
+    f.rule:SetSize(SECTION_W - 4, 1)
     if danger then f.rule:SetColorTexture(1, 0.35, 0.3, 0.4) else f.rule:SetColorTexture(1, 1, 1, 0.15) end
     return f
 end
 
-local function help(parent, text)
+-- a width, not a right anchor: "RIGHT" would also pin the vertical middle and cut wrapped lines
+local function help(parent, text, width)
     local fs = ns.Widgets.Label(parent, text, "GameFontDisableSmall")
     fs:SetWordWrap(true)
+    fs:SetWidth(width or 380)
     return fs
 end
+
+-- labels and their controls share one column, wide enough for the longest label
+local LABEL_COL = 210
 
 -- stack the sections that apply to this set from the top
 local function stack()
@@ -72,7 +76,7 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     page.defaultNote = section(L["About this set"])
     local note = ns.Widgets.Label(page.defaultNote, L["The default set is used whenever no other set is active. It cannot be renamed, disabled or deleted."], "GameFontHighlight")
     note:SetPoint("TOPLEFT", page.defaultNote.rule, "BOTTOMLEFT", 0, -8)
-    note:SetPoint("RIGHT", 0, 0)
+    note:SetWidth(SECTION_W - 8)
     note:SetWordWrap(true)
     page.defaultNote:SetHeight(48)
     tinsert(page.sections, page.defaultNote)
@@ -85,10 +89,9 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     local prioLabel = ns.Widgets.Label(b, L["Priority"])
     prioLabel:SetPoint("TOPLEFT", page.enabled, "BOTTOMLEFT", 4, -12)
     page.priority = ns.Widgets.Dropdown(b, 180, priorityMenu)
-    page.priority:SetPoint("LEFT", prioLabel, "LEFT", 150, 0)
+    page.priority:SetPoint("LEFT", prioLabel, "LEFT", LABEL_COL, 0)
     local prioHelp = help(b, L["When several sets match, the one with the highest priority is used."])
     prioHelp:SetPoint("TOPLEFT", page.priority, "BOTTOMLEFT", 0, -4)
-    prioHelp:SetPoint("RIGHT", 0, 0)
     page.immediate = ns.Widgets.Checkbox(b, L["Summon immediately when this set becomes active"],
         function() return set and set.settings.immediate end, function(v) set:SetImmediate(v) end)
     page.immediate:SetPoint("TOPLEFT", prioLabel, "BOTTOMLEFT", -4, -30)
@@ -107,19 +110,18 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
                 function() set:SetDefaultWeight(lvl.value) end)
         end
     end)
-    page.defaultWeight:SetPoint("LEFT", dwLabel, "LEFT", 150, 0)
+    page.defaultWeight:SetPoint("LEFT", dwLabel, "LEFT", LABEL_COL, 0)
     local dwHelp = help(pets, L["New pets you collect get this too. \"Never\" means only the pets you tick are used."])
     dwHelp:SetPoint("TOPLEFT", page.defaultWeight, "BOTTOMLEFT", 0, -4)
-    dwHelp:SetPoint("RIGHT", 0, 0)
     page.reset = ns.Widgets.Button(pets, L["Reset all weights"], function()
         StaticPopup_Show("PETCALL_CONFIRM", L["Reset all pet weights in this set?"], nil,
             { onAccept = function() set:ClearPetWeights() end })
     end)
-    page.reset:SetPoint("TOPLEFT", dwLabel, "BOTTOMLEFT", -2, -30)
+    page.reset:SetPoint("TOPLEFT", dwLabel, "BOTTOMLEFT", -2, -40)
     page.export = ns.Widgets.Button(pets, L["Export"], function() if ns.UI.Share then ns.UI.Share:ShowExport(set.name) end end)
     page.export:SetPoint("LEFT", page.reset, "RIGHT", 8, 0)
     ns.Widgets.Tooltip(page.export, L["Export"], L["Copy this set as text to share it or keep a backup."])
-    pets:SetHeight(92)
+    pets:SetHeight(102)
     tinsert(page.sections, pets)
 
     local n = section(L["Name"])

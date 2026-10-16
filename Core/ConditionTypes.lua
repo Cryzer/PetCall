@@ -48,6 +48,7 @@ C.RegisterType({
     describe = function(e)
         local parts = zoneNames(e)
         for _, id in ipairs(e.mapIDs or {}) do parts[#parts + 1] = mapName(id) end
+        if #parts == 0 then return L["Place"] .. ": " .. L["none chosen yet"] end
         return L["Place"] .. ": " .. table.concat(union(parts), ", ")
     end,
     merge = function(a, b)
