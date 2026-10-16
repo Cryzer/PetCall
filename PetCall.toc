@@ -34,6 +34,7 @@ Core\AutoRules.lua
 Core\Conditions.lua
 Core\ConditionTypes.lua
 Core\Sets.lua
+Core\Recipes.lua
 Core\Ready.lua
 Core\Summon.lua
 Core\SwitchTimer.lua
