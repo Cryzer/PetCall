@@ -799,7 +799,10 @@ describe("UI smoke", function()
         U.lastMenu:Find("Pause"):Find("Pause for 1 hour"):Click()
         assert.is_true((a:IsPaused()), "paused")
         ns.UI.SetList:Refresh()
-        assert.is_true(rowA.pausedMark:IsShown())
+        assert.is_true(rowA.pause:IsShown())                 -- a paused card keeps its resume button
+        rowA.pause:Click()
+        assert.is_false((a:IsPaused()))
+        a:Pause("hour")
         ns.UI.Main:SelectSet("A")
         ns.UI.Main:SelectTab("settings")
         local page = ns.UI.SetSettingsPage
