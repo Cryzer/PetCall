@@ -5,10 +5,6 @@ local C_Timer, CreateFrame, UIParent = C_Timer, CreateFrame, UIParent
 -- Creature IDs whose skeleton root is far from their visual centre: turning them
 -- makes them orbit instead of spin, so they get a static pose.
 -- Find a creature ID: /run print(select(11, C_PetJournal.GetPetInfoByPetID(petGUID)))
-local STATIC_PREVIEW_CREATURES = {
-    [181535] = true,  -- Murkastrasza
-}
-
 ns.UI = ns.UI or {}
 ns.UI.previews = ns.UI.previews or {}
 
@@ -48,7 +44,6 @@ function ns:CreateModelPreview(frameName)
         -- same pet and its model is there: nothing to do (a dropped load is retried)
         if current == info.creatureID and viewer:ModelID() then return end
         current = info.creatureID
-        viewer:SetStatic(STATIC_PREVIEW_CREATURES[info.creatureID])
         viewer:Load(info)
     end
 

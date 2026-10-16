@@ -18,8 +18,10 @@ ns.UI = ns.UI or {}
 local SCENE_TEMPLATE = "WrappedAndUnwrappedModelScene"
 local HOLD, EASE = 0.8, 1.0
 local FILL = 0.8          -- part of the frame a fitted model may take
--- never further than this times the journal's distance: some models (Murkastrasza)
--- circle a point far to the side and their box is mostly empty space
+-- A fit further than this times the journal's distance means the model's box is
+-- mostly empty space (Murkastrasza: a box ten times the pet, centred far to the
+-- side). Such a model keeps the journal's framing and stands still facing front:
+-- turning it would swing it around that far-away centre.
 local MAX_BACK = 2
 
 -- How far the camera must be to see a model whole in a frame of this shape. The
@@ -111,7 +113,12 @@ function ns.UI.NewModelViewer(parent, opts)
         local want = ns.UI.FitDistance((x2 - x1) * scale, (y2 - y1) * scale, (z2 - z1) * scale, w / h, fov)
         -- the journal's distance for this pet, read once per load before we move it
         self.baseZoom = self.baseZoom or cam:GetZoomDistance()
-        want = math.min(want, self.baseZoom * MAX_BACK)
+        if want > self.baseZoom * MAX_BACK then
+            self.oddBox = true
+            self.angle = 0
+            self:SetYaw(0)
+            return
+        end
         if want > cam:GetZoomDistance() then
             if cam.GetMaxZoomDistance and cam.SetMaxZoomDistance and cam:GetMaxZoomDistance() < want then
                 cam:SetMaxZoomDistance(want)
@@ -145,7 +152,7 @@ function ns.UI.NewModelViewer(parent, opts)
             if displayID and displayID > 0 then self.frame:SetDisplayInfo(displayID) else self.frame:SetCreature(info.creatureID) end
         end
         self:FaceFront()
-        self.baseZoom = nil
+        self.baseZoom, self.oddBox = nil, nil
         -- a model already in memory may be ready before the hook fires
         if useScene then ns:After(0.1, function() v:Fit() end) end
     end
@@ -185,7 +192,7 @@ function ns.UI.NewModelViewer(parent, opts)
             v.holdUntil = 0                       -- the player took over
         else
             local t = GetTime() - v.holdUntil
-            if t < 0 or v.static then return end
+            if t < 0 or v.static or v.oddBox then return end
             v.angle = v.angle + elapsed * v.turnSpeed * math.min(1, t / EASE)
         end
         v:SetYaw(v.angle)

@@ -845,15 +845,25 @@ describe("UI smoke", function()
         viewer.frame.GetWidth = function() return 230 end
         viewer.frame.GetHeight = function() return 300 end
         ns.UI.Preview:SetSelected("big")
-        viewer.actor.GetActiveBoundingBox = function() return -20, -20, 0, 20, 2, 3 end   -- mostly empty box
         viewer.actor.GetScale = function() return 1 end
+        viewer.actor.GetActiveBoundingBox = function() return -1, -1, 0, 1, 1, 1.5 end    -- a big pet
         viewer:Fit()
-        assert.is_true(cam.zoom > 3)
+        assert.is_true(cam.zoom > 3 and cam.zoom <= 6)               -- moved back, at most twice
         assert.is_true(cam.max >= cam.zoom)
-        assert.is_true(cam.zoom <= 6)                                -- at most twice the journal's 3
         cam.zoom = 50
         viewer:Fit()
         assert.equal(50, cam.zoom)                                   -- never pulled closer
+        -- a box mostly made of empty space (Murkastrasza): journal framing, standing still
+        ns.UI.Preview:SetSelected("a")
+        ns.UI.Preview:SetSelected("big")
+        cam.zoom = 3
+        viewer.actor.GetActiveBoundingBox = function() return -20, -20, 0, 30, 20, 40 end
+        viewer:Fit()
+        assert.equal(3, cam.zoom)
+        assert.is_true(viewer.oddBox)
+        local model = viewer.frame
+        for _ = 1, 30 do W.advance(0.1) model._scripts.OnUpdate(model, 0.1) end
+        assert.equal(0, viewer:GetYaw())                             -- no idle turn
         local before = #W.world.printed
         SlashCmdList.PETCALL("model")
         assert.is_true(#W.world.printed - before >= 3)
