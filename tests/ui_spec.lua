@@ -859,11 +859,15 @@ describe("UI smoke", function()
         viewer.actor.GetScale = function() return 1 end
         viewer.actor.GetActiveBoundingBox = function() return -1, -1, 0, 1, 1, 1.5 end    -- a big pet
         viewer:Fit()
-        assert.is_true(cam.zoom > 3 and cam.zoom <= 6)               -- moved back, at most twice
+        assert.is_true(cam.zoom > 3 and cam.zoom <= 12)              -- moved back, within the limit
         assert.is_true(cam.max >= cam.zoom)
         cam.zoom = 50
         viewer:Fit()
         assert.equal(50, cam.zoom)                                   -- never pulled closer
+        -- measured in game: Willie fits by moving back, Murkastrasza is an odd box
+        local Fit, MAX = ns.UI.FitDistance, ns.UI.FIT_MAX_BACK
+        assert.is_true(Fit(4.38 * 7, 2.98 * 7, 2.09 * 7, 191 / 192) <= 26 * MAX)
+        assert.is_true(Fit(15.63 * 3.45, 13.54 * 3.45, 16.27 * 3.45, 191 / 192) > 14 * MAX)
         -- a box mostly made of empty space (Murkastrasza): journal framing, standing still
         ns.UI.Preview:SetSelected("a")
         ns.UI.Preview:SetSelected("big")

@@ -19,10 +19,12 @@ local SCENE_TEMPLATE = "WrappedAndUnwrappedModelScene"
 local HOLD, EASE = 0.8, 1.0
 local FILL = 0.8          -- part of the frame a fitted model may take
 -- A fit further than this times the journal's distance means the model's box is
--- mostly empty space (Murkastrasza: a box ten times the pet, centred far to the
--- side). Such a model keeps the journal's framing and stands still facing front:
--- turning it would swing it around that far-away centre.
-local MAX_BACK = 2
+-- mostly empty space (Murkastrasza wants about 7x: a box ten times the pet, centred
+-- far to the side). Such a model keeps the journal's framing and stands still facing
+-- front: turning it would swing it around that far-away centre. Big but honest
+-- models stay under it (Willie wants about 2.1x in the square menu preview).
+local MAX_BACK = 4
+ns.UI.FIT_MAX_BACK = MAX_BACK      -- for tests
 
 -- How far the camera must be to see a model whole in a frame of this shape. The
 -- journal's camera is set up for the journal's frame; big pets (Willie, mounts-sized
