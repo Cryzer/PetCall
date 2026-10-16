@@ -4,6 +4,7 @@ local L = ns.L
 local CreateFrame = CreateFrame
 local MIN_TILE_W, TILE_H, PREVIEW_MIN_WIDTH = 190, 48, 760
 local GRID_TOP = 60      -- below search (24) and the rules bar (30)
+local BANNER_H = 30
 
 local Tab = {}
 local state = { search = "", show = "all", sort = "name" }
@@ -62,6 +63,7 @@ end
 
 local function tile_OnEnter(self)
     if not self.petID then return end
+    self.check.tex:SetAlpha(1)
     if floatingPreview then
         floatingPreview:ShowForPet(ns.PetCache:GetInfo(self.petID), "LEFT", self, "RIGHT", 6, 0)
     else
@@ -76,6 +78,7 @@ end
 
 local function tile_OnLeave(self)
     GameTooltip:Hide()
+    if self.checkAlpha then self.check.tex:SetAlpha(self.checkAlpha) end
     if floatingPreview then floatingPreview:ScheduleHide() else ns.UI.Preview:SetHover(nil) end
 end
 
@@ -140,7 +143,7 @@ local function setupTile(t, petID)
     local info = ns.PetCache:GetInfo(petID)
     if not info then t:Hide() t.petID = nil return end    -- released while the grid was rebuilding
     t.icon:SetTexture(info.icon)
-    local r, g, b = C_Item.GetItemQualityColor((info.quality or 2) - 1)
+    local r, g, b = ns.Widgets.QualityColor(info.quality)
     t.border:SetVertexColor(r, g, b)
     t.name:SetText(displayName(info))
     t.name:SetTextColor(r, g, b)
@@ -161,8 +164,10 @@ local function setupTile(t, petID)
     t.sub:SetText(table.concat(parts, " · "))
     t.badge:SetText("")
     local included = w > 0
+    -- hundreds of identical bright ticks are noise: quiet until the tile is hovered
     t.check.tex:SetDesaturated(not included)
-    t.check.tex:SetAlpha(included and 1 or 0.25)
+    t.checkAlpha = included and 0.5 or 0.2
+    t.check.tex:SetAlpha(t:IsMouseOver() and 1 or t.checkAlpha)
     t.selected:SetShown(petID == ns.UI.Preview:GetSelected())
     t:SetAlpha(kind == "never" and 0.45 or 1)
     t.icon:SetDesaturated(kind == "never")
@@ -203,6 +208,10 @@ function Tab:Rebuild()
     end
     local inSet, leftOut = ns.UI.SetHeader.Counts(set)
     page.count:SetText(format(L["%d in this set · %d left out"], inSet, leftOut))
+    -- a set nobody picked pets for yet says what to do instead of only "0 in this set"
+    local empty = inSet == 0 and ns.PetCache:NumPets() > 0
+    page.emptyBanner:SetShown(empty)
+    grid:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -GRID_TOP - (empty and BANNER_H + 6 or 0))
     page.show:Refresh()
     ns.UI.Preview:ShowPet(nil, set)
     ns.UI.Preview:Refresh()
@@ -335,6 +344,27 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     view:SetElementInitializer("Frame", initRow)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
     ns.Skin:Apply("ScrollBar", scrollBar)
+
+    page.emptyBanner = CreateFrame("Frame", nil, page)
+    page.emptyBanner:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -GRID_TOP)
+    page.emptyBanner:SetPoint("RIGHT", grid, "RIGHT", 0, 0)
+    page.emptyBanner:SetHeight(BANNER_H)
+    page.emptyBanner.bg = page.emptyBanner:CreateTexture(nil, "BACKGROUND")
+    page.emptyBanner.bg:SetAllPoints()
+    page.emptyBanner.bg:SetColorTexture(1, 0.6, 0.2, 0.15)
+    page.emptyBanner.icon = page.emptyBanner:CreateTexture(nil, "ARTWORK")
+    page.emptyBanner.icon:SetSize(16, 16)
+    page.emptyBanner.icon:SetPoint("LEFT", 8, 0)
+    page.emptyBanner.icon:SetTexture("Interface\\COMMON\\Indicator-Yellow")
+    page.emptyBanner.all = ns.Widgets.Button(page.emptyBanner, L["Include all pets"], function()
+        set:SetDefaultWeight(ns.Weights.NORMAL)
+    end)
+    page.emptyBanner.all:SetPoint("RIGHT", -4, 0)
+    page.emptyBanner.text = ns.Widgets.Label(page.emptyBanner, L["No pets in this set yet. Tick the ones you want, or include them all."], "GameFontHighlight")
+    page.emptyBanner.text:SetPoint("LEFT", page.emptyBanner.icon, "RIGHT", 6, 0)
+    page.emptyBanner.text:SetPoint("RIGHT", page.emptyBanner.all, "LEFT", -8, 0)
+    page.emptyBanner.text:SetWordWrap(false)
+    page.emptyBanner:Hide()
 
     emptyText = ns.Widgets.Label(grid, "", "GameFontDisableLarge")
     emptyText:SetPoint("CENTER")

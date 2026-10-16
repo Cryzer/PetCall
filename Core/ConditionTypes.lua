@@ -48,13 +48,29 @@ C.RegisterType({
     describe = function(e)
         local parts = zoneNames(e)
         for _, id in ipairs(e.mapIDs or {}) do parts[#parts + 1] = mapName(id) end
-        return L["Place"] .. ": " .. table.concat(parts, ", ")
+        return L["Place"] .. ": " .. table.concat(union(parts), ", ")
     end,
     merge = function(a, b)
         local names = union(zoneNames(a), zoneNames(b))
         return { "zone", zoneNames = names, mapIDs = union(a.mapIDs, b.mapIDs) }
     end,
 })
+
+-- the place the player stands in is already listed, by map or by name
+function C.HasCurrentPlace(e)
+    local id = C_Map.GetBestMapForUnit("player")
+    if not id then return false end
+    return contains(e.mapIDs, id) or contains(zoneNames(e), mapName(id))
+end
+
+-- adds the current map unless it is already there; true when something was added
+function C.AddCurrentPlace(e)
+    local id = C_Map.GetBestMapForUnit("player")
+    if not id or C.HasCurrentPlace(e) then return false end
+    e.mapIDs = e.mapIDs or {}
+    tinsert(e.mapIDs, id)
+    return true
+end
 
 local LOC_LEGACY = { city = { "city" }, battleground = { "pvp" }, instance = { "dungeon", "raid" } }
 local LOC_VALUES = {

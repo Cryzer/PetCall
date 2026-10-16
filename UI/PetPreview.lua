@@ -124,7 +124,7 @@ function Preview:ShowPet(petID, forSet)
         viewer.creatureID = info.creatureID
         loadModel(info)
     end
-    local r, g, b = C_Item.GetItemQualityColor((info.quality or 2) - 1)
+    local r, g, b = ns.Widgets.QualityColor(info.quality)
     panel.name:SetText(info.name)
     panel.name:SetTextColor(r, g, b)
     panel.sub:SetText(format("%s%s · %s %d · %s", info.customName and ("«" .. info.customName .. "» ") or "",
@@ -136,7 +136,7 @@ function Preview:ShowPet(petID, forSet)
     if set then
         local current = ns.Weights.Nearest(set:GetPetWeight(petID))
         for _, btn in ipairs(panel.levels) do
-            if btn.value == current then btn:LockHighlight() else btn:UnlockHighlight() end
+            ns.Widgets.SetPicked(btn, btn.value == current)
         end
         -- every copy of the pet is a separate ticket in the draw
         local tbl, sums, top = set:GetWeightTable(), {}, 0

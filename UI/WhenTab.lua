@@ -47,11 +47,12 @@ local function buildField(row, e, field, prev)
         for i, n in ipairs(e.zoneNames or {}) do names[#names + 1] = { text = n, remove = function() table.remove(e.zoneNames, i) end } end
         for i, id in ipairs(e.mapIDs or {}) do names[#names + 1] = { text = mapName(id), remove = function() table.remove(e.mapIDs, i) end } end
         for _, n in ipairs(names) do place(chip(row, n.text, function() n.remove() changedInPlace() Tab:Refresh(set) end)) end
-        place(track(ns.Widgets.Button(row, L["+ current"], function()
-            e.mapIDs = e.mapIDs or {}
-            local id = C_Map.GetBestMapForUnit("player")
-            if id then tinsert(e.mapIDs, id) changedInPlace() Tab:Refresh(set) end
+        local addHere = place(track(ns.Widgets.Button(row, L["+ current"], function()
+            if ns.Conditions.AddCurrentPlace(e) then changedInPlace() Tab:Refresh(set) end
         end)))
+        local here = ns.Conditions.HasCurrentPlace(e)
+        addHere:SetEnabled(not here)
+        ns.Widgets.Tooltip(addHere, L["+ current"], here and L["You are already in one of these places."] or L["Add the place you are in now."])
     elseif field.kind == "multiChoice" then
         local values = field.values()
         local dd = track(ns.Widgets.Dropdown(row, 200, function(owner, root)
@@ -234,11 +235,24 @@ local function buildRow(parent, group, index, e, y)
         local def = ns.Conditions.GetType(e[1])
         local label = track(ns.Widgets.Label(row, def.label, "GameFontNormal"))
         label:SetPoint("LEFT", dot, "RIGHT", 6, 0)
-        label:SetWidth(120)
-        local prev = label
+        label:SetWidth(110)
+        -- "is / is not" sits where it is read, between the condition and its values
+        local negate = track(ns.Widgets.Button(row, "", function(self)
+            e.negate = not e.negate or nil
+            changedInPlace()
+            self:Paint()
+        end))
+        negate:SetWidth(64)
+        function negate:Paint()
+            self:SetText(e.negate and L["is not"] or L["is"])
+            self:GetFontString():SetTextColor(e.negate and 1 or 0.82, e.negate and 0.4 or 0.82, e.negate and 0.3 or 0.82)
+        end
+        negate:Paint()
+        ns.Widgets.Tooltip(negate, L["is / is not"], L["Click to turn the condition around."])
+        negate:SetPoint("LEFT", label, "RIGHT", 4, 0)
+        row.negate = negate
+        local prev = negate
         for _, field in ipairs(def.fields) do prev = buildField(row, e, field, prev) end
-        local negate = track(ns.Widgets.Checkbox(row, L["not"], function() return e.negate end, function(v) e.negate = v or nil changedInPlace() end))
-        negate:SetPoint("RIGHT", -60, 0)
         if row.codeEditor then height = 28 + codeEditor(parent, e, row) end
     end
     local remove = track(ns.Widgets.Button(row, "×", function()

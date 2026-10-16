@@ -163,4 +163,16 @@ describe("Conditions", function()
         assert.is_true(ok)
         assert.is_true(res)
     end)
+    it("adding the current place twice keeps one entry; the description lists each place once", function()
+        local e = { "zone", mapIDs = { 84 } }
+        assert.is_true(C.HasCurrentPlace(e))
+        assert.is_false(C.AddCurrentPlace(e))
+        assert.same({ 84 }, e.mapIDs)
+        local named = { "zone", zoneName = "Map84" }
+        assert.is_true(C.HasCurrentPlace(named))          -- same place, saved by name
+        local other = { "zone", mapIDs = { 13 } }
+        assert.is_true(C.AddCurrentPlace(other))
+        assert.same({ 13, 84 }, other.mapIDs)
+        assert.equal("Place: Map84", C.Describe({ "zone", zoneName = "Map84", mapIDs = { 84, 84 } }))
+    end)
 end)

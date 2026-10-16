@@ -32,6 +32,36 @@ function Widgets.Button(parent, text, onClick)
     return b
 end
 
+-- Quality colour lifted towards white when it is dark: the stock rare blue is hard to read
+-- on dark backgrounds
+function Widgets.QualityColor(quality)
+    local r, g, b = C_Item.GetItemQualityColor((quality or 2) - 1)
+    if 0.3 * r + 0.59 * g + 0.11 * b < 0.6 then
+        r, g, b = r + (1 - r) * 0.35, g + (1 - g) * 0.35, b + (1 - b) * 0.35
+    end
+    return r, g, b
+end
+
+-- Marks a button as the picked one of a group: accent tint, accent underline, white text
+function Widgets.SetPicked(b, on)
+    if not b.pickBg then
+        b.pickBg = b:CreateTexture(nil, "OVERLAY", nil, -1)
+        b.pickBg:SetPoint("TOPLEFT", 2, -2)
+        b.pickBg:SetPoint("BOTTOMRIGHT", -2, 2)
+        b.pickLine = b:CreateTexture(nil, "OVERLAY")
+        b.pickLine:SetPoint("BOTTOMLEFT", 2, 2)
+        b.pickLine:SetPoint("BOTTOMRIGHT", -2, 2)
+        b.pickLine:SetHeight(2)
+    end
+    local r, g, bl = ns.Skin:Accent()
+    b.pickBg:SetColorTexture(r, g, bl, 0.18)
+    b.pickLine:SetColorTexture(r, g, bl, 1)
+    b.pickBg:SetShown(on)
+    b.pickLine:SetShown(on)
+    b.picked = on and true or false
+    b:GetFontString():SetTextColor(1, on and 1 or 0.82, on and 1 or 0)   -- white when picked, gold otherwise
+end
+
 -- Row of joined buttons, one selected: items = { {value =, label =} }, get() -> value
 function Widgets.Segmented(parent, items, get, onPick)
     local f = CreateFrame("Frame", nil, parent)
@@ -49,9 +79,7 @@ function Widgets.Segmented(parent, items, get, onPick)
     function f:Refresh()
         local cur = get()
         for _, b in ipairs(self.buttons) do
-            local on = b.value == cur
-            if on then b:LockHighlight() else b:UnlockHighlight() end
-            b:GetFontString():SetTextColor(1, on and 1 or 0.82, on and 1 or 0)   -- white when picked, gold otherwise
+            Widgets.SetPicked(b, b.value == cur)
         end
     end
     f:Refresh()
