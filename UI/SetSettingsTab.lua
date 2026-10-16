@@ -7,7 +7,7 @@ local page, set
 local function priorityMenu(owner, root)
     for _, lvl in ipairs(ns.Weights.LEVELS) do
         if lvl.value > 0 then
-            root:CreateRadio(lvl.label, function() return set and ns.Weights.Nearest(set:GetPriority()) == lvl.value end,
+            root:CreateRadio(lvl.priority, function() return set and ns.Weights.Nearest(set:GetPriority()) == lvl.value end,
                 function() set:SetPriority(lvl.value) end)
         end
     end

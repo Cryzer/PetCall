@@ -68,8 +68,14 @@ function Main:Build()
     frame.left:SetPoint("BOTTOMLEFT", 4, 4)
     frame.left:SetWidth(190)
 
+    -- set header (UI/SetHeader.lua) on top, then the tab row, then the pages
+    frame.header = CreateFrame("Frame", nil, frame.Inset)
+    frame.header:SetPoint("TOPLEFT", frame.left, "TOPRIGHT", 6, 0)
+    frame.header:SetPoint("RIGHT", -4, 0)
+    frame.header:SetHeight(52)
+
     frame.content = CreateFrame("Frame", nil, frame.Inset)
-    frame.content:SetPoint("TOPLEFT", frame.left, "TOPRIGHT", 6, -28)
+    frame.content:SetPoint("TOPLEFT", frame.header, "BOTTOMLEFT", 0, -28)
     frame.content:SetPoint("BOTTOMRIGHT", -4, 4)
 
     frame.status = CreateFrame("Frame", nil, frame)

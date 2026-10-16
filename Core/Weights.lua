@@ -7,13 +7,14 @@ local Weights = {}
 ns.Weights = Weights
 
 local W8 = 8
+-- label: how often a pet is drawn; priority: the same steps used to rank sets
 Weights.LEVELS = {
-    { value = 0,       key = "NEVER",      label = L["Never"],               short = L["Never"] },
-    { value = W8 ^ -2, key = "EXTRA_LOW",  label = L["Extra Low Priority"],  short = "-2" },
-    { value = W8 ^ -1, key = "LOW",        label = L["Low Priority"],        short = "-1" },
-    { value = 1,       key = "NORMAL",     label = L["Normal"],              short = nil },
-    { value = W8,      key = "HIGH",       label = L["High Priority"],       short = "+1" },
-    { value = W8 ^ 2,  key = "EXTRA_HIGH", label = L["Extra High Priority"], short = "+2" },
+    { value = 0,       key = "NEVER",      label = L["Never"],       short = L["Never"], priority = nil },
+    { value = W8 ^ -2, key = "EXTRA_LOW",  label = L["Very rarely"], short = "-2",       priority = L["Lowest"] },
+    { value = W8 ^ -1, key = "LOW",        label = L["Rarely"],      short = "-1",       priority = L["Low"] },
+    { value = 1,       key = "NORMAL",     label = L["Normal"],      short = nil,        priority = L["Normal"] },
+    { value = W8,      key = "HIGH",       label = L["Often"],       short = "+1",       priority = L["High"] },
+    { value = W8 ^ 2,  key = "EXTRA_HIGH", label = L["Very often"],  short = "+2",       priority = L["Highest"] },
 }
 Weights.NEVER, Weights.NORMAL = 0, 1
 Weights.IGNORE_SPECIES = { [114] = true, [280] = true, [281] = true, [282] = true, [283] = true }
@@ -35,6 +36,7 @@ local function level(value)
 end
 
 function Weights.Label(value) return level(value).label end
+function Weights.PriorityLabel(value) return level(value).priority or level(1).priority end
 function Weights.Short(value) return level(value).short end
 
 function Weights.PetWeight(settings, petID)

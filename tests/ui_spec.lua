@@ -428,4 +428,24 @@ describe("UI smoke", function()
         assert.equal("left", side(1650, 1850, 1500, 1920))  -- no room on the right
         assert.equal("right", side(400, 600, nil, 1920))    -- parent unknown: right if it fits
     end)
+    it("the set header says which set this is, whether it is used and what it does", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        local H = ns.UI.SetHeader
+        local d = ns.Sets:Get("$Default")
+        assert.is_true(H.Summary(d):find("Used when no other set is active") ~= nil)
+        assert.is_true(H.Summary(d):find("one of 2 checked pets") ~= nil)
+        local town = ns.Sets:Create("Town")
+        town:ApplyTemplate("city")
+        town:SetPetWeight("a", 1)
+        assert.is_true(H.Summary(town):find("^When: ") ~= nil, H.Summary(town))
+        ns.UI.Main:SelectSet("Town")
+        W.advance(0.1)                                   -- the header refreshes once per burst of changes
+        local header = ns.UI.Main:GetFrame().header
+        assert.equal("Town", header.title:GetText())
+        assert.equal("Active now", header.status:GetText())
+        local content = ns.UI.Main:GetFrame().content
+        assert.is_true(content._points.TOPLEFT.rel == header, "tabs and pages sit below the header")
+    end)
 end)
