@@ -54,6 +54,7 @@ UI\PetPreview.lua
 UI\PetsTab.lua
 UI\AutoRulesBar.lua
 UI\SetList.lua
+UI\RecipeGallery.lua
 UI\StatusBar.lua
 UI\SetSettingsTab.lua
 UI\WhenTab.lua

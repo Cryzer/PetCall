@@ -621,4 +621,46 @@ describe("UI smoke", function()
         root:Find("When"):Find("During any holiday"):Click()
         assert.equal("holiday", set:GetConditionModel().groups[1].rows[2][1])
     end)
+    it("+ New offers a recipe gallery; Create makes the set and closes the gallery", function()
+        W.world.pets.fish = { species = 9, name = "Fish", type = 9 }
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        local G = ns.UI.RecipeGallery
+        G:Show()
+        assert.is_true(G:IsShown())
+        local card
+        for _, c in ipairs(G._cards) do if c.recipe.key == "swimming" then card = c end end
+        assert.is_not_nil(card)
+        assert.equal("1", card.count:GetText():match("%d+"))
+        card.create:Click()
+        assert.is_false(G:IsShown())
+        local set = ns.UI.Main:GetSelectedSet()
+        assert.equal(card.recipe.title, set.name)
+        assert.equal("pets", ns.UI.Main:GetSelectedTab())
+        W.advance(1)
+        assert.is_false(ns.UI.PetsTabPage.emptyBanner:IsShown())    -- rule-only pets count as in the set
+    end)
+    it("a recipe without pets is greyed and cannot be created", function()
+        ns.UI.Main:Show()
+        ns.UI.RecipeGallery:Show()
+        local seen
+        for _, c in ipairs(ns.UI.RecipeGallery._cards) do
+            if c.recipe.key == "night" then
+                seen = true
+                assert.is_false(c.create:IsEnabled())
+                assert.is_true(c.reason:GetText() ~= "")
+            end
+        end
+        assert.is_true(seen)
+    end)
+    it("+ New asks: empty set or from a recipe", function()
+        ns.UI.Main:Show()
+        ns.UI.SetList._newButton:Click()
+        local root = U.lastMenu
+        assert.is_not_nil(root:Find("Empty set"))
+        root:Find("From a recipe"):Click()
+        assert.is_true(ns.UI.RecipeGallery:IsShown())
+        ns.UI.Main:SelectSet("$Default")
+        assert.is_false(ns.UI.RecipeGallery:IsShown())
+    end)
 end)

@@ -187,7 +187,15 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     end)
     ns.Skin:Apply("EditBox", newBox)
 
-    local new = ns.Widgets.Button(panel, L["+ New"], function() newBox:Show() newBox:SetFocus() end)
+    local function openNameBox() newBox:Show() newBox:SetFocus() end
+    SetList.OpenNew = openNameBox
+    local new = ns.Widgets.Button(panel, L["+ New"], function(self)
+        MenuUtil.CreateContextMenu(self, function(owner, root)
+            root:CreateButton(L["Empty set"], openNameBox)
+            root:CreateButton(L["From a recipe..."], function() ns.UI.RecipeGallery:Show() end)
+        end)
+    end)
+    SetList._newButton = new
     new:SetPoint("BOTTOMLEFT", 4, 4)
     local import = ns.Widgets.Button(panel, L["Import"], function() if ns.UI.Share then ns.UI.Share:ShowImport() end end)
     import:SetPoint("LEFT", new, "RIGHT", 4, 0)
