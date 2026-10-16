@@ -61,8 +61,14 @@ local function check_OnClick(self)
     PlaySound(included and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 end
 
+-- leaving a tile lets go of the hover after a moment, so crossing the gap to the next
+-- tile does not flash the selected pet in between
+local HOVER_GRACE = 0.12
+local hoverClear
+
 local function tile_OnEnter(self)
     if not self.petID then return end
+    if hoverClear then hoverClear:Cancel() hoverClear = nil end
     self.check.tex:SetAlpha(1)
     if floatingPreview then
         floatingPreview:ShowForPet(ns.PetCache:GetInfo(self.petID), "LEFT", self, "RIGHT", 6, 0)
@@ -79,8 +85,12 @@ end
 local function tile_OnLeave(self)
     GameTooltip:Hide()
     if self.checkAlpha then self.check.tex:SetAlpha(self.checkAlpha) end
-    -- the docked preview keeps the last pet the cursor was on
-    if floatingPreview then floatingPreview:ScheduleHide() end
+    if floatingPreview then
+        floatingPreview:ScheduleHide()
+    else
+        if hoverClear then hoverClear:Cancel() end
+        hoverClear = ns:After(HOVER_GRACE, function() hoverClear = nil ns.UI.Preview:SetHover(nil) end)
+    end
 end
 
 local function createTile(parent)

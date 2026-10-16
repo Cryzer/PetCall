@@ -6,14 +6,15 @@ ns.UI = ns.UI or {}
 local Preview = {}
 ns.UI.Preview = Preview
 
-local panel, viewer, set, hoverID, selectedID
+local panel, viewer, set, hoverID, selectedID, lastHoverID
 local shownID
 local loadModel        -- assigned above Preview:ShowPet
 local MODEL_SHARE = 0.55        -- part of the panel's height given to the model
 
--- a selected pet stays in the panel; hovering only previews while nothing is selected
+-- the pet under the cursor wins; off the tiles the panel shows the selected pet, else
+-- the last one hovered, else the summoned one
 local function petToShow()
-    return selectedID or hoverID or C_PetJournal.GetSummonedPetGUID()
+    return hoverID or selectedID or lastHoverID or C_PetJournal.GetSummonedPetGUID()
 end
 
 function Preview:Attach(parent)
@@ -164,7 +165,11 @@ function Preview:ShowPet(petID, forSet)
     panel.fav:GetNormalTexture():SetAlpha(info.isFavorite and 1 or 0.4)
 end
 
-function Preview:SetHover(petID) hoverID = petID self:ShowPet(petToShow()) end
+function Preview:SetHover(petID)
+    hoverID = petID
+    if petID then lastHoverID = petID end
+    self:ShowPet(petToShow())
+end
 function Preview:SetSelected(petID) selectedID = petID self:ShowPet(petToShow()) end
 function Preview:Refresh() self:ShowPet(petToShow()) end
 function Preview:GetPanel() return panel end

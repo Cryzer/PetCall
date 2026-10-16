@@ -217,7 +217,7 @@ describe("UI smoke", function()
         assert.has_no_error(function() gridTiles().b:Click("RightButton") end)
     end)
 
-    it("clicking a tile selects it and pins the preview; hovering others does not move it", function()
+    it("clicking a tile selects it; hovering others previews them and leaving returns to it", function()
         W.world.pets.b = { species = 2, name = "B" }
         W.world.pets.c = { species = 3, name = "C" }
         ns.PetCache:Rescan()
@@ -232,8 +232,10 @@ describe("UI smoke", function()
         tiles = gridTiles()
         assert.is_true(tiles.b.selected:IsShown())
         tiles.c._scripts.OnEnter(tiles.c)
-        assert.equal("b", ns.UI.Preview:GetShown())
+        assert.equal("c", ns.UI.Preview:GetShown())
         tiles.c._scripts.OnLeave(tiles.c)
+        W.advance(0.5)
+        assert.equal("b", ns.UI.Preview:GetShown())       -- off the tiles: back to the selected pet
         gridTiles().b:Click("LeftButton")                -- second click releases the pin
         tiles = gridTiles()
         tiles.c._scripts.OnEnter(tiles.c)
