@@ -62,6 +62,18 @@ function Widgets.SetPicked(b, on)
     b:GetFontString():SetTextColor(1, on and 1 or 0.82, on and 1 or 0)   -- white when picked, gold otherwise
 end
 
+-- A menu pinned to a button (above it) instead of at the cursor, the way Blizzard's
+-- dropdowns open; falls back to a plain context menu on clients without the menu manager.
+function Widgets.OpenMenuAbove(owner, build)
+    if MenuUtil.CreateRootMenuDescription and Menu and Menu.GetManager and MenuVariants and AnchorUtil then
+        local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
+        build(owner, root)
+        Menu.GetManager():OpenMenu(owner, root, AnchorUtil.CreateAnchor("BOTTOMLEFT", owner, "TOPLEFT", 0, 2))
+    else
+        MenuUtil.CreateContextMenu(owner, build)
+    end
+end
+
 -- Row of joined buttons, one selected: items = { {value =, label =} }, get() -> value
 function Widgets.Segmented(parent, items, get, onPick)
     local f = CreateFrame("Frame", nil, parent)

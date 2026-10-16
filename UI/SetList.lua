@@ -190,7 +190,7 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     local function openNameBox() newBox:Show() newBox:SetFocus() end
     SetList.OpenNew = openNameBox
     local new = ns.Widgets.Button(panel, L["+ New"], function(self)
-        MenuUtil.CreateContextMenu(self, function(owner, root)
+        ns.Widgets.OpenMenuAbove(self, function(owner, root)
             root:CreateButton(L["Empty set"], openNameBox)
             root:CreateButton(L["From a recipe..."], function() ns.UI.RecipeGallery:Show() end)
         end)

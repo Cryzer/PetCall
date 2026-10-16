@@ -699,4 +699,18 @@ describe("UI smoke", function()
         ns.UI.SetHeader:Refresh()
         assert.equal("Standing by", ns.UI.Main:GetFrame().header.status:GetText())
     end)
+    it("+ New opens its menu above the button, not at the cursor", function()
+        ns.UI.Main:Show()
+        local opened
+        local G = _G
+        G.MenuVariants = { GetDefaultContextMenuMixin = function() return {} end }
+        G.AnchorUtil = { CreateAnchor = function(point, rel, relPoint) return { point = point, rel = rel, relPoint = relPoint } end }
+        G.Menu = { GetManager = function() return { OpenMenu = function(_, owner, root, anchor) opened = { owner = owner, root = root, anchor = anchor } end } end }
+        G.MenuUtil.CreateRootMenuDescription = function() return U.newMenu() end
+        ns.UI.SetList._newButton:Click()
+        G.Menu, G.MenuVariants, G.AnchorUtil, G.MenuUtil.CreateRootMenuDescription = nil, nil, nil, nil
+        assert.equal(ns.UI.SetList._newButton, opened.anchor.rel)
+        assert.equal("BOTTOMLEFT", opened.anchor.point)
+        assert.is_not_nil(opened.root:Find("From a recipe"))
+    end)
 end)

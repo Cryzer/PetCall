@@ -59,7 +59,7 @@ read_globals = {
     "StaticPopup_Show",
     "SearchBoxTemplate_OnEditFocusLost", "SearchBoxTemplate_OnTextChanged",
     "BackdropTemplateMixin",
-    "MenuUtil",
+    "MenuUtil", "Menu", "MenuVariants", "AnchorUtil",
     "UIErrorsFrame",
 
     -- WoW fonts
