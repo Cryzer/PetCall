@@ -51,9 +51,24 @@ end
 
 function Header.Counts(set) return counts(set) end
 
+-- the pet rules in words: "Source: Trading Post, Favorites"
+function Header.RulesText(set)
+    local parts = {}
+    for _, e in ipairs(set.settings.filter or {}) do parts[#parts + 1] = ns.AutoRules.Describe(e) end
+    return table.concat(parts, ", ")
+end
+
+-- a set that takes no pet by default picks only from its rules and its ticks
+function Header.RulesOnly(set)
+    return (set.settings.defaultValue or 0) == 0 and #(set.settings.filter or {}) > 0
+end
+
 function Header.Summary(set)
     local inSet = counts(set)
     local picks = format(L["PetCall picks one of %d checked pets."], inSet)
+    if Header.RulesOnly(set) then
+        picks = format(L["PetCall picks one of %d pets chosen by rules: %s."], inSet, Header.RulesText(set))
+    end
     if set:IsNoPet() then picks = L["While it is used, PetCall keeps your pet away."] end
     if set:IsDefault() then return L["Used when no other set is active."] .. " " .. picks end
     if not set:HasConditions() then return L["No conditions yet, so this set is always active."] .. " " .. picks end

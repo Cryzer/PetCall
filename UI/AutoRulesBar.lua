@@ -163,8 +163,10 @@ function Bar:Refresh(newSet)
     if not bar or not set then return end
     closeEditor()
     local data = set:GetAutoRules()
-    local label = bar.label or ns.Widgets.Label(bar, L["More chance for:"], "GameFontNormalSmall")
+    local label = bar.label or ns.Widgets.Label(bar, "", "GameFontNormalSmall")
     bar.label = label
+    -- rules either add chances on top of the ticked pets, or are where the pets come from
+    label:SetText(ns.UI.SetHeader.RulesOnly(set) and L["Pets from rules:"] or L["More chance for:"])
     label:SetPoint("LEFT")
     local prev = label
     for i, chip in ipairs(data) do
