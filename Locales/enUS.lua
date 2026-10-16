@@ -373,3 +373,4 @@ L["Pick one; afterwards it is an ordinary set and you can change everything."] =
 L["Back"] = true
 L["Empty set"] = true
 L["From a recipe..."] = true
+L["Standing by"] = true

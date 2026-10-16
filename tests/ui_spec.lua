@@ -674,4 +674,31 @@ describe("UI smoke", function()
         ns.UI.Preview:SetSelected("a")                     -- no own look: the species display
         assert.equal(5001, ns.UI.Preview:GetViewer():ModelID())
     end)
+    it("crossing the gap between tiles keeps the hovered pet in the preview", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        W.world.summoned = "a"
+        ns.PetCache:Rescan()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local tile
+        for _, t in pairs(gridTiles()) do if t.petID == "b" then tile = t end end
+        tile._scripts.OnEnter(tile)
+        assert.equal("b", ns.UI.Preview:GetShown())
+        tile._scripts.OnLeave(tile)
+        W.advance(0.1)
+        assert.equal("b", ns.UI.Preview:GetShown())        -- still b while crossing the gap
+        W.advance(0.5)
+        assert.equal("a", ns.UI.Preview:GetShown())        -- then back to the summoned pet
+    end)
+    it("the default set stands by while another set is used", function()
+        local town = ns.Sets:Create("Always")
+        town:SetPetWeight("a", 1)
+        W.advance(1)
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("$Default")
+        ns.UI.SetHeader:Refresh()
+        assert.equal("Standing by", ns.UI.Main:GetFrame().header.status:GetText())
+    end)
 end)

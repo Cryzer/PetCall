@@ -15,6 +15,7 @@ local STATUS = {
     empty        = { L["No pets to choose from"], 0.85, 0.45, 0.10 },
     noConditions = { L["Always active"], 0.85, 0.45, 0.10 },
     disabled     = { L["Disabled"], 0.30, 0.30, 0.30 },
+    standby      = { L["Standing by"], 0.45, 0.45, 0.45 },   -- the default set while another set is used
 }
 
 local function describeConditions(set)
@@ -51,7 +52,9 @@ function Header:Refresh()
     local set = ns.UI.Main:GetSelectedSet()
     if not set or set.deleted then return end
     header.title:SetText(set:DisplayName())
-    local st = STATUS[set:GetStatus()] or STATUS.waiting
+    local status = set:GetStatus()
+    if status == "waiting" and set:IsDefault() then status = "standby" end
+    local st = STATUS[status] or STATUS.waiting
     header.status:SetText(st[1])
     header.pill:SetColorTexture(st[2], st[3], st[4], 0.85)
     header.pillFrame:SetWidth(header.status:GetStringWidth() + 16)
