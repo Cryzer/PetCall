@@ -89,6 +89,7 @@ local function build()
     whereSetting("bg", L["Battlegrounds and arenas"], L["What PetCall does in battlegrounds and arenas."], "enableInBattleground", "dismissInBattleground")
     whereSetting("pve", L["Dungeons and raids"], L["What PetCall does in dungeons and raids."], "enableInPVE", "dismissInPVE")
     profileBool("disableOutsideCities", L["Only Enable in Cities"], L["Restrict pet summoning to city areas only. Your pet will be dismissed when you leave a city."])
+    profileBool("noSummonMounted", L["Don't summon while mounted"], L["Wait until you dismount. A summon on a mount uses the global cooldown and can get in the way of Skyriding abilities."])
     profileBool("dismissWhenStealthed", L["Dismiss When Stealthed or Invisible"], L["Automatically dismiss your pet when you enter stealth or use an invisibility effect."])
 
     header(L["Auto Switch Pet"])

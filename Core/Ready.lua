@@ -15,13 +15,13 @@ local CAMO_SPELLS = { 198783, 199483 }
 local FOOD_SPELLS = { 430, 433, 167152, 160598, 160599 }
 
 local BLOCKER_ORDER = {
-    "addon_enabled", "have_pets", "combat", "alive", "flying", "vehicle", "stealthed", "invisible", "camo",
+    "addon_enabled", "have_pets", "combat", "alive", "flying", "mounted", "vehicle", "stealthed", "invisible", "camo",
     "feigned", "sitting", "casting", "looting", "barbar", "thunderisle_saurok", "in_battleground", "in_pve",
     "resting", "near_pew", "addon_ready",
 }
 local LABELS = {
     addon_enabled = L["Auto-summon is off"], have_pets = L["No pets"], combat = L["In combat"],
-    alive = L["Dead"], flying = L["Flying"], vehicle = L["In a vehicle"], stealthed = L["Stealthed"],
+    alive = L["Dead"], flying = L["Flying"], mounted = L["Mounted"], vehicle = L["In a vehicle"], stealthed = L["Stealthed"],
     invisible = L["Invisible"], camo = L["Camouflaged"], feigned = L["Feigning death"], sitting = L["Sitting"],
     casting = L["Casting"], looting = L["Looting"], barbar = L["At the barber"], thunderisle_saurok = L["Transformed"],
     in_battleground = L["In a battleground or arena"], in_pve = L["In a dungeon or raid"],
@@ -82,6 +82,7 @@ function Ready:OnEnable()
     self:SetReady("in_battleground", not ns.InBattlegroundOrArena())
     self:SetReady("vehicle", not UnitInVehicle("player"))
     self:SetReady("flying", not IsFlying())
+    self:SetReady("mounted", not IsMounted())
     self:UNIT_AURA(nil, "player")
     self:UPDATE_STEALTH()
     self:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", "CheckFlying")
@@ -123,6 +124,7 @@ function Ready:UpdateChecks()
     self:EnableCheck("stealthed", true, p.dismissWhenStealthed)
     self:EnableCheck("invisible", true, p.dismissWhenStealthed)
     self:EnableCheck("flying", true)
+    self:EnableCheck("mounted", p.noSummonMounted)
     self:EnableCheck("near_pew", p.nearPEWOnly)
     self:EnableCheck("alive", true)
     self:EnableCheck("camo", true, p.dismissWhenStealthed)
@@ -238,10 +240,14 @@ function Ready:QueueResummon(nowait)
 end
 
 function Ready:PetListUpdated() self:SetReady("have_pets", ns.PetCache:NumPets() > 0) end
-function Ready:CheckFlying() self:SetReady("flying", not IsFlying()) end
+function Ready:CheckFlying()
+    self:SetReady("flying", not IsFlying())
+    self:SetReady("mounted", not IsMounted())
+end
 
 function Ready:FrequentCheck()
     self:SetReady("flying", not IsFlying())
+    self:SetReady("mounted", not IsMounted())
     local petID = ns:GetCurrentPet()
     if not petID and petID ~= self._lastPet then self:_CheckSummon() end
     self._lastPet = petID

@@ -255,7 +255,7 @@ local ACTIVITY_VALUES = {
 }
 C.RegisterType({
     key = "activity", label = L["Activity"], group = "doing",
-    hint = L["Mounted, swimming, indoors or outdoors, AFK, or in a form like Travel Form. Any ticked one is enough."],
+    hint = L["Swimming, indoors or outdoors, AFK, or in a form like Travel Form. Any ticked one is enough. Mounted needs \"Don't summon while mounted\" turned off in the settings."],
     fields = { { key = "activity", kind = "flags", values = function() return ACTIVITY_VALUES end } },
     -- swimming and indoors have no events of their own
     tick = 1,

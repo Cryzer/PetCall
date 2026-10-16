@@ -12,6 +12,7 @@ DB.defaults = {
     dismissInBattleground = false,
     disableOutsideCities = false,
     dismissWhenStealthed = false,
+    noSummonMounted = true,               -- a summon on a mount takes the GCD from Skyriding abilities
     disableForQuestItems = true,          -- unused since 1.x; kept so old data round-trips
     enableInPVE = true,
     dismissInPVE = false,

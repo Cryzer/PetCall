@@ -12,6 +12,25 @@ describe("Ready", function()
         ns.Summon.SummonRandom = function() summons = summons + 1 return true end
     end)
 
+    it("waits while mounted unless the option is off", function()
+        W.world.mounted = true
+        W.fire("PLAYER_MOUNT_DISPLAY_CHANGED")
+        local function blocked()
+            for _, b in ipairs(ns.Ready:GetBlockers()) do if b.key == "mounted" then return true end end
+            return false
+        end
+        assert.is_true(ns.db.profile.noSummonMounted)
+        assert.is_true(blocked())
+        ns.db.profile.noSummonMounted = false
+        ns.Ready:UpdateChecks()
+        assert.is_false(blocked())
+        ns.db.profile.noSummonMounted = true
+        ns.Ready:UpdateChecks()
+        W.world.mounted = false
+        W.fire("PLAYER_MOUNT_DISPLAY_CHANGED")
+        assert.is_false(blocked())
+    end)
+
     it("reports blockers with labels", function()
         W.world.combat = true
         W.fire("PLAYER_REGEN_DISABLED")
