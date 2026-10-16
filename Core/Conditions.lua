@@ -46,6 +46,15 @@ function C.Context()
     ctx.name = UnitName("player")
     local h, m = GetGameTime()
     ctx.minutes = h * 60 + m
+    ctx.mounted, ctx.afk = IsMounted() and true or false, UnitIsAFK("player") and true or false
+    ctx.swimming = (IsSwimming() or IsSubmerged()) and true or false
+    ctx.indoors, ctx.outdoors = IsIndoors() and true or false, IsOutdoors() and true or false
+    ctx.form = GetShapeshiftFormID() ~= nil
+    local H = C_Housing
+    ctx.ownHome = H and H.IsInsideOwnedHouseOrPlot and H.IsInsideOwnedHouseOrPlot() or false
+    ctx.anyHome = H and H.IsInsideHouseOrPlot and H.IsInsideHouseOrPlot() or false
+    ctx.inHouse = H and H.IsInsideHouse and H.IsInsideHouse() or false
+    ctx.holidays = C.ActiveHolidays and C.ActiveHolidays() or {}
     return ctx
 end
 

@@ -148,6 +148,7 @@ function MenuMT:CreateButton(text, onClick) return add(self, "button", text, onC
 function MenuMT:CreateCheckbox(text, isSelected, onToggle) return add(self, "checkbox", text, isSelected, onToggle) end
 function MenuMT:CreateRadio(text, isSelected, onSelect) return add(self, "radio", text, isSelected, onSelect) end
 function MenuMT:SetScrollMode() end
+function MenuMT:SetTooltip(fn) self.tooltip = fn end
 function MenuMT:SetOnEnter(fn) self.onEnter = fn end
 function MenuMT:SetOnLeave(fn) self.onLeave = fn end
 function MenuMT:Find(prefix)

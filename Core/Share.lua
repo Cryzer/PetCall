@@ -46,6 +46,8 @@ local FIELDS = {
     zoneName = "string", loc = "string", class = "string", name = "string", macro = "string", code = "string",
     operator = "string", petType = "scalar", level = "scalar", spec = "number", from = "number", to = "number",
     zoneNames = "strings", locs = "strings", mapIDs = "numbers", petTypes = "numbers",
+    ownHome = "boolean", otherHome = "boolean", inHouse = "boolean", holidayIDs = "numbers",
+    mounted = "boolean", swimming = "boolean", indoors = "boolean", outdoors = "boolean", afk = "boolean", form = "boolean",
 }
 
 local function isNumber(v) return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge end

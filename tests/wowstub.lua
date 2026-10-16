@@ -57,6 +57,11 @@ local function defaultWorld()
         auras = {}, items = {}, equipped = {}, quests = {}, pastCooldowns = {},
         pets = {}, summoned = nil, cooldowns = {}, favorites = {},
         macroResult = nil, locale = "enUS",
+        swimming = false, indoors = false, formID = nil,
+        home = { own = false, any = false, inside = false },
+        -- calendar: the month it shows, today, and events keyed by offset * 100 + day
+        calShown = { year = 2026, month = 10 }, now = { year = 2026, month = 10, monthDay = 16, hour = 12, minute = 0 },
+        calEvents = {},
         printed = {},
     }
 end
@@ -134,6 +139,11 @@ function W.reset()
     UnitIsDeadOrGhost = function() return w.dead end
     UnitInVehicle = function() return w.vehicle end
     UnitIsAFK = function() return w.afk end
+    IsSwimming = function() return w.swimming end
+    IsSubmerged = function() return false end
+    IsIndoors = function() return w.indoors end
+    IsOutdoors = function() return not w.indoors end
+    GetShapeshiftFormID = function() return w.formID end
     UnitCastingInfo = function() return w.casting and "Spell" or nil end
     UnitChannelInfo = function() return nil end
     SecureCmdOptionParse = function() return w.macroResult end
@@ -219,6 +229,21 @@ function W.reset()
         GetMapInfo = function(id) return { mapID = id, name = "Map" .. id, parentMapID = w.mapParents[id] or 0 } end,
     }
     C_PartyInfo = { IsDelveInProgress = function() return w.delve end }
+    C_Housing = {
+        IsInsideOwnedHouseOrPlot = function() return w.home.own end,
+        IsInsideHouseOrPlot = function() return w.home.any or w.home.own end,
+        IsInsideHouse = function() return w.home.inside end,
+    }
+    C_DateAndTime = { GetCurrentCalendarTime = function() return w.now end }
+    C_Calendar = {
+        OpenCalendar = function() w.calendarOpened = true end,
+        GetMonthInfo = function(off)
+            local m = w.calShown.month - 1 + off
+            return { year = w.calShown.year + math.floor(m / 12), month = m % 12 + 1, numDays = 31 }
+        end,
+        GetNumDayEvents = function(off, day) return #(w.calEvents[off * 100 + day] or {}) end,
+        GetDayEvent = function(off, day, i) return (w.calEvents[off * 100 + day] or {})[i] end,
+    }
     C_QuestLog = {
         GetNumQuestLogEntries = function() return #w.quests end,
         GetInfo = function(i) return w.quests[i] and { questID = w.quests[i], isHeader = false } or nil end,

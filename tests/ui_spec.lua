@@ -596,4 +596,29 @@ describe("UI smoke", function()
         assert.is_true(page.danger:IsShown())
         assert.is_true(page.behaviour:IsShown())
     end)
+    it("the add-condition menu asks where, what, with whom, as whom and when, with quick picks", function()
+        local set = ns.Sets:Create("Menu")
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Menu")
+        ns.UI.Main:SelectTab("when")
+        set:ApplyTemplate("home")
+        ns.UI.Main:SelectTab("when")
+        local m = set:GetConditionModel()
+        assert.equal("housing", m.groups[1].rows[1][1])
+        -- build the menu the dropdown would show
+        local build
+        for _, def in ipairs(ns.Conditions.Types()) do assert.is_not_nil(def.hint, def.key) end
+        local orig = ns.Widgets.Dropdown
+        ns.Widgets.Dropdown = function(parent, width, fn) build = build or fn return orig(parent, width, fn) end
+        ns.UI.Main:SelectTab("pets") ns.UI.Main:SelectTab("when")
+        ns.Widgets.Dropdown = orig
+        local root = U.newMenu()
+        build(nil, root)
+        assert.is_not_nil(root:Find("Where I am"))
+        assert.is_not_nil(root:Find("What I am doing"):Find("While swimming"))
+        assert.is_not_nil(root:Find("Who I play as"):Find("On my current specialization"))
+        assert.is_not_nil(root:Find("When"):Find("Holiday"))
+        root:Find("When"):Find("During any holiday"):Click()
+        assert.equal("holiday", set:GetConditionModel().groups[1].rows[2][1])
+    end)
 end)

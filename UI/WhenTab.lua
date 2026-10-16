@@ -12,7 +12,8 @@ local results = setmetatable({}, { __mode = "k" })            -- entry -> last "
 local TEMPLATES = {
     { key = "city", label = L["In a city"] }, { key = "instance", label = L["In a raid or dungeon"] },
     { key = "here", label = L["Here (current place)"] }, { key = "spec", label = L["On my current specialization"] },
-    { key = "group", label = L["In a group"] },
+    { key = "group", label = L["In a group"] }, { key = "home", label = L["At my house"] },
+    { key = "holiday", label = L["During any holiday"] },
 }
 
 local function save() set:SetConditionModel(model) end
@@ -267,16 +268,53 @@ local function buildRow(parent, group, index, e, y)
     return height
 end
 
+-- the menu asks the player's questions, in the order they think of them
+local MENU_GROUPS = {
+    { key = "where", label = L["Where I am"] },
+    { key = "doing", label = L["What I am doing"] },
+    { key = "with", label = L["Who I play with"] },
+    { key = "who", label = L["Who I play as"] },
+    { key = "when", label = L["When"] },
+    { key = "advanced", label = L["Advanced"] },
+}
+
+-- ready-made rows for the most common wishes, at the top of their group
+local QUICK = {
+    where = { { label = L["Here (current place)"], new = function() return { "zone", mapIDs = { C_Map.GetBestMapForUnit("player") } } end },
+        { label = L["At my house"], new = function() return { "housing", ownHome = true } end } },
+    doing = { { label = L["While swimming"], new = function() return { "activity", swimming = true } end },
+        { label = L["While AFK"], new = function() return { "activity", afk = true } end } },
+    who = { { label = L["On my current specialization"], new = function()
+        local _, class = UnitClass("player")
+        return { "specialization", class = class, spec = C_SpecializationInfo.GetSpecialization() or -1 }
+    end } },
+    when = { { label = L["During any holiday"], new = function() return { "holiday", holidayIDs = { 0 } } end } },
+}
+
+local function withHint(item, title, hint)
+    if hint and item.SetTooltip then
+        item:SetTooltip(function(tooltip)
+            tooltip:SetText(title, 1, 1, 1)
+            tooltip:AddLine(hint, nil, nil, nil, true)
+        end)
+    end
+    return item
+end
+
 local function addMenu(group)
+    local function add(row) tinsert(group.rows, row) save() Tab:Refresh(set) end
     return function(owner, root)
-        local groups = { place = L["Place"], party = L["Group and character"], time = L["Time"], advanced = L["Advanced"] }
         local sub = {}
+        for _, g in ipairs(MENU_GROUPS) do
+            sub[g.key] = root:CreateButton(g.label)
+            for _, q in ipairs(QUICK[g.key] or {}) do
+                sub[g.key]:CreateButton(q.label, function() add(q.new()) end)
+            end
+            if QUICK[g.key] then sub[g.key]:CreateDivider() end
+        end
         for _, def in ipairs(ns.Conditions.Types()) do
-            sub[def.group] = sub[def.group] or root:CreateButton(groups[def.group])
-            sub[def.group]:CreateButton(def.label, function()
-                tinsert(group.rows, def.new())
-                save() Tab:Refresh(set)
-            end)
+            local parent = sub[def.group] or sub.advanced
+            withHint(parent:CreateButton(def.label, function() add(def.new()) end), def.label, def.hint)
         end
     end
 end
@@ -304,9 +342,15 @@ function render()
         note:SetPoint("TOPLEFT", 8, y)
         y = y - 22
         local prev
-        for _, t in ipairs(TEMPLATES) do
+        -- four per row so the row never runs past a narrow window
+        for i, t in ipairs(TEMPLATES) do
             local b = track(ns.Widgets.Button(content, t.label, function() set:ApplyTemplate(t.key) Tab:Refresh(set) end))
-            if prev then b:SetPoint("LEFT", prev, "RIGHT", 6, 0) else b:SetPoint("TOPLEFT", 8, y) end
+            if i % 4 == 1 then
+                if i > 1 then y = y - 26 end
+                b:SetPoint("TOPLEFT", 8, y)
+            else
+                b:SetPoint("LEFT", prev, "RIGHT", 6, 0)
+            end
             prev = b
         end
         y = y - 30

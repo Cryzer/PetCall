@@ -156,6 +156,8 @@ local TEMPLATES = {
         return { { "specialization", class = class, spec = C_SpecializationInfo.GetSpecialization() or -1 } }
     end,
     group = function() return { { "groupType", party = true, raid = true } } end,
+    home = function() return { { "housing", ownHome = true } } end,
+    holiday = function() return { { "holiday", holidayIDs = { 0 } } } end,
 }
 
 function SetMixin:ApplyTemplate(key)

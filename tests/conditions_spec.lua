@@ -176,4 +176,52 @@ describe("Conditions", function()
         assert.equal("Place: Map84", C.Describe({ "zone", zoneName = "Map84", mapIDs = { 84, 84 } }))
         assert.equal("Place: none chosen yet", C.Describe({ "zone", mapIDs = {} }))
     end)
+    it("activity: any ticked activity is enough", function()
+        assert.is_false(eval({ "activity", swimming = true, afk = true }))
+        W.world.swimming = true
+        assert.is_true(eval({ "activity", swimming = true, afk = true }))
+        W.world.swimming = false
+        W.world.formID = 3
+        assert.is_true(eval({ "activity", form = true }))
+        W.world.mounted = true
+        assert.is_true(eval({ "activity", mounted = true }))
+        assert.equal("Activity: Mounted or AFK", C.Describe({ "activity", mounted = true, afk = true }))
+    end)
+    it("home: own plot, someone else's plot, inside a house", function()
+        assert.is_false(eval({ "housing", ownHome = true }))
+        W.world.home.any = true
+        assert.is_false(eval({ "housing", ownHome = true }))
+        assert.is_true(eval({ "housing", otherHome = true }))
+        W.world.home.own = true
+        assert.is_true(eval({ "housing", ownHome = true }))
+        assert.is_false(eval({ "housing", otherHome = true }))      -- my own plot is not a visit
+        W.world.home.inside = true
+        assert.is_true(eval({ "housing", inHouse = true }))
+    end)
+    it("holiday: a running holiday from the calendar, by id or any", function()
+        local hallows = { eventID = 324, title = "Hallow's End", calendarType = "HOLIDAY", sequenceType = "ONGOING",
+            startTime = { year = 2026, month = 10, monthDay = 10, hour = 10, minute = 0 },
+            endTime = { year = 2026, month = 11, monthDay = 1, hour = 11, minute = 0 } }
+        local raidReset = { eventID = 9, title = "Raid reset", calendarType = "RAID_RESET" }
+        W.world.calEvents[16] = { raidReset, hallows }
+        assert.is_true(eval({ "holiday", holidayIDs = { 324 } }))
+        assert.is_true(eval({ "holiday", holidayIDs = { 0 } }))
+        assert.is_false(eval({ "holiday", holidayIDs = { 141 } }))
+        assert.is_true(W.world.calendarOpened)
+        assert.equal("Holiday: Hallow's End", C.Describe({ "holiday", holidayIDs = { 324 } }))
+    end)
+    it("holiday: not before it starts, and the calendar showing another month still finds today", function()
+        local fair = { eventID = 479, title = "Darkmoon Faire", calendarType = "HOLIDAY",
+            startTime = { year = 2026, month = 10, monthDay = 16, hour = 13, minute = 0 },
+            endTime = { year = 2026, month = 10, monthDay = 22, hour = 23, minute = 59 } }
+        W.world.calShown = { year = 2026, month = 8 }        -- the player left the calendar on August
+        W.world.calEvents[2 * 100 + 16] = { fair }
+        assert.is_false(eval({ "holiday", holidayIDs = { 479 } }))   -- 12:00, it opens at 13:00
+        W.world.now = { year = 2026, month = 10, monthDay = 16, hour = 14, minute = 0 }
+        W.advance(2)                                          -- past the short cache
+        assert.is_true(eval({ "holiday", holidayIDs = { 479 } }))
+        local known = C.KnownHolidays()
+        assert.equal(479, known[1].value)
+        assert.equal("Darkmoon Faire", known[1].label)
+    end)
 end)

@@ -50,7 +50,7 @@ read_globals = {
     "LibStub",
 
     -- WoW C_ namespaces
-    "C_PetJournal", "C_Timer", "C_AddOns", "C_Item", "C_Map",
+    "C_PetJournal", "C_Timer", "C_AddOns", "C_Item", "C_Map", "C_Housing", "C_Calendar", "C_DateAndTime",
     "C_QuestLog", "C_SettingsUtil", "C_Spell", "C_UnitAuras",
     "C_ChatInfo", "C_SpecializationInfo",
 
@@ -73,7 +73,7 @@ read_globals = {
     "GetBindingKey",
     "HasFullControl", "InCombatLockdown", "IsFalling", "IsFlying",
     "IsInGroup", "IsInInstance", "IsResting", "IsStealthed",
-    "IsControlKeyDown", "IsMounted",
+    "IsControlKeyDown", "IsMounted", "IsSwimming", "IsSubmerged", "IsIndoors", "IsOutdoors", "GetShapeshiftFormID",
     "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitInVehicle",
     "UnitIsDeadOrGhost", "UnitIsAFK", "SendChatMessage",
     "SecureCmdOptionParse", "PlaySound", "PlaySoundFile",
