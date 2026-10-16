@@ -845,11 +845,12 @@ describe("UI smoke", function()
         viewer.frame.GetWidth = function() return 230 end
         viewer.frame.GetHeight = function() return 300 end
         ns.UI.Preview:SetSelected("big")
-        viewer.actor.GetActiveBoundingBox = function() return -2, -2, 0, 2, 2, 3 end
+        viewer.actor.GetActiveBoundingBox = function() return -20, -20, 0, 20, 2, 3 end   -- mostly empty box
         viewer.actor.GetScale = function() return 1 end
         viewer:Fit()
         assert.is_true(cam.zoom > 3)
         assert.is_true(cam.max >= cam.zoom)
+        assert.is_true(cam.zoom <= 6)                                -- at most twice the journal's 3
         cam.zoom = 50
         viewer:Fit()
         assert.equal(50, cam.zoom)                                   -- never pulled closer

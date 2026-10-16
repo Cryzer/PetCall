@@ -18,6 +18,9 @@ ns.UI = ns.UI or {}
 local SCENE_TEMPLATE = "WrappedAndUnwrappedModelScene"
 local HOLD, EASE = 0.8, 1.0
 local FILL = 0.8          -- part of the frame a fitted model may take
+-- never further than this times the journal's distance: some models (Murkastrasza)
+-- circle a point far to the side and their box is mostly empty space
+local MAX_BACK = 2
 
 -- How far the camera must be to see a model whole in a frame of this shape. The
 -- journal's camera is set up for the journal's frame; big pets (Willie, mounts-sized
@@ -77,6 +80,9 @@ function ns.UI.NewModelViewer(parent, opts)
         if not (w and h) or h <= 0 then return end
         local fov = cam.GetFieldOfView and cam:GetFieldOfView() or nil
         local want = ns.UI.FitDistance((x2 - x1) * scale, (y2 - y1) * scale, (z2 - z1) * scale, w / h, fov)
+        -- the journal's distance for this pet, read once per load before we move it
+        self.baseZoom = self.baseZoom or cam:GetZoomDistance()
+        want = math.min(want, self.baseZoom * MAX_BACK)
         if want > cam:GetZoomDistance() then
             if cam.GetMaxZoomDistance and cam.SetMaxZoomDistance and cam:GetMaxZoomDistance() < want then
                 cam:SetMaxZoomDistance(want)
@@ -109,6 +115,7 @@ function ns.UI.NewModelViewer(parent, opts)
             if displayID and displayID > 0 then self.frame:SetDisplayInfo(displayID) else self.frame:SetCreature(info.creatureID) end
         end
         self:FaceFront()
+        self.baseZoom = nil
         -- a model already in memory may be ready before the hook fires
         if useScene then ns:After(0.1, function() v:Fit() end) end
     end
