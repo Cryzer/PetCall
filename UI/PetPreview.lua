@@ -13,7 +13,8 @@ local loadModel        -- assigned above Preview:ShowPet
 -- so a tall window gets a big model and a short one never pushes the controls out.
 -- When room runs short the parts go in this order: the source lines (still in the
 -- tooltip), the chance bar, then the model. Name, How often and Summon always stay.
-local FULL, NO_SOURCE, NO_CHANCE = 236, 196, 142
+-- (each budget keeps an 8 px gap above the Summon button)
+local FULL, NO_SOURCE, NO_CHANCE = 242, 202, 148
 
 -- -> model height (0 = no model), show source, show chance
 function Preview.Layout(h)
