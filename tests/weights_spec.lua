@@ -55,4 +55,18 @@ describe("Weights", function()
         assert.is_nil(ns.Weights.Short(1))
         assert.equal(8, ns.Weights.Nearest(7.9))
     end)
+    it("rules give no tickets to a pet that cannot be summoned, but still count it as theirs", function()
+        W.world.pets.ghost = { species = 900, name = "Ghost", unsummonable = true }
+        W.world.favorites.ghost = true
+        ns.PetCache:Rescan()
+        local settings = { pets = {}, defaultValue = 0, filter = { { "favorites", 8 } } }
+        local tbl = ns.Weights.Build(settings)
+        assert.equal(0, ns.Weights.Sum(tbl, "ghost"))
+        assert.equal(8, tbl.auto.ghost)
+        local others = 0
+        for id in pairs(W.world.favorites) do
+            if id ~= "ghost" and W.world.pets[id] then others = others + 8 end
+        end
+        assert.equal(others, tbl.total)
+    end)
 end)

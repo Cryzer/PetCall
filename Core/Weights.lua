@@ -47,7 +47,7 @@ function Weights.PetWeight(settings, petID)
     return settings.defaultValue or 0
 end
 
--- out.auto: petID -> the tickets its rules give it (summonable or not), so the UI
+-- out.auto: petID -> the tickets its rules would give it (summonable or not), so the UI
 -- can tell "in through a rule" without judging every pet against the rules again
 function Weights.Build(settings, out)
     out = out or {}
@@ -58,8 +58,11 @@ function Weights.Build(settings, out)
     local filters = settings.filter
     local hasFilters = filters and #filters > 0
     for _, petID in ns.PetCache:IteratePetIDs() do
+        -- a pet the game will not summon gets no tickets from anywhere: drawing it would
+        -- summon nothing (1.x let rules give it tickets)
+        local summonable = C_PetJournal.PetIsSummonable(petID)
         local value = Weights.PetWeight(settings, petID)
-        if value > 0 and C_PetJournal.PetIsSummonable(petID) then
+        if value > 0 and summonable then
             out[#out + 1], out[#out + 2] = value, petID
             out.total = out.total + value
         end
@@ -67,8 +70,10 @@ function Weights.Build(settings, out)
             for _, entry in ipairs(filters) do
                 if ns.AutoRules.Match(entry, petID) then
                     local w = ns.AutoRules.Weight(entry)
-                    out[#out + 1], out[#out + 2] = w, petID
-                    out.total = out.total + w
+                    if summonable then
+                        out[#out + 1], out[#out + 2] = w, petID
+                        out.total = out.total + w
+                    end
                     auto[petID] = (auto[petID] or 0) + w
                 end
             end
