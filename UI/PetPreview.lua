@@ -178,16 +178,12 @@ function Preview:ShowPet(petID, forSet)
             ns.Widgets.SetPicked(btn, btn.value == current)
         end
         -- every copy of the pet is a separate ticket in the draw
-        local tbl, sums, top = set:GetWeightTable(), {}, 0
-        for i = 1, #tbl, 2 do
-            local primary = ns.PetCache:GetCopies(tbl[i + 1])[1]
-            sums[primary] = (sums[primary] or 0) + tbl[i]
-            if sums[primary] > top then top = sums[primary] end
-        end
+        local tbl = set:GetWeightTable()
+        local sums, top = set:GetTileSums()
         local mine = sums[copies[1]] or 0
         local chance = (tbl.total or 0) > 0 and mine / tbl.total or 0
         local reason
-        for _, id in ipairs(copies) do reason = reason or select(2, set:GetChance(id)) end
+        for _, id in ipairs(copies) do reason = reason or set:Unavailable(id) end
         panel.chanceBar:SetValue(top > 0 and mine / top or 0)
         panel.chance:SetText(format("%.1f%%", chance * 100))
         panel.reason:SetText(reason or "")

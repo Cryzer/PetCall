@@ -160,15 +160,30 @@ function SetMixin:GetWeightTable()
     return self.weights
 end
 
+-- why the pet would not come out right now, or nil
+function SetMixin:Unavailable(petID)
+    if ns.PetCache:OnCooldown(petID) then return L["On cooldown"] end
+    if not C_PetJournal.PetIsSummonable(petID) then return L["Cannot be summoned"] end
+end
+
 function SetMixin:GetChance(petID)
-    local chance = ns.Weights.Chance(self:GetWeightTable(), petID)
-    local reason
-    if ns.PetCache:OnCooldown(petID) then
-        reason = L["On cooldown"]
-    elseif not C_PetJournal.PetIsSummonable(petID) then
-        reason = L["Cannot be summoned"]
+    return ns.Weights.Chance(self:GetWeightTable(), petID), self:Unavailable(petID)
+end
+
+-- tickets per tile (copies add up on their primary) and the most any tile has,
+-- added up once per draw table: hovering the grid only reads them
+function SetMixin:GetTileSums()
+    local tbl = self:GetWeightTable()
+    if not tbl.tiles then
+        local sums, top = {}, 0
+        for i = 1, #tbl, 2 do
+            local primary = ns.PetCache:GetCopies(tbl[i + 1])[1]
+            sums[primary] = (sums[primary] or 0) + tbl[i]
+            if sums[primary] > top then top = sums[primary] end
+        end
+        tbl.tiles = { sums = sums, top = top }
     end
-    return chance, reason
+    return tbl.tiles.sums, tbl.tiles.top
 end
 
 function SetMixin:PickPet(exclude) return ns.Weights.Pick(self:GetWeightTable(), fastrandom(), exclude) end

@@ -28,15 +28,8 @@ function M.Filter(set, state)
     end
     local key = state.sort or "name"
     if key ~= "name" then
-        -- chance is proportional to a pet's summed weight: one pass over the table
-        local sums = {}
-        if key == "chance" then
-            local tbl = set:GetWeightTable()
-            for i = 1, #tbl, 2 do
-                local primary = ns.PetCache:GetCopies(tbl[i + 1])[1]   -- copies add up on their tile
-                sums[primary] = (sums[primary] or 0) + tbl[i]
-            end
-        end
+        -- chance is proportional to a tile's summed weight (copies add up on their tile)
+        local sums = key == "chance" and set:GetTileSums() or {}
         local function value(id)
             local info = ns.PetCache:GetInfo(id)
             if key == "level" then return info.level end

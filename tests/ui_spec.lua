@@ -1253,4 +1253,20 @@ describe("UI smoke", function()
         local inSet, leftOut = ns.UI.SetHeader.Counts(set)
         assert.equal(ns.PetCache:NumPets(), inSet + leftOut)
     end)
+    it("hovering pets does not add up the set's whole table each time", function()
+        for i = 1, 6 do W.world.pets["p" .. i] = { species = 10 + i, name = "P" .. i } end
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        ns.UI.Preview:SetHover("p1")
+        local copies = 0
+        local get = ns.PetCache.GetCopies
+        ns.PetCache.GetCopies = function(...) copies = copies + 1 return get(...) end
+        ns.UI.Preview:SetHover("p2")
+        ns.PetCache.GetCopies = get
+        assert.is_true(copies <= 2, "looked up " .. copies .. " pets")
+        assert.equal("p2", ns.UI.Preview:GetShown())
+        assert.equal(format("%.1f%%", 100 / ns.PetCache:NumPets()), ns.UI.Preview:GetPanel().chance:GetText())
+    end)
 end)
