@@ -218,6 +218,7 @@ function G:Show()
     if not gallery then build() end
     ns.UI.Main:SetSetPagesShown(false)
     gallery:Show()
+    ns.Recipes.ForgetCounts()      -- favourites and the like may have changed since
     scrollBox:SetDataProvider(CreateDataProvider(elements()))
 end
 

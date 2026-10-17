@@ -1319,4 +1319,25 @@ describe("UI smoke", function()
         assert.equal(0, boxes)
         assert.is_true(editor:IsShown())
     end)
+    it("the recipe gallery counts each recipe's pets once per opening", function()
+        ns.UI.Main:Show()
+        local builds = 0
+        local build = ns.Weights.Build
+        ns.Weights.Build = function(...) builds = builds + 1 return build(...) end
+        ns.UI.RecipeGallery:Show()
+        local opened = builds
+        ns.UI.RecipeGallery:Refresh()
+        local refreshed = builds - opened
+        ns.Weights.Build = build
+        local recipes = #ns.Recipes.List() + #ns.Conditions.KnownHolidays()
+        assert.is_true(opened <= recipes, opened .. " counts for " .. recipes .. " recipes")
+        assert.equal(0, refreshed, "a resize reuses the counts")
+        -- a new pet is counted the next time
+        local n = ns.Recipes.Count(ns.Recipes.List()[1])
+        W.world.pets.z = { species = 99, name = "Zed", favorite = true }
+        W.world.favorites = W.world.favorites or {}
+        W.world.favorites.z = true
+        ns.PetCache:Rescan()
+        assert.is_true(ns.Recipes.Count(ns.Recipes.List()[1]) >= n)
+    end)
 end)

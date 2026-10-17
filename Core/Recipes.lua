@@ -135,7 +135,7 @@ local function holidayRecipe(h)
 end
 
 -- how many tiles (copies grouped) the set would draw from, and up to four of them, most likely first
-function R.Count(r)
+local function count(r)
     local tbl = ns.Weights.Build({ pets = {}, defaultValue = r.defaultValue or 0, filter = r.rules })
     local found = {}
     for _, id in ns.PetCache:IteratePetIDs() do
@@ -153,6 +153,25 @@ function R.Count(r)
     for i = 1, math.min(4, #found) do sample[i] = found[i].id end
     return #found, sample
 end
+
+-- recipe key -> { n, sample }: the gallery asks about each recipe several times per
+-- drawing, and every answer goes over all pets. Forgotten when the pets change and
+-- each time the gallery opens.
+local counts = {}
+
+function R.Count(r)
+    if not r.key then return count(r) end
+    local c = counts[r.key]
+    if not c then
+        local n, sample = count(r)
+        c = { n = n, sample = sample }
+        counts[r.key] = c
+    end
+    return c.n, c.sample
+end
+
+function R.ForgetCounts() wipe(counts) end
+ns:RegisterCallback(R, "PetsChanged", R.ForgetCounts)
 
 function R.Usable(r)
     if R.Count(r) == 0 then return false, L["You have no pets for this yet."] end
