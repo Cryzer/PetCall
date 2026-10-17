@@ -9,7 +9,7 @@ ignore = { "211", "212", "213", "411", "421", "422", "431", "432", "433", "443",
 
 -- Locales are auto-generated from CurseForge and may contain Lua 5.3 \uXXXX escapes.
 -- Libs are vendored third-party libraries; not our code to lint.
-exclude_files = { "Locales/", "Libs/", "tests/lib/", "tools/" }
+exclude_files = { "Locales/", "Libs/", "tests/lib/", "tools/", "docs/" }
 
 globals = {
     -- Addon globals

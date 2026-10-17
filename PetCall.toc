@@ -23,10 +23,15 @@ Core\Addon.lua
 Core\Locale.lua
 Locales\enUS.lua
 Locales\deDE.lua
+Locales\esES.lua
+Locales\esMX.lua
 Locales\frFR.lua
+Locales\itIT.lua
 Locales\koKR.lua
+Locales\ptBR.lua
 Locales\ruRU.lua
 Locales\zhCN.lua
+Locales\zhTW.lua
 Core\DB.lua
 Core\PetCache.lua
 Core\Weights.lua
