@@ -132,8 +132,10 @@ function Help.GetButton() return button end
 
 ns:RegisterCallback(Help, "WindowBuilt", function(_, f)
     button = CreateFrame("Button", nil, f)
-    button:SetSize(26, 26)
-    button:SetPoint("LEFT", f.badge or f, f.badge and "RIGHT" or "TOPLEFT", 2, f.badge and -8 or -12)
+    -- Blizzard's size, on the title bar's line just right of the logo, like the "i"
+    -- in their windows: the texture fills its frame, so smaller reads as a dot
+    button:SetSize(36, 36)
+    button:SetPoint("CENTER", f.badge or f, f.badge and "TOPRIGHT" or "TOPLEFT", 16, f.badge and -21 or -11)
     button:SetFrameLevel((f.badge and f.badge:GetFrameLevel() or f:GetFrameLevel()) + 1)
     button:SetNormalTexture("Interface\\common\\help-i")
     button:SetHighlightTexture("Interface\\common\\help-i", "ADD")
