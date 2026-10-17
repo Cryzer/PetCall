@@ -39,20 +39,24 @@ describe("SpecialItems", function()
         assert.is_true(#list >= 18)
         assert.is_not_nil(list[1].name)
     end)
-    it("reads the quest log once per burst of quest updates; taking a quest counts at once", function()
-        local reads = 0
-        local num = C_QuestLog.GetNumQuestLogEntries
-        rawset(C_QuestLog, "GetNumQuestLogEntries", function(...) reads = reads + 1 return num(...) end)
+    it("looks at the watched quests once per burst of quest updates; taking a quest counts at once", function()
+        local asks, logReads = 0, 0
+        local isOn, num = C_QuestLog.IsOnQuest, C_QuestLog.GetNumQuestLogEntries
+        rawset(C_QuestLog, "IsOnQuest", function(...) asks = asks + 1 return isOn(...) end)
+        rawset(C_QuestLog, "GetNumQuestLogEntries", function(...) logReads = logReads + 1 return num(...) end)
         W.world.quests = { 26831 }
         for _ = 1, 10 do W.fire("QUEST_LOG_UPDATE") end
-        assert.equal(0, reads)
+        assert.equal(0, asks)
         W.advance(0.6)
-        assert.equal(1, reads)
+        local perLook = asks
+        assert.is_true(perLook > 0 and perLook <= 7, tostring(perLook))   -- 7 watched quests
         assert.is_true(ns.Ready.is_false["quest:26831"])
         W.world.quests = {}
         W.fire("QUEST_REMOVED", 26831)
-        assert.equal(2, reads)
+        assert.equal(2 * perLook, asks)
         assert.is_nil(ns.Ready.is_false["quest:26831"])
+        assert.equal(0, logReads)                                         -- the whole log is never read
+        rawset(C_QuestLog, "IsOnQuest", isOn)
         rawset(C_QuestLog, "GetNumQuestLogEntries", num)
     end)
 end)

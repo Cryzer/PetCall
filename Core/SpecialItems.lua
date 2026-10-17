@@ -39,7 +39,7 @@ end }
 local function questEntry(...)
     local ids = { ... }
     return { quest = true, check = function()
-        for _, q in ipairs(ids) do if SI.quests[q] then return true end end
+        for _, q in ipairs(ids) do if C_QuestLog.IsOnQuest(q) then return true end end
         return false
     end }
 end
@@ -52,9 +52,8 @@ local defaults = { profile = { enable = true, items = { ["*"] = true } }, global
 
 function SI:OnInitialize()
     self.db = ns.DB:Namespace("SpecialItems", defaults)
-    self.quests = {}
     self.byEvent = {}
-    -- comes with every bit of quest progress: read the log once the burst settles
+    -- comes with every bit of quest progress: look once the burst settles
     self.QueueQuestList = ns.Debounce(0.5, function() SI:UpdateQuestList() end)
     self:RegisterEvent("QUEST_LOG_UPDATE", "QueueQuestList")
     self:RegisterEvent("QUEST_ACCEPTED", "UpdateQuestList")
@@ -92,12 +91,8 @@ function SI:CheckAll()
     for key, e in pairs(ENTRIES) do self:Update(key, e.check(e, "Init")) end
 end
 
+-- asks only about the few quests we watch: reading the whole log made a table per entry
 function SI:UpdateQuestList()
-    wipe(self.quests)
-    for i = 1, C_QuestLog.GetNumQuestLogEntries() do
-        local info = C_QuestLog.GetInfo(i)
-        if info and not info.isHeader then self.quests[info.questID] = true end
-    end
     for key, e in pairs(ENTRIES) do
         if e.quest then self:Update(key, e.check(e)) end
     end

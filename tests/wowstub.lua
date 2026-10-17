@@ -256,6 +256,10 @@ function W.reset()
     C_QuestLog = {
         GetNumQuestLogEntries = function() return #w.quests end,
         GetInfo = function(i) return w.quests[i] and { questID = w.quests[i], isHeader = false } or nil end,
+        IsOnQuest = function(id)
+            for _, q in ipairs(w.quests) do if q == id then return true end end
+            return false
+        end,
         GetTitleForQuestID = function(q) return "Quest" .. q end,
     }
     C_Spell = { GetSpellInfo = function(id) return { name = "Spell" .. id } end }
