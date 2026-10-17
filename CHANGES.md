@@ -16,7 +16,7 @@ PetCall 2.0 is a complete rebuild. You collected hundreds of pets; now you get t
 - 29 ready-made templates in groups you can filter and search, plus one for each pet family and pet source, your class and each holiday. One click and the set is yours to change.
 - Decide how often each pet comes out, from Never to Very often, or let rules do it for whole groups: favorites, a pet type, a level, rare quality, where a pet comes from, or pets native to where you are. Pets you collect later follow the rules too.
 - A fast pet grid for even the biggest collections, and a 3D preview with the exact chance a pet comes out next.
-- No more guessing: the status bar at the bottom of the window says why no pet is out, for example "Paused by: In combat".
+- No more guessing: the status bar at the bottom of the window and the minimap button's tooltip say why no pet is out, for example "Paused by: In combat".
 - Built-in help: click the "i" and every part of the window explains itself.
 
 ### Also new

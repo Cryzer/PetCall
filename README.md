@@ -40,7 +40,7 @@ You decide what fits by making **sets** of pets and telling each set **when** to
 - A 3D preview with the exact chance the pet comes out next.
 
 **Always clear**
-- A status bar along the bottom of the window that says what PetCall is doing, and why no pet is out ("Paused by: In combat").
+- A status bar along the bottom of the window, and the minimap button's tooltip, say what PetCall is doing and why no pet is out ("Paused by: In combat").
 - Built-in help: click the **i** and every part of the window explains itself.
 
 **Fits your game**
@@ -87,7 +87,7 @@ Now a dragonkin pet runs next to you whenever you ride one of those drakes.
 2. **Which pets.** Only the pets ticked in that set take part. Rules tick whole groups of pets for you.
 3. **Which one.** Each pet's **How often** sets its odds: *Never*, *Very rarely*, *Rarely*, *Normal*, *Often* or *Very often*. Each step makes a pet about eight times as likely as the one before. The preview shows the exact chance.
 
-**When PetCall waits:** in combat, while flying, in stealth or invisible, in a vehicle, while dead, looting or at the barber, and in the cases you choose in the settings. The status bar at the bottom of the window says what it is waiting for.
+**When PetCall waits:** in combat, while flying, in stealth or invisible, in a vehicle, while dead, looting or at the barber, and in the cases you choose in the settings. The status bar at the bottom of the window, and the tooltip of the minimap button, say what it is waiting for.
 
 ---
 
@@ -182,6 +182,8 @@ Click **+ New → From a template…**. Templates are grouped by when they are u
 
 ## Minimap button and data broker
 
+**Point at the button** to see the status at a glance: whether auto-summon is on, the set in use, the pet that is out, what PetCall is waiting for (*Paused by: Mounted*) and how many pets you have.
+
 - **Left-click**: your pet out or away, with auto-summon.
 - **Right-click**: a pet menu with *Summon another*, your recently summoned pets and every pet in alphabetical pages, with a 3D preview.
 - **Ctrl+Click**: the PetCall window.
@@ -217,7 +219,7 @@ Right-click a set, choose **Export** and send the text to a friend. They click *
 ## FAQ
 
 **Why is no pet out?**
-Open the window with `/pcall` and look at the status bar along its bottom edge. Where it usually says *Auto-summon: ready*, it says what is in the way: combat, flying, stealth, a set with *no pet* and so on. Point at the text for details.
+Open the window with `/pcall` and look at the status bar along its bottom edge. Where it usually says *Auto-summon: ready*, it says what is in the way: combat, flying, stealth, a set with *no pet* and so on. Point at the text for details. Without opening the window: point at the minimap button.
 
 **My Mount condition does nothing.**
 Turn off *Don't summon while mounted* in the settings. While it is on, PetCall waits until you dismount. It is on by default because a summon on a mount uses the global cooldown and can get in the way of Skyriding.
