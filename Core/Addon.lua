@@ -71,28 +71,34 @@ end
 -- Callbacks
 --
 
-local callbacks = {}   -- name -> { [owner] = fn }
+-- name -> { [owner] = fn }. A list is never changed in place: (un)registering puts a
+-- new copy in, so Fire walks the list it started with even when a callback
+-- (un)registers, without copying it on every call.
+local callbacks = {}
 
-function ns:RegisterCallback(owner, name, fn)
-    callbacks[name] = callbacks[name] or {}
-    callbacks[name][owner] = fn
+local function withOwner(name, owner, fn)
+    local list = {}
+    for o, f in pairs(callbacks[name] or {}) do list[o] = f end
+    list[owner] = fn
+    callbacks[name] = list
 end
 
+function ns:RegisterCallback(owner, name, fn) withOwner(name, owner, fn) end
+
 function ns:UnregisterCallback(owner, name)
-    if callbacks[name] then callbacks[name][owner] = nil end
+    if callbacks[name] and callbacks[name][owner] then withOwner(name, owner, nil) end
 end
 
 function ns:UnregisterAllCallbacks(owner)
-    for _, list in pairs(callbacks) do list[owner] = nil end
+    for name, list in pairs(callbacks) do
+        if list[owner] then withOwner(name, owner, nil) end
+    end
 end
 
 function ns:Fire(name, ...)
     local list = callbacks[name]
     if not list then return end
-    -- copy: a callback may (un)register while we iterate
-    local snapshot = {}
-    for owner, fn in pairs(list) do snapshot[owner] = fn end
-    for owner, fn in pairs(snapshot) do
+    for owner, fn in pairs(list) do
         local ok, err = pcall(fn, owner, ...)
         if not ok then geterrorhandler()(err) end
     end

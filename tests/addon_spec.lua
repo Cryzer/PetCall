@@ -62,4 +62,26 @@ describe("Addon core", function()
         W.advance(0.6)
         assert.equal(1, n)
     end)
+    it("callbacks may come and go while one fires, and firing makes no garbage", function()
+        local a, b, got = {}, {}, {}
+        ns:RegisterCallback(a, "Ping", function()
+            got[#got + 1] = "a"
+            ns:UnregisterCallback(b, "Ping")              -- still called this time
+            ns:RegisterCallback({}, "Ping", function() got[#got + 1] = "late" end)
+        end)
+        ns:RegisterCallback(b, "Ping", function() got[#got + 1] = "b" end)
+        ns:Fire("Ping")
+        table.sort(got)
+        assert.same({ "a", "b" }, got)
+        ns:UnregisterAllCallbacks(a)
+        local quiet = {}
+        ns:RegisterCallback(quiet, "Quiet", function() end)
+        collectgarbage("collect")
+        collectgarbage("stop")
+        local before = collectgarbage("count")
+        for _ = 1, 2000 do ns:Fire("Quiet", 1, 2) end
+        local grown = collectgarbage("count") - before
+        collectgarbage("restart")
+        assert.is_true(grown < 4, grown .. " KB")
+    end)
 end)
