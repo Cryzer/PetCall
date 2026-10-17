@@ -165,7 +165,7 @@ local function build()
     ButtonFrameTemplate_HidePortrait(win)
     ButtonFrameTemplate_HideButtonBar(win)
     win:SetTitle(L["Choose mounts"])
-    win:SetSize(580, 480)
+    win:SetSize(600, 500)
     win:SetFrameStrata("DIALOG")
     win:SetToplevel(true)
     win:SetMovable(true)
@@ -212,8 +212,34 @@ local function build()
     preview.empty:SetPoint("CENTER", preview.model, "CENTER")
 
     scrollBox = CreateFrame("Frame", nil, inset, "WowScrollBoxList")
-    scrollBox:SetPoint("TOPLEFT", 6, -34)
+    scrollBox:SetPoint("TOPLEFT", search, "BOTTOMLEFT", -6, -6)
     scrollBox:SetPoint("BOTTOMRIGHT", preview, "BOTTOMLEFT", -24, 0)
+
+    -- over the search: the condition does nothing while PetCall waits for you to dismount
+    local warn = CreateFrame("Frame", nil, inset)
+    warn:SetPoint("TOPLEFT", 6, -6)
+    warn:SetPoint("RIGHT", preview, "LEFT", -8, 0)
+    warn:SetHeight(58)
+    warn.bg = warn:CreateTexture(nil, "BACKGROUND")
+    warn.bg:SetAllPoints()
+    warn.bg:SetColorTexture(1, 0.82, 0, 0.12)
+    warn.edge = warn:CreateTexture(nil, "ARTWORK")
+    warn.edge:SetPoint("TOPLEFT")
+    warn.edge:SetPoint("BOTTOMLEFT")
+    warn.edge:SetWidth(3)
+    warn.edge:SetColorTexture(1, 0.82, 0, 1)
+    warn.button = ns.Widgets.Button(warn, L["Turn it off"], function()
+        ns.db.profile.noSummonMounted = false
+        ns.Ready:UpdateChecks()
+        Picker:PaintWarning()
+    end)
+    warn.button:SetPoint("RIGHT", -6, 0)
+    warn.text = ns.Widgets.Label(warn, L["\"Don't summon while mounted\" is on, so PetCall waits until you dismount and these mounts change nothing. Turn it off?"], "GameFontHighlightSmall")
+    warn.text:SetTextColor(1, 0.82, 0)
+    warn.text:SetPoint("LEFT", 12, 0)
+    warn.text:SetPoint("RIGHT", warn.button, "LEFT", -8, 0)
+    warn.text:SetWordWrap(true)
+    win.warn = warn
     local bar = CreateFrame("EventFrame", nil, inset, "MinimalScrollBar")
     bar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 6, 0)
     bar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 6, 0)
@@ -245,8 +271,18 @@ function Picker:Open(e, anchor, onChanged)
     win:ClearAllPoints()
     if anchor then win:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 6, 0) else win:SetPoint("CENTER") end
     win:Show()
+    self:PaintWarning()
     self:Redraw()
     previewMount(visible[1])
+end
+
+-- the warning shows while "Don't summon while mounted" is on; the search moves under it
+function Picker:PaintWarning()
+    if not win then return end
+    local on = ns.db.profile.noSummonMounted and true or false
+    win.warn:SetShown(on)
+    win.search:ClearAllPoints()
+    if on then win.search:SetPoint("TOPLEFT", win.warn, "BOTTOMLEFT", 6, -8) else win.search:SetPoint("TOPLEFT", 12, -8) end
 end
 
 function Picker:Close() if win then win:Hide() end end

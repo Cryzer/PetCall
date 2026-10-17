@@ -126,6 +126,12 @@ describe("UI smoke", function()
         open()
         assert.is_true(P:IsShown())
         assert.equal("Black Drake", P:GetPreviewed().name)       -- the first on the list until one is pointed at
+        -- "Don't summon while mounted" is on by default: a warning offers to turn it off
+        local win = _G.PetCallMountPicker
+        assert.is_true(win.warn:IsShown())
+        win.warn.button:Click()
+        assert.is_false(ns.db.profile.noSummonMounted)
+        assert.is_false(win.warn:IsShown())
         P:Toggle(9)
         P:Toggle(7)
         assert.same({ 9, 7 }, e.mountIDs)
