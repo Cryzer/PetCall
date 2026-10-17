@@ -10,9 +10,10 @@ Thumbs.db
 
 # WoW packaging artifacts
 *.zip
-tools/.luacheck/
-tools/.argparse/
 
-# Private notes, kept locally
-docs/feedback/
-docs/review/
+# Local only: dev tools and working notes
+docs/
+tools/
+
+# Claude Code session files
+.claude/
