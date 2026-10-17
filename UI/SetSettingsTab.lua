@@ -9,7 +9,7 @@ local SECTION_W = 560
 
 -- a titled block with a thin rule under the title; height is set by its builder
 local function section(title, danger)
-    local f = CreateFrame("Frame", nil, page)
+    local f = CreateFrame("Frame", nil, page.body)
     f:SetWidth(SECTION_W)
     f.title = ns.Widgets.Label(f, title, "GameFontNormal")
     f.title:SetPoint("TOPLEFT", 4, 0)
@@ -32,16 +32,19 @@ end
 -- labels and their controls share one column, wide enough for the longest label
 local LABEL_COL = 210
 
--- stack the sections that apply to this set from the top
+-- stack the sections that apply to this set from the top; the scrolled body is as
+-- tall as they are, so a short window scrolls instead of spilling below its edge
 local function stack()
-    local prev
+    local prev, height = nil, 10
     for _, s in ipairs(page.sections) do
         s:ClearAllPoints()
         if s:IsShown() then
             if prev then s:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -18) else s:SetPoint("TOPLEFT", 8, -10) end
+            height = height + (prev and 18 or 0) + s:GetHeight()
             prev = s
         end
     end
+    page.body:SetHeight(height + 10)
 end
 
 function Tab:Refresh(newSet)
@@ -73,6 +76,15 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     page = p
     ns.UI.SetSettingsPage = page
     page.sections = {}
+    local scroll = CreateFrame("ScrollFrame", nil, page, "ScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 0, -2)
+    scroll:SetPoint("BOTTOMRIGHT", -24, 2)
+    page.body = CreateFrame("Frame", nil, scroll)
+    page.body:SetSize(10, 10)
+    scroll:SetScrollChild(page.body)
+    scroll:SetScript("OnSizeChanged", function(_, w) page.body:SetWidth(w) end)
+    ns.Skin:Apply("ScrollBar", scroll.ScrollBar)
+    page.scroll = scroll
 
     -- the default set: what it is, instead of the controls it does not have
     page.defaultNote = section(L["About this set"])

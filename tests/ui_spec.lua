@@ -582,6 +582,12 @@ describe("UI smoke", function()
         page.reset:Click()
         assert.equal("PETCALL_CONFIRM", W.world.popup)
         assert.is_nil(ns.UI.PetsTabPage.defaultWeight)
+        -- the page scrolls: its body is as tall as the Default set's two sections
+        local got
+        page.body.SetHeight = function(_, h) got = h end
+        for _, s in ipairs(page.sections) do s.GetHeight = function() return 40 end end
+        ns:Fire("SetsChanged")
+        assert.equal(10 + 40 + 18 + 40 + 10, got)            -- the Default set: note and pets
     end)
     it("tiles say the pet type and how often, not just the level", function()
         W.world.pets.b = { species = 2, name = "B", type = 3 }
