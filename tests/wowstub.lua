@@ -59,6 +59,7 @@ local function defaultWorld()
         macroResult = nil, locale = "enUS",
         swimming = false, indoors = false, formID = nil,
         home = { own = false, any = false, inside = false },
+        mounts = {},          -- { id, name, active, collected }
         -- calendar: the month it shows, today, and events keyed by offset * 100 + day
         calShown = { year = 2026, month = 10 }, now = { year = 2026, month = 10, monthDay = 16, hour = 12, minute = 0 },
         calEvents = {},
@@ -242,6 +243,18 @@ function W.reset()
         IsInsideOwnedHouseOrPlot = function() return w.home.own end,
         IsInsideHouseOrPlot = function() return w.home.any or w.home.own end,
         IsInsideHouse = function() return w.home.inside end,
+    }
+    C_MountJournal = {
+        GetMountIDs = function()
+            local ids = {}
+            for i, m in ipairs(w.mounts) do ids[i] = m.id end
+            return ids
+        end,
+        GetMountInfoByID = function(id)
+            for _, m in ipairs(w.mounts) do
+                if m.id == id then return m.name, 1, 1, m.active, true, 0, false, false, nil, false, m.collected, id end
+            end
+        end,
     }
     C_DateAndTime = { GetCurrentCalendarTime = function() return w.now end }
     C_Calendar = {

@@ -209,6 +209,26 @@ describe("Conditions", function()
         W.world.home.inside = true
         assert.is_true(eval({ "housing", inHouse = true }))
     end)
+    it("mount: the chosen mounts, found by the one the journal marks active", function()
+        W.world.mounts = { { id = 7, name = "Swift Spectral Tiger", collected = true }, { id = 9, name = "Black Drake", collected = true } }
+        local e = { "mount", mountIDs = { 7 } }
+        assert.is_false(eval(e))                                  -- on foot
+        assert.equal("Not mounted.", select(2, C.Eval(e, C.Context())))
+        W.world.mounted, W.world.mounts[2].active = true, true
+        assert.is_false(eval(e))
+        W.world.mounts[2].active, W.world.mounts[1].active = false, true
+        assert.is_true(eval(e))
+        assert.equal("Riding: Swift Spectral Tiger", select(2, C.Eval(e, C.Context())))
+        assert.equal("Mount: Swift Spectral Tiger, Black Drake", C.Describe({ "mount", mountIDs = { 7, 9 } }))
+        assert.equal("Mount: none chosen yet", C.Describe({ "mount", mountIDs = {} }))
+        -- a new condition starts with the mount you sit on
+        assert.same({ "mount", mountIDs = { 7 } }, C.GetType("mount").new())
+        -- the picker lists only collected mounts, by name
+        W.world.mounts[3] = { id = 3, name = "Albino Drake", collected = false }
+        local names = {}
+        for _, m in ipairs(C.CollectedMounts()) do names[#names + 1] = m.name end
+        assert.same({ "Black Drake", "Swift Spectral Tiger" }, names)
+    end)
     it("holiday: a running holiday from the calendar, by id or any", function()
         local hallows = { eventID = 324, title = "Hallow's End", calendarType = "HOLIDAY", sequenceType = "ONGOING",
             startTime = { year = 2026, month = 10, monthDay = 10, hour = 10, minute = 0 },

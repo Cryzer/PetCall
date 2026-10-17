@@ -103,6 +103,7 @@ Conditions read like sentences: *Activity is Swimming*, *Place type is not City*
 | Place type | city or rest area, dungeon, raid, scenario, delve, battleground or arena, open world |
 | Home | your house or plot, someone else's, inside a house |
 | Activity | mounted, swimming, indoors, outdoors, AFK, in a shapeshift form |
+| Mount | one or more mounts from your collection (turn off "Don't summon while mounted") |
 | Group | solo, party, raid |
 | Character | class, specialization, one character by name |
 | Time of day | hours on the server clock |

@@ -67,6 +67,15 @@ fills({ "ownHome", "anyHome", "inHouse" }, function(ctx)
     ctx.anyHome = H and H.IsInsideHouseOrPlot and H.IsInsideHouseOrPlot() or false
     ctx.inHouse = H and H.IsInsideHouse and H.IsInsideHouse() or false
 end)
+-- the journal marks the mount you ride as active; looked for only while mounted
+fills({ "mountID" }, function(ctx)
+    ctx.mountID = false
+    if not (IsMounted() and C_MountJournal) then return end
+    for _, id in ipairs(C_MountJournal.GetMountIDs()) do
+        local _, _, _, active = C_MountJournal.GetMountInfoByID(id)
+        if active then ctx.mountID = id return end
+    end
+end)
 fills({ "holidays" }, function(ctx) ctx.holidays = C.ActiveHolidays and C.ActiveHolidays() or {} end)
 
 local Lazy = { __index = function(ctx, key)

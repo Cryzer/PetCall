@@ -305,6 +305,45 @@ C.RegisterType({
     end,
 })
 
+-- the mount the player rides: one or several picked from the collection
+local function mountName(id)
+    local name = C_MountJournal and C_MountJournal.GetMountInfoByID(id)
+    return name or ("#" .. id)
+end
+
+-- { id, name } of every collected mount, by name, for the picker
+function C.CollectedMounts()
+    local out = {}
+    if not C_MountJournal then return out end
+    for _, id in ipairs(C_MountJournal.GetMountIDs()) do
+        local name, _, _, _, _, _, _, _, _, _, collected = C_MountJournal.GetMountInfoByID(id)
+        if name and collected then out[#out + 1] = { id = id, name = name } end
+    end
+    table.sort(out, function(a, b) return a.name < b.name end)
+    return out
+end
+
+C.RegisterType({
+    key = "mount", label = L["Mount"], group = "doing",
+    hint = L["Riding one of the chosen mounts. Needs \"Don't summon while mounted\" turned off in the settings."],
+    fields = { { key = "mountIDs", kind = "multiMount" } },
+    events = { "PLAYER_MOUNT_DISPLAY_CHANGED", "PLAYER_ENTERING_WORLD" },
+    new = function()
+        local id = C.Context().mountID
+        return { "mount", mountIDs = { id or nil } }
+    end,
+    check = function(e, ctx) return ctx.mountID and contains(e.mountIDs, ctx.mountID) or false end,
+    reason = function(_, ctx)
+        return ctx.mountID and format(L["Riding: %s"], mountName(ctx.mountID)) or L["Not mounted."]
+    end,
+    describe = function(e)
+        local parts = {}
+        for _, id in ipairs(e.mountIDs or {}) do parts[#parts + 1] = mountName(id) end
+        return L["Mount"] .. ": " .. (#parts > 0 and table.concat(parts, ", ") or L["none chosen yet"])
+    end,
+    merge = function(a, b) return { "mount", mountIDs = union(a.mountIDs, b.mountIDs) } end,
+})
+
 --
 -- Holidays, read from the in-game calendar
 --

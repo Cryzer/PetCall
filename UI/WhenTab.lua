@@ -33,6 +33,7 @@ local function chip(parent, text, onRemove)
 end
 
 local function mapName(id) local i = C_Map.GetMapInfo(id) return i and i.name or tostring(id) end
+local function mountName(id) return C_MountJournal.GetMountInfoByID(id) or ("#" .. id) end
 
 local function buildField(row, e, field, prev)
     local function place(w, gap) w:SetPoint("LEFT", prev, "RIGHT", gap or 6, 0) prev = w return w end
@@ -48,6 +49,38 @@ local function buildField(row, e, field, prev)
         local here = ns.Conditions.HasCurrentPlace(e)
         addHere:SetEnabled(not here)
         ns.Widgets.Tooltip(addHere, L["+ current"], here and L["You are already in one of these places."] or L["Add the place you are in now."])
+    elseif field.kind == "multiMount" then
+        e.mountIDs = e.mountIDs or {}
+        local function has(id) for _, x in ipairs(e.mountIDs) do if x == id then return true end end return false end
+        local function toggle(id)
+            for i, x in ipairs(e.mountIDs) do
+                if x == id then table.remove(e.mountIDs, i) changedInPlace() Tab:Refresh(set) return end
+            end
+            e.mountIDs[#e.mountIDs + 1] = id
+            changedInPlace() Tab:Refresh(set)
+        end
+        for _, id in ipairs(e.mountIDs) do place(chip(row, mountName(id), function() toggle(id) end)) end
+        local current = ns.Conditions.Context().mountID
+        local addHere = place(frames:Button(row, L["+ current"], function() if current and not has(current) then toggle(current) end end))
+        addHere:SetEnabled(current and not has(current) or false)
+        ns.Widgets.Tooltip(addHere, L["+ current"], not current and L["You are not mounted."]
+            or has(current) and L["You already ride one of these."] or L["Add the mount you are riding."])
+        -- the whole collection in letter pages, like the pet menu; the window redraws
+        -- under it on every pick, so the menu belongs to UIParent and stays open
+        local pick = place(frames:Button(row, L["+ choose"], function()
+            MenuUtil.CreateContextMenu(UIParent, function(_, root)
+                local ids, names = {}, {}
+                for i, m in ipairs(ns.Conditions.CollectedMounts()) do ids[i], names[m.id] = m.id, m.name end
+                for _, g in ipairs(ns.UI.Menu.Groups(ids, 25, function(id) return names[id] end)) do
+                    local page = root:CreateButton(format("%s  |cff808080(%d)|r", g.label, #g.ids))
+                    page:SetScrollMode(20 * 26)
+                    for _, id in ipairs(g.ids) do
+                        page:CreateCheckbox(names[id], function() return has(id) end, function() toggle(id) end)
+                    end
+                end
+            end)
+        end))
+        ns.Widgets.Tooltip(pick, L["+ choose"], L["Pick mounts from your collection."])
     elseif field.kind == "multiChoice" then
         local values = field.values()
         local dd = frames:Dropdown(row, 200, function(owner, root)
