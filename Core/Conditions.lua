@@ -24,9 +24,12 @@ function C.IsLegacyNode(e) return isNode(e) end
 -- Context
 --
 
-function C.Context()
-    local ctx = {}
-    ctx.zone, ctx.subzone = GetZoneText(), GetSubZoneText()
+-- field -> the function that reads it from the game, together with its neighbours
+local FILL = {}
+local function fills(names, fill) for _, n in ipairs(names) do FILL[n] = fill end end
+
+fills({ "zone", "subzone" }, function(ctx) ctx.zone, ctx.subzone = GetZoneText(), GetSubZoneText() end)
+fills({ "mapChain" }, function(ctx)
     ctx.mapChain = {}
     local mapID = C_Map.GetBestMapForUnit("player")
     local guard = 0
@@ -36,27 +39,45 @@ function C.Context()
         mapID = info and info.parentMapID
         guard = guard + 1
     end
-    ctx.inInstance, ctx.instanceType = IsInInstance()
+end)
+fills({ "inInstance", "instanceType" }, function(ctx) ctx.inInstance, ctx.instanceType = IsInInstance() end)
+fills({ "delve" }, function(ctx)
     ctx.delve = C_PartyInfo and C_PartyInfo.IsDelveInProgress and C_PartyInfo.IsDelveInProgress() or false
-    ctx.resting = IsResting()
-    ctx.inRaid, ctx.inGroup = IsInRaid(), IsInGroup()
+end)
+fills({ "resting" }, function(ctx) ctx.resting = IsResting() end)
+fills({ "inRaid", "inGroup" }, function(ctx) ctx.inRaid, ctx.inGroup = IsInRaid(), IsInGroup() end)
+fills({ "class", "name" }, function(ctx)
     local _, class = UnitClass("player")
-    ctx.class = class
-    ctx.spec = C_SpecializationInfo.GetSpecialization()
-    ctx.name = UnitName("player")
+    ctx.class, ctx.name = class, UnitName("player")
+end)
+fills({ "spec" }, function(ctx) ctx.spec = C_SpecializationInfo.GetSpecialization() end)
+fills({ "minutes" }, function(ctx)
     local h, m = GetGameTime()
     ctx.minutes = h * 60 + m
+end)
+fills({ "mounted", "afk", "swimming", "indoors", "outdoors", "form" }, function(ctx)
     ctx.mounted, ctx.afk = IsMounted() and true or false, UnitIsAFK("player") and true or false
     ctx.swimming = (IsSwimming() or IsSubmerged()) and true or false
     ctx.indoors, ctx.outdoors = IsIndoors() and true or false, IsOutdoors() and true or false
     ctx.form = GetShapeshiftFormID() ~= nil
+end)
+fills({ "ownHome", "anyHome", "inHouse" }, function(ctx)
     local H = C_Housing
     ctx.ownHome = H and H.IsInsideOwnedHouseOrPlot and H.IsInsideOwnedHouseOrPlot() or false
     ctx.anyHome = H and H.IsInsideHouseOrPlot and H.IsInsideHouseOrPlot() or false
     ctx.inHouse = H and H.IsInsideHouse and H.IsInsideHouse() or false
-    ctx.holidays = C.ActiveHolidays and C.ActiveHolidays() or {}
-    return ctx
-end
+end)
+fills({ "holidays" }, function(ctx) ctx.holidays = C.ActiveHolidays and C.ActiveHolidays() or {} end)
+
+local Lazy = { __index = function(ctx, key)
+    local fill = FILL[key]
+    if fill then fill(ctx) return rawget(ctx, key) end
+end }
+
+-- The player's state as the conditions see it. Each field is read from the game the
+-- first time a condition asks for it, so a tick of "Activity" never reads the map
+-- chain or the calendar.
+function C.Context() return setmetatable({}, Lazy) end
 
 --
 -- Evaluation
@@ -261,17 +282,49 @@ end
 --
 
 local tickers = {}   -- seconds -> { ticker, watchers = {} }
+local listeners = {} -- event -> { [watcher] = true }
+local dispatcher = {}
+
+-- every watcher woken together looks at one context: one look at the world per event
+local function refreshAll(watchers)
+    local list = {}
+    for w in pairs(watchers) do list[#list + 1] = w end   -- a change may add or free watchers
+    local ctx = C.Context()
+    for _, w in ipairs(list) do w:Refresh(nil, ctx) end
+end
 
 local function subscribeTick(w, seconds)
     local t = tickers[seconds]
     if not t then
         t = { watchers = {} }
-        t.ticker = ns:NewTicker(seconds, function()
-            for watcher in pairs(t.watchers) do watcher:Refresh() end
-        end)
+        t.ticker = ns:NewTicker(seconds, function() refreshAll(t.watchers) end)
         tickers[seconds] = t
     end
     t.watchers[w] = true
+end
+
+local function listen(w, event)
+    local set = listeners[event]
+    if not set then
+        set = {}
+        listeners[event] = set
+        ns.Events.Register(dispatcher, event, function(_, _, unit)
+            -- fires for every group member; only our own flags matter
+            if event == "PLAYER_FLAGS_CHANGED" and unit ~= "player" then return end
+            refreshAll(set)
+        end)
+    end
+    set[w] = true
+end
+
+local function stopListening(w)
+    for event, set in pairs(listeners) do
+        set[w] = nil
+        if not next(set) then
+            ns.Events.Unregister(dispatcher, event)
+            listeners[event] = nil
+        end
+    end
 end
 
 local function unsubscribeTicks(w)
@@ -297,7 +350,7 @@ end
 
 function Watcher:Rebuild()
     if self.freed then return end
-    ns.Events.UnregisterAll(self)
+    stopListening(self)
     unsubscribeTicks(self)
     local events = {}
     for _, e in ipairs(collect(self.list, {})) do
@@ -312,18 +365,14 @@ function Watcher:Rebuild()
             end
         end
     end
-    for ev in pairs(events) do
-        ns.Events.Register(self, ev, function(_, _, unit)
-            -- fires for every group member; only our own flags matter
-            if ev == "PLAYER_FLAGS_CHANGED" and unit ~= "player" then return end
-            self:Refresh()
-        end)
-    end
+    for ev in pairs(events) do listen(self, ev) end
     self:Refresh(true)
 end
 
-function Watcher:Refresh(silent)
-    local ctx = C.Context()
+-- ctx: shared by the watchers woken by one event or tick
+function Watcher:Refresh(silent, ctx)
+    if self.freed then return end
+    ctx = ctx or C.Context()
     local changed = false
     local states = {}
     for _, e in ipairs(collect(self.list, {})) do
@@ -332,18 +381,20 @@ function Watcher:Refresh(silent)
         local old = self.states[e]
         if not old or old.value ~= v or old.reason ~= reason then changed = true end
     end
+    -- the set's value from the top-level states: leaves are not judged twice
+    local value = true
     for _, e in ipairs(self.list) do
         if isNode(e) then states[e] = { value = (C.Eval(e, ctx)) } end
+        if not states[e].value then value = false end
     end
     self.states = states
-    local value = C.EvalList(self.list, ctx)
     if value ~= self.value then changed = true end
     self.value = value
     if changed and not silent then self.onChange(self) end
 end
 
 function Watcher:Free()
-    ns.Events.UnregisterAll(self)
+    stopListening(self)
     unsubscribeTicks(self)
     self.freed = true
 end

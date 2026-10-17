@@ -245,4 +245,37 @@ describe("Conditions", function()
         local known = C.KnownHolidays()
         assert.equal(111, known[1].icon)
     end)
+    it("watchers woken by the same event share one look at the world", function()
+        local ws = {}
+        for i = 1, 3 do ws[i] = C.NewWatcher({ { "zone", zoneName = "Ironforge" } }, function() end) end
+        local reads = 0
+        local zoneText = _G.GetZoneText
+        _G.GetZoneText = function(...) reads = reads + 1 return zoneText(...) end
+        W.world.zone = "Ironforge"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        _G.GetZoneText = zoneText
+        assert.equal(1, reads)
+        for i = 1, 3 do assert.is_true(ws[i].value) end
+        ws[2]:Free()
+        W.world.zone = "Stormwind City"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        assert.is_false(ws[1].value)
+        assert.is_true(ws[2].value, "a freed watcher is left alone")
+        ws[1]:Free() ws[3]:Free()
+    end)
+    it("a tick reads only what its conditions need", function()
+        local w = C.NewWatcher({ { "activity", mounted = true } }, function() end)
+        assert.is_false(w.value)
+        local looked = 0
+        local holidays, best = C.ActiveHolidays, C_Map.GetBestMapForUnit
+        C.ActiveHolidays = function(...) looked = looked + 1 return holidays(...) end
+        rawset(C_Map, "GetBestMapForUnit", function(...) looked = looked + 1 return best(...) end)
+        W.world.mounted = true
+        W.advance(1.1)
+        C.ActiveHolidays = holidays
+        rawset(C_Map, "GetBestMapForUnit", best)
+        assert.equal(0, looked)
+        assert.is_true(w.value)
+        w:Free()
+    end)
 end)
