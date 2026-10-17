@@ -19,7 +19,6 @@ Skin.Flat = Flat
 
 local function hasEUI() return EllesmereUI ~= nil and EllesmereUI.RegisterSkin ~= nil end
 local function hasQUI() return type(QUI) == "table" and type(QUI.GetSkinColor) == "function" end
-Skin.HasQUI = hasQUI
 
 -- what the player picked in the settings: auto, flat or blizzard
 function Skin:GetChoice()

@@ -12,7 +12,6 @@ ns.UI = ns.UI or {}
 --   v.frame                   the ModelScene / PlayerModel to anchor
 --   v:Load(info)              PetCache info; resets the facing
 --   v:Clear()  v:ModelID()    nil while nothing is loaded (or a load was dropped)
---   v:SetStatic(b)            no idle turn (models that orbit their root)
 --   v:GetYaw()
 
 local SCENE_TEMPLATE = "WrappedAndUnwrappedModelScene"
@@ -211,7 +210,6 @@ function ns.UI.NewModelViewer(parent, opts)
         return self.frame:GetModelFileID()
     end
 
-    function v:SetStatic(b) self.static = b and true or false end
     function v:GetYaw() return self.angle end
 
     -- the scene rotates its own camera on drag; the idle turn pauses meanwhile
@@ -233,7 +231,7 @@ function ns.UI.NewModelViewer(parent, opts)
             v.holdUntil = 0                       -- the player took over
         else
             local t = GetTime() - v.holdUntil
-            if t < 0 or v.static or v.oddBox then return end
+            if t < 0 or v.oddBox then return end
             v.angle = v.angle + elapsed * v.turnSpeed * math.min(1, t / EASE)
         end
         v:SetYaw(v.angle)

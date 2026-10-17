@@ -121,11 +121,6 @@ function ns.InBattlegroundOrArena()
     return t == "pvp" or t == "arena"
 end
 
-function ns.InInstanceOrRaid()
-    local _, t = IsInInstance()
-    return t == "party" or t == "raid"
-end
-
 function Ready:UpdateChecks()
     local p = ns.db.profile
     self:EnableCheck("addon_ready", true)
@@ -200,8 +195,6 @@ function Ready:SetReady(name, value)
 end
 
 function Ready:ToggleReady(name) self:SetReady(name, self.is_false[name] and true or false) end
-
-function Ready:IsReady() return next(self.is_false) == nil end
 
 function Ready:LastCheck()
     return not IsFalling() and HasFullControl() and GetTime() - self.last_spell_sent > 1.5

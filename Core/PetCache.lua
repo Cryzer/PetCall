@@ -96,7 +96,6 @@ function PetCache:IsPrimary(petID) local g = copiesOf[petID] return g ~= nil and
 function PetCache:Contains(petID) return infos[petID] ~= nil end
 function PetCache:GetInfo(petID) return infos[petID] end
 function PetCache:GetSpeciesID(petID) local i = infos[petID] return i and i.speciesID end
-function PetCache:GetCreatureID(petID) local i = infos[petID] return i and i.creatureID end
 
 -- the journal's "where from" text, plain and lower case, for rules that search it
 local sources = {}      -- speciesID -> text
