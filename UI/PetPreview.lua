@@ -11,13 +11,17 @@ local shownID
 local loadModel        -- assigned above Preview:ShowPet
 -- The text and the controls under the model need this much; the model takes the rest,
 -- so a tall window gets a big model and a short one never pushes the controls out.
-local BELOW, SOURCE_H, MIN_MODEL = 236, 40, 110
+-- When room runs short the parts go in this order: the source lines (still in the
+-- tooltip), the chance bar, then the model. Name, How often and Summon always stay.
+local FULL, NO_SOURCE, NO_CHANCE = 236, 196, 142
 
-function Preview.ModelHeight(h)
-    local room = (h or 0) - BELOW
-    if room >= MIN_MODEL then return room, true end
-    -- short panel: the source lines go (they stay in the tooltip), the model keeps its minimum
-    return math.max(MIN_MODEL, room + SOURCE_H), false
+-- -> model height (0 = no model), show source, show chance
+function Preview.Layout(h)
+    h = h or 0
+    if h - FULL >= 110 then return h - FULL, true, true end
+    if h - NO_SOURCE >= 80 then return h - NO_SOURCE, false, true end
+    if h - NO_CHANCE >= 60 then return h - NO_CHANCE, false, false end
+    return 0, false, false
 end
 
 -- the pet under the cursor wins; off the tiles the panel shows the selected pet, else
@@ -39,12 +43,20 @@ function Preview:Attach(parent)
     model:SetHeight(260)
     panel:SetScript("OnSizeChanged", function(_, _, h)
         if not panel.weight then return end         -- still being built
-        local mh, withSource = Preview.ModelHeight(h)
-        model:SetHeight(mh)
+        local mh, withSource, withChance = Preview.Layout(h)
+        model:SetShown(mh > 0)
+        model:SetHeight(math.max(1, mh))
+        panel.name:ClearAllPoints()
+        if mh > 0 then panel.name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 4, -10)
+        else panel.name:SetPoint("TOPLEFT", 8, -10) end
+        panel.name:SetPoint("RIGHT", -6, 0)
         panel.source:SetShown(withSource)
         panel.sourceHit:SetShown(withSource)
         panel.weight:ClearAllPoints()
         panel.weight:SetPoint("TOPLEFT", withSource and panel.source or panel.sub, "BOTTOMLEFT", 0, -12)
+        for _, part in ipairs({ panel.chanceLabel, panel.chanceBar, panel.chance, panel.reason }) do
+            part:SetShown(withChance)
+        end
     end)
 
     panel.name = ns.Widgets.Label(panel, "", "GameFontNormalLarge")
