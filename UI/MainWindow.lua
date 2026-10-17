@@ -9,6 +9,7 @@ ns.UI.Main = Main
 
 local MIN_W, MIN_H = 640, 440
 local frame, tabs, tabOrder, tabButtons, selectedTab, selectedSet = nil, {}, {}, {}, nil, nil
+local built = false     -- the tabs and panels exist; resizes before that are not news
 
 local function saveGeometry()
     local g = ns.db.global.window
@@ -83,8 +84,9 @@ function Main:Build()
     frame.status:SetPoint("BOTTOMRIGHT", -24, 6)
     frame.status:SetHeight(22)
 
+    -- a menu measuring itself while the tabs are built makes the window lay out early
     frame:SetScript("OnSizeChanged", function(_, w, h)
-        ns:Fire("WindowResized", w, h)
+        if built then ns:Fire("WindowResized", w, h) end
     end)
     frame:SetScript("OnShow", function()
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
@@ -105,6 +107,7 @@ function Main:Build()
 
     for _, key in ipairs(tabOrder) do Main:BuildTab(key) end
     Main:LayoutTabs()
+    built = true
     ns:Fire("WindowBuilt", frame)
 end
 
@@ -188,6 +191,7 @@ end
 function Main:GetSelectedSet() return selectedSet end
 function Main:GetSelectedTab() return selectedTab end
 function Main:GetFrame() self:Build() return frame end
+function Main.GetFrameRaw() return frame end      -- for tests: no build
 function Main:GetContentWidth() return frame and frame.content:GetWidth() or 0 end
 
 function Main:SetScale(scale)

@@ -176,6 +176,7 @@ function SetList:SetCollapsed(collapsed, user)
 end
 
 local function autoCollapse()
+    if not panel then return end
     local user = ns.db.global.window.setsCollapsed
     local f = ns.UI.Main:GetFrame()
     if f:GetWidth() < COLLAPSE_BELOW then return SetList:SetCollapsed(true) end

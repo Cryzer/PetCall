@@ -917,4 +917,20 @@ describe("UI smoke", function()
         ns.UI.Main:SelectSet("$Default")
         assert.equal("More chance for:", ns.UI.PetsTabRulesBar.label:GetText())
     end)
+    it("a resize while the window is still being built is not passed on", function()
+        local n, ready = 0, false
+        ns:RegisterCallback({}, "WindowBuilt", function() ready = true end)
+        ns:RegisterCallback({}, "WindowResized", function() if not ready then n = n + 1 end end)
+        local real = ns.Widgets.Dropdown
+        ns.Widgets.Dropdown = function(...)
+            -- a dropdown measuring itself makes the window lay out, as Blizzard's menu does
+            local win = ns.UI.Main.GetFrameRaw()
+            local s = win and win:GetScript("OnSizeChanged")
+            if s then s(win, 800, 500) end
+            return real(...)
+        end
+        assert.has_no_error(function() ns.UI.Main:Show() end)
+        ns.Widgets.Dropdown = real
+        assert.equal(0, n)
+    end)
 end)
