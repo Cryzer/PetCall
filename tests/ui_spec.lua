@@ -106,6 +106,64 @@ describe("UI smoke", function()
             assert.equal(2, #set:GetConditionModel().groups)
         end)
     end)
+    it("the mount picker ticks mounts for one condition and closes when that condition is out of sight", function()
+        W.world.mounts = {
+            { id = 7, name = "Swift Spectral Tiger", collected = true, favorite = true },
+            { id = 9, name = "Black Drake", collected = true, typeID = 248 },
+            { id = 4, name = "Riding Turtle", collected = true, typeID = 231, source = 3 },
+        }
+        ns.UI.Main:Show()
+        local set = ns.Sets:Create("Riders")
+        ns.UI.Main:SelectSet("Riders")
+        local m = set:GetConditionModel()
+        m.groups = { { rows = { { "mount", mountIDs = {} } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:SelectTab("when")
+        local e = set.settings.trigger[1]
+        local P = ns.UI.MountPicker
+        local function open() P:Open(e, ns.UI.Main:GetFrame(), function() set:ConditionsChanged() end) end
+        open()
+        assert.is_true(P:IsShown())
+        P:Toggle(9)
+        P:Toggle(7)
+        assert.same({ 9, 7 }, e.mountIDs)
+        P:Toggle(9)
+        assert.same({ 7 }, e.mountIDs)
+        -- the filter: search, kinds, favorites, chosen
+        local all = ns.Conditions.CollectedMounts()
+        local function names(st)
+            st.hiddenKinds, st.hiddenSources = st.hiddenKinds or {}, st.hiddenSources or {}
+            local out = {}
+            for _, x in ipairs(P.Filter(all, st, function(id) return id == 7 end)) do out[#out + 1] = x.name end
+            return out
+        end
+        assert.same({ "Black Drake", "Riding Turtle", "Swift Spectral Tiger" }, names({ search = "" }))
+        assert.same({ "Black Drake" }, names({ search = "drak" }))
+        assert.same({ "Black Drake" }, names({ search = "", hiddenKinds = { ground = true, aquatic = true } }))
+        assert.same({ "Black Drake", "Swift Spectral Tiger" }, names({ search = "", hiddenSources = { [3] = true } }))
+        assert.same({ "Swift Spectral Tiger" }, names({ search = "", favoritesOnly = true }))
+        assert.same({ "Swift Spectral Tiger" }, names({ search = "", chosenOnly = true }))
+        -- closes with another tab, another set, the window, or the condition removed
+        ns.UI.Main:SelectTab("pets")
+        assert.is_false(P:IsShown())
+        ns.UI.Main:SelectTab("when")
+        open()
+        ns.UI.Main:SelectSet("$Default")
+        assert.is_false(P:IsShown())
+        ns.UI.Main:SelectSet("Riders")
+        ns.UI.Main:SelectTab("when")
+        open()
+        ns.UI.Main:Hide()
+        assert.is_false(P:IsShown())
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("when")
+        open()
+        m = set:GetConditionModel()
+        m.groups = { { rows = { { "activity", swimming = true } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:SelectTab("when")
+        assert.is_false(P:IsShown())
+    end)
     it("tick boxes in a condition row start after the label before them", function()
         ns.UI.Main:Show()
         local set = ns.Sets:Create("Visits")

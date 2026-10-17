@@ -252,7 +252,14 @@ function W.reset()
         end,
         GetMountInfoByID = function(id)
             for _, m in ipairs(w.mounts) do
-                if m.id == id then return m.name, 1, 1, m.active, true, 0, false, false, nil, false, m.collected, id end
+                if m.id == id then
+                    return m.name, 1, m.icon or 1, m.active, m.usable ~= false, m.source or 1, m.favorite or false, false, nil, false, m.collected, id
+                end
+            end
+        end,
+        GetMountInfoExtraByID = function(id)
+            for _, m in ipairs(w.mounts) do
+                if m.id == id then return m.display or 100 + id, "", m.sourceText or "", false, m.typeID or 230, 1 end
             end
         end,
     }

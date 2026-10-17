@@ -58,6 +58,7 @@ UI\RecipeGallery.lua
 UI\StatusBar.lua
 UI\SetSettingsTab.lua
 UI\WhenTab.lua
+UI\MountPicker.lua
 UI\ShareDialog.lua
 UI\Settings.lua
 UI\Profiles.lua

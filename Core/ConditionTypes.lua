@@ -311,13 +311,27 @@ local function mountName(id)
     return name or ("#" .. id)
 end
 
--- { id, name } of every collected mount, by name, for the picker
+-- where a mount goes, by the journal's mount type: ground and water types are listed,
+-- every other type flies (some of them also swim)
+local GROUND_TYPES = { [230] = true, [241] = true, [269] = true, [284] = true, [412] = true }
+local WATER_TYPES = { [231] = true, [232] = true, [254] = true, [407] = true, [412] = true, [436] = true }
+local NOT_FLYING = { [230] = true, [231] = true, [232] = true, [241] = true, [254] = true, [269] = true, [284] = true, [412] = true }
+function C.MountKinds(typeID)
+    return { ground = GROUND_TYPES[typeID] or false, aquatic = WATER_TYPES[typeID] or false,
+        flying = typeID ~= nil and not NOT_FLYING[typeID] }
+end
+
+-- every collected mount, by name, for the picker: { id, name, icon, source, favorite, usable, kinds }
 function C.CollectedMounts()
     local out = {}
     if not C_MountJournal then return out end
     for _, id in ipairs(C_MountJournal.GetMountIDs()) do
-        local name, _, _, _, _, _, _, _, _, _, collected = C_MountJournal.GetMountInfoByID(id)
-        if name and collected then out[#out + 1] = { id = id, name = name } end
+        local name, _, icon, _, usable, source, favorite, _, _, _, collected = C_MountJournal.GetMountInfoByID(id)
+        if name and collected then
+            local _, _, _, _, typeID = C_MountJournal.GetMountInfoExtraByID(id)
+            out[#out + 1] = { id = id, name = name, icon = icon, source = source, favorite = favorite or false,
+                usable = usable or false, kinds = C.MountKinds(typeID) }
+        end
     end
     table.sort(out, function(a, b) return a.name < b.name end)
     return out

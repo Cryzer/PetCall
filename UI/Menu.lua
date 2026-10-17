@@ -38,13 +38,11 @@ local function initial(name)
 end
 
 -- { {label = "A", ids = {...}}, {label = "D – F", ids = {...}} }: one group per
--- initial, neighbouring initials merged while the group stays within maxSize;
--- nameOf names the ids (pets by default), which come sorted by that name
-function Menu.Groups(ids, maxSize, nameOf)
-    nameOf = nameOf or petName
+-- initial, neighbouring initials merged while the group stays within maxSize
+function Menu.Groups(ids, maxSize)
     local letters = {}
     for _, id in ipairs(ids) do
-        local c = initial(nameOf(id))
+        local c = initial(petName(id))
         local last = letters[#letters]
         if not last or last.key ~= c then
             last = { key = c, ids = {} }

@@ -54,31 +54,21 @@ local function buildField(row, e, field, prev)
         local function has(id) for _, x in ipairs(e.mountIDs) do if x == id then return true end end return false end
         local function toggle(id)
             for i, x in ipairs(e.mountIDs) do
-                if x == id then table.remove(e.mountIDs, i) changedInPlace() Tab:Refresh(set) return end
+                if x == id then table.remove(e.mountIDs, i) changedInPlace() Tab:Refresh(set) ns.UI.MountPicker:Redraw() return end
             end
             e.mountIDs[#e.mountIDs + 1] = id
-            changedInPlace() Tab:Refresh(set)
+            changedInPlace() Tab:Refresh(set) ns.UI.MountPicker:Redraw()
         end
+        local picker = ns.UI.MountPicker
         for _, id in ipairs(e.mountIDs) do place(chip(row, mountName(id), function() toggle(id) end)) end
         local current = ns.Conditions.Context().mountID
         local addHere = place(frames:Button(row, L["+ current"], function() if current and not has(current) then toggle(current) end end))
         addHere:SetEnabled(current and not has(current) or false)
         ns.Widgets.Tooltip(addHere, L["+ current"], not current and L["You are not mounted."]
             or has(current) and L["You already ride one of these."] or L["Add the mount you are riding."])
-        -- the whole collection in letter pages, like the pet menu; the window redraws
-        -- under it on every pick, so the menu belongs to UIParent and stays open
+        -- the whole collection in a window of its own, next to this one
         local pick = place(frames:Button(row, L["+ choose"], function()
-            MenuUtil.CreateContextMenu(UIParent, function(_, root)
-                local ids, names = {}, {}
-                for i, m in ipairs(ns.Conditions.CollectedMounts()) do ids[i], names[m.id] = m.id, m.name end
-                for _, g in ipairs(ns.UI.Menu.Groups(ids, 25, function(id) return names[id] end)) do
-                    local page = root:CreateButton(format("%s  |cff808080(%d)|r", g.label, #g.ids))
-                    page:SetScrollMode(20 * 26)
-                    for _, id in ipairs(g.ids) do
-                        page:CreateCheckbox(names[id], function() return has(id) end, function() toggle(id) end)
-                    end
-                end
-            end)
+            picker:Open(e, ns.UI.Main:GetFrame(), function() changedInPlace() Tab:Refresh(set) end)
         end))
         ns.Widgets.Tooltip(pick, L["+ choose"], L["Pick mounts from your collection."])
     elseif field.kind == "multiChoice" then
@@ -440,6 +430,10 @@ function render()
         y = y - 30
     end
     content:SetHeight(-y + 10)
+    -- the mount picker belongs to one condition: gone with it
+    local present = {}
+    for _, g in ipairs(model.groups) do for _, r in ipairs(g.rows) do present[r] = true end end
+    ns.UI.MountPicker:CloseIfGone(present)
 end
 
 ns.UI.Main:RegisterTab("when", L["When"], function(p)
@@ -452,6 +446,8 @@ ns.UI.Main:RegisterTab("when", L["When"], function(p)
     scroll:SetScrollChild(content)
     scroll:SetScript("OnSizeChanged", function(self, w) content:SetWidth(w) end)
     ns.Skin:Apply("ScrollBar", scroll.ScrollBar)
+    -- another tab, or the window closing: the mount picker has nothing to edit
+    page:HookScript("OnHide", function() ns.UI.MountPicker:Close() end)
     return Tab
 end, 2)
 
