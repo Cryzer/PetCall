@@ -130,6 +130,13 @@ describe("UI smoke", function()
             end
         end
         assert.equal(2, chained)                      -- three boxes, each after the one before
+        local last = boxes[#boxes]
+        local after = false                           -- the remove × follows the last label, not the box
+        for _, f in ipairs(U.created) do
+            local lp = f._points and f._points.LEFT
+            if lp and lp.rel == last.text then after = true end
+        end
+        assert.is_true(after)
     end)
     it("the flat look drops the round portrait for a small icon beside the title", function()
         local f = CreateFrame("Frame", nil, UIParent, "ButtonFrameTemplate")

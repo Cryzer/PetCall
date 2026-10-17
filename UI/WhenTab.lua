@@ -83,6 +83,7 @@ local function buildField(row, e, field, prev)
             place(cb, gap)
             gap = 2 + (tonumber(cb.text:GetStringWidth()) or 0) + 16
         end
+        prev = prev.text or prev          -- what comes next (the remove ×) follows the last label
     elseif field.kind == "class" then
         place(track(ns.Widgets.Dropdown(row, 150, function(owner, root)
             root:CreateRadio(L["Any class"], function() return not e.class or e.class == "" end, function() e.class = "" changedInPlace() end)
