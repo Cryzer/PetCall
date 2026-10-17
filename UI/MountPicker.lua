@@ -15,7 +15,8 @@ local KINDS = ns.Conditions.MOUNT_KINDS
 
 local win, list, scrollBox, preview, count
 local entry, onChange          -- the condition being edited and what to call when it changes
-local pinned                   -- the mount clicked last: the preview goes back to it
+local current                  -- the mount in the preview: the first one, then the last one pointed at
+local visible = {}             -- the mounts the list shows now
 local state = { search = "", hiddenKinds = {}, hiddenSources = {} }   -- kept while the session lasts
 
 local function chosen(id)
@@ -82,6 +83,13 @@ local function showMount(m)
     end
 end
 
+-- the preview stays on the mount pointed at last; its row is marked
+local function previewMount(m)
+    current = m
+    showMount(m)
+    scrollBox:ForEachFrame(function(row) row.pick:SetShown(current ~= nil and row.mount.id == current.id) end)
+end
+
 local function initRow(row, m)
     if not row.check then
         row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
@@ -102,9 +110,9 @@ local function initRow(row, m)
             PlaySound(self:GetChecked() and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
             toggle(self:GetParent().mount.id)
         end)
-        row:SetScript("OnClick", function(self) pinned = self.mount Picker:Redraw() showMount(pinned) end)
-        row:SetScript("OnEnter", function(self) showMount(self.mount) end)
-        row:SetScript("OnLeave", function() showMount(pinned) end)
+        -- a click anywhere on the row ticks it too
+        row:SetScript("OnClick", function(self) self.check:Click() end)
+        row:SetScript("OnEnter", function(self) if current ~= self.mount then previewMount(self.mount) end end)
     end
     row.mount = m
     row.icon:SetTexture(m.icon)
@@ -112,7 +120,7 @@ local function initRow(row, m)
     row.check:SetChecked(chosen(m.id))
     local r, g, b = ns.Skin:Accent()
     row.pick:SetColorTexture(r, g, b, 0.18)
-    row.pick:SetShown(pinned ~= nil and pinned.id == m.id)
+    row.pick:SetShown(current ~= nil and current.id == m.id)
 end
 
 local function filterMenu(_, root)
@@ -155,7 +163,7 @@ local function build()
     win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
-    win:SetScript("OnHide", function() entry, onChange, pinned = nil, nil, nil end)
+    win:SetScript("OnHide", function() entry, onChange, current = nil, nil, nil end)
     tinsert(UISpecialFrames, "PetCallMountPicker")
     ns.Skin:Apply("Shell", win)
     ns.Skin:Apply("CloseButton", win.CloseButton)
@@ -212,27 +220,28 @@ end
 
 function Picker:Redraw()
     if not win or not win:IsShown() then return end
-    local shown = Picker.Filter(list, state, chosen)
-    scrollBox:SetDataProvider(CreateDataProvider(shown), ScrollBoxConstants.RetainScrollPosition)
-    count:SetText(format(L["%d chosen · %d shown"], #(entry.mountIDs or {}), #shown))
+    visible = Picker.Filter(list, state, chosen)
+    scrollBox:SetDataProvider(CreateDataProvider(visible), ScrollBoxConstants.RetainScrollPosition)
+    count:SetText(format(L["%d chosen · %d shown"], #(entry.mountIDs or {}), #visible))
 end
 
 -- opens for one Mount condition next to `anchor` (the PetCall window); onChanged runs after each tick
 function Picker:Open(e, anchor, onChanged)
     if not win then build() end
-    entry, onChange, pinned = e, onChanged, nil
+    entry, onChange, current = e, onChanged, nil
     list = ns.Conditions.CollectedMounts()
     win:SetScale(ns.db.global.window.scale or 1)
     win:ClearAllPoints()
     if anchor then win:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 6, 0) else win:SetPoint("CENTER") end
     win:Show()
-    showMount(nil)
     self:Redraw()
+    previewMount(visible[1])
 end
 
 function Picker:Close() if win then win:Hide() end end
 function Picker:IsShown() return win ~= nil and win:IsShown() end
 function Picker:GetEntry() return entry end
+function Picker:GetPreviewed() return current end
 
 -- the When tab drew its conditions again: close unless ours is still among them
 function Picker:CloseIfGone(present)

@@ -125,6 +125,7 @@ describe("UI smoke", function()
         local function open() P:Open(e, ns.UI.Main:GetFrame(), function() set:ConditionsChanged() end) end
         open()
         assert.is_true(P:IsShown())
+        assert.equal("Black Drake", P:GetPreviewed().name)       -- the first on the list until one is pointed at
         P:Toggle(9)
         P:Toggle(7)
         assert.same({ 9, 7 }, e.mountIDs)
