@@ -67,14 +67,24 @@ fills({ "ownHome", "anyHome", "inHouse" }, function(ctx)
     ctx.anyHome = H and H.IsInsideHouseOrPlot and H.IsInsideHouseOrPlot() or false
     ctx.inHouse = H and H.IsInsideHouse and H.IsInsideHouse() or false
 end)
--- the journal marks the mount you ride as active; looked for only while mounted
+-- The journal marks the mount you ride as active. Looking through the whole journal is
+-- a thousand calls, and a set that also checks Activity asks every second: the mount
+-- found last is checked first (one call), and a ride the journal does not know (a quest
+-- mount) is not looked for again for a few seconds.
+local lastMount, unknownAt
 fills({ "mountID" }, function(ctx)
     ctx.mountID = false
-    if not (IsMounted() and C_MountJournal) then return end
+    if not (IsMounted() and C_MountJournal) then unknownAt = nil return end
+    if lastMount and select(4, C_MountJournal.GetMountInfoByID(lastMount)) then ctx.mountID = lastMount return end
+    if unknownAt and GetTime() - unknownAt < 5 then return end
     for _, id in ipairs(C_MountJournal.GetMountIDs()) do
         local _, _, _, active = C_MountJournal.GetMountInfoByID(id)
-        if active then ctx.mountID = id return end
+        if active then
+            lastMount, unknownAt, ctx.mountID = id, nil, id
+            return
+        end
     end
+    unknownAt = GetTime()
 end)
 fills({ "holidays" }, function(ctx) ctx.holidays = C.ActiveHolidays and C.ActiveHolidays() or {} end)
 

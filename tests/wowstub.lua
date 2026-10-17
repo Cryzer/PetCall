@@ -254,6 +254,7 @@ function W.reset()
             return ids
         end,
         GetMountInfoByID = function(id)
+            w.mountLookups = (w.mountLookups or 0) + 1
             for _, m in ipairs(w.mounts) do
                 if m.id == id then
                     return m.name, 1, m.icon or 1, m.active, m.usable ~= false, m.source or 1, m.favorite or false, false, nil, m.hidden or false, m.collected, id
@@ -262,7 +263,7 @@ function W.reset()
         end,
         IsValidTypeFilter = function(i) return i >= 1 and i <= 5 end,
         IsTypeChecked = function(i) return w.mountFilters.types[i] end,
-        SetTypeFilter = function(i, on) w.mountFilters.types[i] = on end,
+        SetTypeFilter = function(i, on) w.mountFilters.types[i] = on w.filterSets = (w.filterSets or 0) + 1 end,
         IsValidSourceFilter = function(i) return w.mountFilters.sources[i] ~= nil end,
         IsSourceChecked = function(i) return w.mountFilters.sources[i] end,
         SetSourceFilter = function(i, on) w.mountFilters.sources[i] = on end,

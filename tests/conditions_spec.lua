@@ -219,6 +219,10 @@ describe("Conditions", function()
         W.world.mounts[2].active, W.world.mounts[1].active = false, true
         assert.is_true(eval(e))
         assert.equal("Riding: Swift Spectral Tiger", select(2, C.Eval(e, C.Context())))
+        -- the same mount again: one look at it and one for its name, not the whole journal
+        W.world.mountLookups = 0
+        assert.is_true(eval(e))
+        assert.equal(2, W.world.mountLookups)
         assert.equal("Mount: Swift Spectral Tiger, Black Drake", C.Describe({ "mount", mountIDs = { 7, 9 } }))
         assert.equal("Mount: none chosen yet", C.Describe({ "mount", mountIDs = {} }))
         -- a new condition starts with the mount you sit on
@@ -250,6 +254,13 @@ describe("Conditions", function()
         assert.same({ true, true, false }, f.sources)
         assert.equal("tig", f.search)
         assert.same({ flying = true, skyriding = true }, C.CollectedMounts()[1].kinds)    -- Drake, first by name
+        -- asked once: the journal's filters stay untouched until a new mount is learned
+        W.world.filterSets = 0
+        C.MountKindsFromJournal()
+        assert.equal(0, W.world.filterSets)
+        W.fire("NEW_MOUNT_ADDED")
+        C.MountKindsFromJournal()
+        assert.is_true(W.world.filterSets > 0)
     end)
     it("holiday: a running holiday from the calendar, by id or any", function()
         local hallows = { eventID = 324, title = "Hallow's End", calendarType = "HOLIDAY", sequenceType = "ONGOING",

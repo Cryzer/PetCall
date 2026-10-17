@@ -323,12 +323,21 @@ C.MOUNT_KINDS = {
 
 local COLLECTED_FILTERS = { 1, 2, 3 }     -- LE_MOUNT_JOURNAL_FILTER_COLLECTED, _NOT_COLLECTED, _UNUSABLE
 
+-- a mount's kinds never change: asked once, again only when a new mount is learned
+local kindsCache
+ns.Events.Register(C, "NEW_MOUNT_ADDED", function() kindsCache = nil end)
+
 -- mountID -> { kind = true }: asks the journal's filter for each kind in turn, with every
--- other filter open, then puts the player's filters and search back as they were
+-- other filter open, then puts the player's filters and search back as they were. Each
+-- change makes the journal sort its list again, so only filters that differ are set.
 function C.MountKindsFromJournal()
+    if kindsCache then return kindsCache end
     local J = C_MountJournal
     local out = {}
     if not (J and J.IsTypeChecked and J.SetTypeFilter and J.GetNumDisplayedMounts and Enum.MountType) then return out end
+    local function setCollected(i, on) if J.GetCollectedFilterSetting(i) ~= on then J.SetCollectedFilterSetting(i, on) end end
+    local function setSource(i, on) if J.IsSourceChecked(i) ~= on then J.SetSourceFilter(i, on) end end
+    local function setType(i, on) if J.IsTypeChecked(i) ~= on then J.SetTypeFilter(i, on) end end
     local numSources = C_PetJournal.GetNumPetSources and C_PetJournal.GetNumPetSources() or 0
     local saved = { collected = {}, sources = {}, types = {} }
     for _, i in ipairs(COLLECTED_FILTERS) do saved.collected[i] = J.GetCollectedFilterSetting(i) end
@@ -343,13 +352,13 @@ function C.MountKindsFromJournal()
     local box = MountJournal and MountJournal.searchBox
     local search = box and box:GetText() or ""
 
-    J.SetCollectedFilterSetting(1, true)
-    J.SetCollectedFilterSetting(2, false)
-    J.SetCollectedFilterSetting(3, true)
-    J.SetAllSourceFilters(true)
-    J.SetSearch("")
+    setCollected(1, true)
+    setCollected(2, false)
+    setCollected(3, true)
+    for i in pairs(saved.sources) do setSource(i, true) end
+    if search ~= "" then J.SetSearch("") end
     for key, index in pairs(typeIndex) do
-        for _, other in pairs(typeIndex) do J.SetTypeFilter(other, other == index) end
+        for _, other in pairs(typeIndex) do setType(other, other == index) end
         for n = 1, J.GetNumDisplayedMounts() do
             local id = J.GetDisplayedMountID(n)
             if id then
@@ -359,10 +368,11 @@ function C.MountKindsFromJournal()
         end
     end
 
-    for i, on in pairs(saved.collected) do J.SetCollectedFilterSetting(i, on) end
-    for i, on in pairs(saved.sources) do J.SetSourceFilter(i, on) end
-    for i, on in pairs(saved.types) do J.SetTypeFilter(i, on) end
-    J.SetSearch(search)
+    for i, on in pairs(saved.collected) do setCollected(i, on) end
+    for i, on in pairs(saved.sources) do setSource(i, on) end
+    for i, on in pairs(saved.types) do setType(i, on) end
+    if search ~= "" then J.SetSearch(search) end
+    kindsCache = out
     return out
 end
 
