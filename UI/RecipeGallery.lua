@@ -227,6 +227,7 @@ function G:Hide()
     ns.UI.Main:SetSetPagesShown(true)
 end
 function G:IsShown() return gallery ~= nil and gallery:IsShown() end
+function G:GetFrame() return gallery end
 
 ns:RegisterCallback(G, "SelectedSetChanged", function() G:Hide() end)
 ns:RegisterCallback(G, "WindowHidden", function() G:Hide() end)

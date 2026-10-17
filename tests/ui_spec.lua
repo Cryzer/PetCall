@@ -1411,4 +1411,62 @@ describe("UI smoke", function()
         assert.is_not_nil(table.concat(names, "|"):find("Bobby", 1, true))
         ns.UI.Menu.UniquePets = unique
     end)
+    it("the help puts a box over each part the window shows, inside the window", function()
+        local shown, tutorial
+        rawset(_G, "HelpPlate", {
+            Show = function(info) shown = info end,
+            Hide = function() shown = nil end,
+            IsShowingHelpInfo = function(info) return shown ~= nil and shown == info end,
+            GetEffectiveScale = function() return 1 end,
+            ShowTutorialTooltip = function() tutorial = (tutorial or 0) + 1 end,
+        })
+        rawset(_G, "HelpPlateTooltip", { Init = function() end, Hide = function() end })
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end   -- room for the preview
+        ns.UI.Main:Show()
+        assert.equal(1, tutorial)                        -- the first opening points out the "i"
+        ns.UI.Main:SelectTab("pets")
+        local f = ns.UI.Main:GetFrame()
+        local function place(r, l, t, w, h)
+            r.GetLeft, r.GetTop = function() return l end, function() return t end
+            r.GetRight, r.GetBottom = function() return l + w end, function() return t - h end
+        end
+        place(f, 100, 800, 900, 600)
+        place(f.Inset, 104, 740, 892, 506)
+        place(f.left, 108, 736, 190, 498)
+        place(f.header, 304, 736, 688, 52)
+        place(f.content, 304, 656, 688, 418)
+        place(f.status, 108, 228, 860, 22)
+        for i, b in ipairs(ns.UI.Main:GetTabButtons()) do place(b, 304 + (i - 1) * 80, 682, 78, 24) end
+        place(ns.UI.PetsTabRulesBar, 300, 626, 690, 24)
+        place(ns.UI.PetsTabPage.grid, 306, 596, 440, 360)
+        place(ns.UI.Preview:GetPanel(), 750, 596, 240, 360)
+        local function keys()
+            local out = {}
+            for _, a in ipairs(ns.UI.Help.Areas()) do out[#out + 1] = a.key end
+            return out
+        end
+        ns.UI.Help:Toggle()
+        assert.is_not_nil(shown)
+        assert.same({ "sets", "header", "tabs", "toolbar", "rules", "grid", "preview", "status" }, keys())
+        assert.equal(8, #shown)
+        assert.equal(-60, shown.FramePos.y)              -- below the title bar: the "i" stays clickable
+        for _, tile in ipairs(shown) do
+            local b = tile.HighLightBox
+            assert.is_true(b.x >= 0 and b.y <= 0, tile.ToolTipText)
+            assert.is_true(b.x + b.width <= shown.FrameSize.width and b.height - b.y <= shown.FrameSize.height)
+            assert.is_nil(tile.ToolTipText:find("^HELP_"))   -- a text, not a missing key
+        end
+        ns.UI.Help:Toggle()
+        assert.is_nil(shown)
+        -- another page, other boxes; closing the window takes the help along
+        ns.UI.Main:SelectTab("settings")
+        ns.UI.Help:Toggle()
+        assert.same({ "sets", "header", "tabs", "settings", "status" }, keys())
+        ns.UI.Main:Hide()
+        assert.is_nil(shown)
+        ns.UI.Main:Show()
+        assert.equal(1, tutorial)                        -- once
+        rawset(_G, "HelpPlate", nil)
+        rawset(_G, "HelpPlateTooltip", nil)
+    end)
 end)

@@ -227,6 +227,7 @@ end
 
 function Main:GetSelectedSet() return selectedSet end
 function Main:GetSelectedTab() return selectedTab end
+function Main:GetTabButtons() return tabButtons end
 function Main:GetFrame() self:Build() return frame end
 function Main.GetFrameRaw() return frame end      -- for tests: no build
 function Main:GetContentWidth() return frame and frame.content:GetWidth() or 0 end

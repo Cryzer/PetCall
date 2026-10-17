@@ -76,7 +76,7 @@ read_globals = {
     "IsControlKeyDown", "IsMounted", "IsSwimming", "IsSubmerged", "IsIndoors", "IsOutdoors", "GetShapeshiftFormID",
     "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitInVehicle",
     "UnitIsDeadOrGhost", "UnitIsAFK", "SendChatMessage",
-    "SecureCmdOptionParse", "PlaySound", "PlaySoundFile",
+    "SecureCmdOptionParse", "PlaySound", "PlaySoundFile", "HelpPlate", "HelpPlateTooltip", "MAIN_HELP_BUTTON_TOOLTIP",
     "ReloadUI",
     "hooksecurefunc", "CopyTable",
 

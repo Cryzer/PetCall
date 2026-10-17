@@ -63,4 +63,5 @@ UI\Settings.lua
 UI\Profiles.lua
 UI\Menu.lua
 UI\Broker.lua
+UI\Help.lua
 ReleaseNotes.lua

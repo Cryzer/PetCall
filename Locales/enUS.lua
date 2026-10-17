@@ -462,3 +462,16 @@ L["Blizzard"] = true
 L["Window look"] = true
 L["The new look shows after the interface reloads. Reload now?"] = true
 L["Automatic: EllesmereUI's look when it is installed, PetCall dark with QUI (in QUI's colours), otherwise Blizzard's frames."] = true
+
+-- help boxes over the window (the "i" next to the logo)
+L["HELP_SETS"] = "|cffffd100Sets|r\nEach set is a group of pets with its own conditions. PetCall uses the highest set in the list whose conditions are met right now, and the Default set when none are.\n\n- Click a set to edit it, drag it to change the order.\n- Right-click a set to pause, rename, duplicate, export or delete it.\n- + New starts an empty set or one from a template.\n\nAt the bottom: the pet that is out now and the set it came from."
+L["HELP_HEADER"] = "|cffffd100The selected set|r\nWhether it is used right now, and if not, why. Below it, in plain words: when the set is used and which pets it picks from."
+L["HELP_TABS"] = "|cffffd100Pets|r: which pets the set uses and how often.\n|cffffd100When|r: the conditions for using the set. The Default set has none.\n|cffffd100Set settings|r: pause, order, what happens when the set starts, and more."
+L["HELP_TOOLBAR"] = "|cffffd100Finding pets|r\nSearch by name, show every pet or only those in the set or left out, or only favorites. The filter button sorts the pets and can give one weight to every pet shown."
+L["HELP_RULES"] = "|cffffd100More chance for|r\nRules that give whole groups of pets extra chances: favorites, a pet type, a level, rare quality or where the pet comes from. Pets you collect later follow the rules too.\n\nClick a rule to change it, + Add for a new one."
+L["HELP_GRID"] = "|cffffd100Your pets|r\nTick a pet to put it in this set; a set never summons unticked pets. Pets a rule put in are marked \"via a rule\". Copies of one pet share a tile.\n\nClick a pet to see it on the right. Right-click to set its weight, summon it or make it a favorite."
+L["HELP_PREVIEW"] = "|cffffd100The pet you point at or picked|r\n|cffffd100How often|r: the pet's weight in this set, from Never to Very often. Each step makes it about eight times as likely as the one before.\n|cffffd100Chance in this set|r: how likely it is to come out next.\n|cffffd100Summon|r calls it right now."
+L["HELP_WHEN"] = "|cffffd100When to use this set|r\nAdd conditions such as a place, a group, a class, the time or a holiday. In a group every condition must be met; with several groups, any one group is enough.\n\nThe dot shows what is met right now. Click \"is\" to turn a condition into \"is not\"."
+L["HELP_SETTINGS"] = "|cffffd100Set settings|r\nPause the set, move it up or down, choose what happens when it starts (keep the pet that is out or summon a new one), how often to switch pets, a chat message, or no pet at all while the set is used.\n\nUnder Pets: the weight of every pet you haven't set by hand, new pets included."
+L["HELP_GALLERY"] = "|cffffd100Templates|r\nReady-made sets: pick one and PetCall creates the set with its conditions and rules. Afterwards it is an ordinary set you can change. Grey cards need pets you don't have yet."
+L["HELP_STATUS"] = "|cffffd100Status|r\nAuto-summon on or off, the pet that is out, and while no pet comes out, what is in the way: point at the text for details.\n\n|cffffd100Summon another|r draws a new pet from the set in use."
