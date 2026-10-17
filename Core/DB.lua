@@ -29,7 +29,8 @@ DB.defaults = {
 }
 
 DB.globalDefaults = {
-    window = { scale = 1, width = 820, height = 560, setsCollapsed = nil },
+    -- room for the sets list, three columns of pets and the preview at first open
+    window = { scale = 1, width = 940, height = 640, setsCollapsed = nil },
     recentPets = {},
 }
 

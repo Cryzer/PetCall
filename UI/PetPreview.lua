@@ -9,7 +9,16 @@ ns.UI.Preview = Preview
 local panel, viewer, set, hoverID, selectedID, lastHoverID
 local shownID
 local loadModel        -- assigned above Preview:ShowPet
-local MODEL_SHARE = 0.55        -- part of the panel's height given to the model
+-- The text and the controls under the model need this much; the model takes the rest,
+-- so a tall window gets a big model and a short one never pushes the controls out.
+local BELOW, SOURCE_H, MIN_MODEL = 236, 40, 110
+
+function Preview.ModelHeight(h)
+    local room = (h or 0) - BELOW
+    if room >= MIN_MODEL then return room, true end
+    -- short panel: the source lines go (they stay in the tooltip), the model keeps its minimum
+    return math.max(MIN_MODEL, room + SOURCE_H), false
+end
 
 -- the pet under the cursor wins; off the tiles the panel shows the selected pet, else
 -- the last one hovered, else the summoned one
@@ -28,8 +37,15 @@ function Preview:Attach(parent)
     model:SetPoint("TOPLEFT", 4, -4)
     model:SetPoint("TOPRIGHT", -4, -4)
     model:SetHeight(260)
-    -- the model takes over half of the panel; text and controls sit below it
-    panel:SetScript("OnSizeChanged", function(_, _, h) model:SetHeight(math.max(200, (h or 0) * MODEL_SHARE)) end)
+    panel:SetScript("OnSizeChanged", function(_, _, h)
+        if not panel.weight then return end         -- still being built
+        local mh, withSource = Preview.ModelHeight(h)
+        model:SetHeight(mh)
+        panel.source:SetShown(withSource)
+        panel.sourceHit:SetShown(withSource)
+        panel.weight:ClearAllPoints()
+        panel.weight:SetPoint("TOPLEFT", withSource and panel.source or panel.sub, "BOTTOMLEFT", 0, -12)
+    end)
 
     panel.name = ns.Widgets.Label(panel, "", "GameFontNormalLarge")
     panel.name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 4, -10)
@@ -44,6 +60,7 @@ function Preview:Attach(parent)
     -- long lists of zones would push the controls into the Summon button: three lines, the rest on hover
     panel.source:SetMaxLines(3)
     local sourceHit = CreateFrame("Frame", nil, panel)
+    panel.sourceHit = sourceHit
     sourceHit:SetAllPoints(panel.source)
     sourceHit:EnableMouse(true)
     ns.Widgets.Tooltip(sourceHit, function() return panel.name:GetText() end,
