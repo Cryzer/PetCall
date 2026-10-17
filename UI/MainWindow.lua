@@ -22,12 +22,14 @@ local function applyScale()
     frame:SetScale(ns.db.global.window.scale or 1)
 end
 
+local ICON = "Interface\\AddOns\\PetCall\\Media\\icon"
+
 function Main:Build()
     if frame then return end
     local g = ns.db.global.window
     frame = CreateFrame("Frame", "PetCallMainWindow", UIParent, "ButtonFrameTemplate")
     frame:SetTitle("PetCall")
-    frame:SetPortraitToAsset("Interface\\AddOns\\PetCall\\Media\\icon")
+    frame:SetPortraitToAsset(ICON)
     frame:SetSize(g.width or 940, g.height or 640)
     frame:SetPoint(g.point or "CENTER", UIParent, g.relPoint or "CENTER", g.x or 0, g.y or 0)
     frame:SetFrameStrata("HIGH")
@@ -46,7 +48,7 @@ function Main:Build()
     -- the status bar lives below the inset
     frame.Inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 32)
     applyScale()
-    ns.Skin:Apply("Shell", frame, { bottomBar = 28 })
+    ns.Skin:Apply("Shell", frame, { bottomBar = 28, icon = ICON })
     ns.Skin:Apply("CloseButton", frame.CloseButton)
     ns.Skin:Apply("Inset", frame.Inset)
 

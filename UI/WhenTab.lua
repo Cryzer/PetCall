@@ -73,11 +73,15 @@ local function buildField(row, e, field, prev)
         end))
         place(dd)
     elseif field.kind == "flags" then
+        -- each box starts after the label before it, measured, so labels never run into boxes
+        local gap = 12
         for _, v in ipairs(field.values()) do
             local cb = track(ns.Widgets.Checkbox(row, v.label, function() return e[v.value] end,
                 function(on) e[v.value] = on or nil changedInPlace() end))
-            place(cb, 8)
-            prev = cb.text
+            cb.text:ClearAllPoints()
+            cb.text:SetPoint("LEFT", cb, "RIGHT", 2, 0)
+            place(cb, gap)
+            gap = 2 + (tonumber(cb.text:GetStringWidth()) or 0) + 16
         end
     elseif field.kind == "class" then
         place(track(ns.Widgets.Dropdown(row, 150, function(owner, root)

@@ -170,14 +170,22 @@ local function dropNineSlice(frame)
     if frame.SetBackdrop and frame.backdropInfo then frame:SetBackdrop(nil) end
 end
 
--- a framed window (ButtonFrameTemplate): flat body, a title strip, an optional bottom bar
+-- a framed window (ButtonFrameTemplate): flat body, a title strip, an optional bottom bar.
+-- The round portrait would hang over the corner of a flat window: with opts.icon the
+-- window shows a small icon beside its title instead.
 function Flat.Shell(frame, opts)
     dropNineSlice(frame)
     hide(frame.Bg)
     hide(frame.TopTileStreaks)
-    if frame.PortraitContainer and frame.PortraitContainer.CircleMask then
-        -- the round portrait keeps its look; only its golden ring goes
-        hide(frame.PortraitFrame)
+    if frame.PortraitContainer then frame.PortraitContainer:Hide() end
+    hide(frame.PortraitFrame)
+    local title = frame.TitleContainer and frame.TitleContainer.TitleText
+    if opts and opts.icon and title then
+        frame.pcIcon = frame.pcIcon or frame:CreateTexture(nil, "ARTWORK")
+        frame.pcIcon:SetTexture(opts.icon)
+        frame.pcIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        frame.pcIcon:SetSize(16, 16)
+        frame.pcIcon:SetPoint("RIGHT", title, "LEFT", -5, 0)
     end
     local r, g, b, a = Flat.Background()
     fill(frame, r, g, b, a)

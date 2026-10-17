@@ -106,6 +106,40 @@ describe("UI smoke", function()
             assert.equal(2, #set:GetConditionModel().groups)
         end)
     end)
+    it("tick boxes in a condition row start after the label before them", function()
+        ns.UI.Main:Show()
+        local set = ns.Sets:Create("Visits")
+        ns.UI.Main:SelectSet("Visits")
+        local m = set:GetConditionModel()
+        m.groups = { { rows = { { "housing", ownHome = true } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:SelectTab("when")
+        local boxes = {}
+        for _, f in ipairs(U.created) do
+            if f._template == "UICheckButtonTemplate" and f:IsShown() and f.text and f.text._points and f.text._points.LEFT then boxes[#boxes + 1] = f end
+        end
+        assert.is_true(#boxes >= 3)
+        local chained = 0
+        for i = 2, #boxes do
+            local p = boxes[i]._points.LEFT
+            if p.rel == boxes[i - 1] then
+                chained = chained + 1
+                local w = tonumber(boxes[i - 1].text:GetStringWidth()) or 0
+                assert.equal(2 + w + 16, p.x)
+                assert.equal(boxes[i], boxes[i].text._points.LEFT.rel)
+            end
+        end
+        assert.equal(2, chained)                      -- three boxes, each after the one before
+    end)
+    it("the flat look drops the round portrait for a small icon beside the title", function()
+        local f = CreateFrame("Frame", nil, UIParent, "ButtonFrameTemplate")
+        f.TitleContainer = { TitleText = CreateFrame("Frame") }
+        f.PortraitContainer = CreateFrame("Frame")
+        f.PortraitContainer:Show()
+        ns.Skin.Flat.Shell(f, { icon = "x" })
+        assert.is_false(f.PortraitContainer:IsShown())
+        assert.equal(f.TitleContainer.TitleText, f.pcIcon._points.RIGHT.rel)
+    end)
     it("share dialog shows export and import", function()
         assert.has_no_error(function()
             ns.Sets:Create("Src")
