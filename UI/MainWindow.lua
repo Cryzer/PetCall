@@ -159,12 +159,10 @@ function Main:SelectTab(key)
     if not t or not t.button:IsShown() then key, t = "pets", tabs.pets end
     if not t then return end
     selectedTab = key
-    for k, other in pairs(tabs) do
-        local on = k == key
-        other.page:SetShown(on)
-        ns.Skin:SetTabSelected(other.button, on)
-    end
+    for k, other in pairs(tabs) do other.page:SetShown(k == key) end
     PanelTemplates_SetTab(frame, t.button:GetID())
+    -- after Blizzard's own selection, which moves the text and swaps the textures
+    for k, other in pairs(tabs) do ns.Skin:SetTabSelected(other.button, k == key) end
     if t.object.Refresh then t.object:Refresh(selectedSet) end
 end
 

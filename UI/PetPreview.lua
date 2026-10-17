@@ -191,6 +191,11 @@ end
 function Preview:SetSelected(petID) selectedID = petID self:ShowPet(petToShow()) end
 function Preview:Refresh() self:ShowPet(petToShow()) end
 function Preview:GetPanel() return panel end
+
+-- with nothing hovered or picked the panel shows the pet that is out: follow it
+ns:RegisterCallback(Preview, "SummonedPetChanged", function()
+    if panel and panel:IsVisible() then Preview:Refresh() end
+end)
 function Preview:GetViewer() return viewer end
 function Preview:GetYaw() return viewer:GetYaw() end
 function Preview:GetSelected() return selectedID end

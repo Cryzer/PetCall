@@ -1026,4 +1026,15 @@ describe("UI smoke", function()
         assert.is_false(ns.Skin:IsActive())
         rawset(_G, "QUI", nil)
     end)
+    it("with nothing hovered or picked, the preview follows the pet that comes out", function()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local panel = ns.UI.Preview:GetPanel()
+        panel:Show()                                        -- a wide window shows the panel
+        W.world.summoned = nil
+        ns.UI.Preview:Refresh()
+        W.world.summoned = "a"
+        ns:Fire("SummonedPetChanged")
+        assert.equal("A", panel.name:GetText())
+    end)
 end)

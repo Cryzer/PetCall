@@ -252,6 +252,13 @@ function Flat.SetTabSelection(tab, selected)
     tab.pcLine:SetShown(selected)
     local lr, lg, lb = lighter(selected and 0.1 or 0.04)
     tab.pcFlat.bg:SetColorTexture(lr, lg, lb, 1)
+    -- Blizzard lifts the text of the picked tab; flat tabs keep every label centred
+    local text = tab.Text or (tab.GetFontString and tab:GetFontString())
+    if text then
+        text:ClearAllPoints()
+        text:SetPoint("CENTER", tab, "CENTER", 0, 0)
+        text:SetTextColor(1, selected and 1 or 0.82, selected and 1 or 0)
+    end
 end
 
 function Flat.CloseButton(button)
