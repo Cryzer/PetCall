@@ -168,6 +168,7 @@ function SetList:Refresh()
     for i = #sets + 1, #rows do rows[i]:Hide() end
     rail.count:SetText(#sets)
     SetList:PaintScroll()
+    list.canScroll = SetList.CanScroll()
 end
 
 -- Scrolling: the cards move inside the clipped list; a thin bar shows where you are.
@@ -418,7 +419,13 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     list:SetClipsChildren(true)
     list:EnableMouseWheel(true)
     list:SetScript("OnMouseWheel", function(_, delta) SetList:ScrollBy(-delta * STEP) end)
-    list:SetScript("OnSizeChanged", function() SetList:Refresh() end)
+    -- a new height only moves the scroll bar; the cards are redrawn only when the
+    -- scroll position or the room for the bar changes, not on every step of a resize
+    list:SetScript("OnSizeChanged", function()
+        local could, was = list.canScroll, scroll
+        SetList:PaintScroll()
+        if SetList.CanScroll() ~= could or scroll ~= was then SetList:Refresh() end
+    end)
     list.track = list:CreateTexture(nil, "BACKGROUND")
     list.track:SetColorTexture(1, 1, 1, 0.06)
     list.track:SetPoint("TOPRIGHT")

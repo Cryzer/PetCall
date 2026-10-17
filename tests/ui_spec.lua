@@ -525,17 +525,33 @@ describe("UI smoke", function()
         assert.is_true(page.count._points.BOTTOMRIGHT.rel == page.emptyBanner, "count sits above the grid area")
     end)
 
-    it("dragging the window size rebuilds the grid once it settles, not on every step", function()
+    it("dragging the window size follows every step cheaply: tiles stretch, rows regroup only on a new column count", function()
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
         W.advance(1)
-        local rows = 0
-        local orig = ns.PetGridModel.Rows
-        ns.PetGridModel.Rows = function(...) rows = rows + 1 return orig(...) end
+        local Tab = ns.UI.PetsTab
+        local filters, rows, loads = 0, 0, U.modelLoads or 0
+        local origF, origR = ns.PetGridModel.Filter, ns.PetGridModel.Rows
+        ns.PetGridModel.Filter = function(...) filters = filters + 1 return origF(...) end
+        ns.PetGridModel.Rows = function(...) rows = rows + 1 return origR(...) end
+        Tab._FitColumns(400)                                  -- 2 columns of 200
+        rows = 0
+        for w = 401, 560 do Tab._FitColumns(w) end            -- still 2 columns: tiles stretch
+        assert.equal(0, rows)
+        local second                                          -- tiles in the second column start one tile in
+        for _, f in ipairs(U.created) do
+            if f._template == "WowScrollBoxList" then second = f._rowFrames[1].tiles[2] end
+        end
+        assert.equal(280, second._points.LEFT.x)
+        Tab._FitColumns(600)                                  -- 3 columns: regrouped once
+        assert.equal(1, rows)
         for i = 1, 20 do ns:Fire("WindowResized", 800 + i, 560) end
         W.advance(1)
-        ns.PetGridModel.Rows = orig
-        assert.equal(1, rows)
+        ns.PetGridModel.Filter, ns.PetGridModel.Rows = origF, origR
+        assert.equal(0, filters, "resizing never filters the pets again")
+        assert.equal(loads, U.modelLoads or 0, "resizing never reloads the preview model")
+        assert.same({ 3, 200 }, { Tab.Columns(600) })
+        assert.same({ 1, 150 }, { Tab.Columns(150) })
     end)
     it("set cards show a pet icon and say in words what each set is doing", function()
         ns.UI.Main:Show()
@@ -968,6 +984,16 @@ describe("UI smoke", function()
         SL:Refresh()
         assert.is_false(SL.CanScroll())
         assert.equal(0, SL:GetScroll())
+    end)
+    it("resizing the set list redraws the cards only when the scroll changes", function()
+        ns.UI.Main:Show()
+        local SL = ns.UI.SetList
+        local list = SL._list
+        local n, orig = 0, SL.Refresh
+        SL.Refresh = function(...) n = n + 1 return orig(...) end
+        for _ = 1, 10 do list._scripts.OnSizeChanged(list) end
+        SL.Refresh = orig
+        assert.equal(0, n)
     end)
     it("the preview model takes the room the controls leave; a short panel drops the source lines", function()
         local Lay = ns.UI.Preview.Layout

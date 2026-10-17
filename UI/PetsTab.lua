@@ -7,10 +7,12 @@ local GRID_TOP = 60      -- below search (24) and the rules bar (30)
 local BANNER_H = 30
 
 local Tab = {}
+ns.UI.PetsTab = Tab
 local state = { search = "", show = "all", sort = "name" }
 local set, page, grid, scrollBox, scrollBar, dataProvider, emptyText, columns = nil, nil, nil, nil, nil, nil, nil, 1
 local floatingPreview, gridPreview    -- gridPreview is created once and reused
 local tileW = MIN_TILE_W
+local shownIDs = {}      -- the filtered pets of the last rebuild, regrouped when the columns change
 
 local function displayName(info) return info.customName or info.name end
 
@@ -207,6 +209,7 @@ local function initRow(row, data)
             t = createTile(row)
             row.tiles[i] = t
         end
+        t.col = i
         t:ClearAllPoints()
         t:SetPoint("LEFT", (i - 1) * tileW, 0)
         t:SetWidth(tileW - 4)
@@ -219,8 +222,8 @@ function Tab:Rebuild()
     if not set or not page:IsVisible() then return end
     refreshAccent()
     local ids = ns.PetGridModel.Filter(set, state)
-    local rows = ns.PetGridModel.Rows(ids, columns)
-    dataProvider = CreateDataProvider(rows)
+    shownIDs = ids
+    dataProvider = CreateDataProvider(ns.PetGridModel.Rows(ids, columns))
     scrollBox:SetDataProvider(dataProvider, ScrollBoxConstants.RetainScrollPosition)
     if ns.PetCache:NumPets() == 0 then
         emptyText:SetText(L["You have no pets yet."])
@@ -250,8 +253,52 @@ end
 
 function ns.UI.PetsTabState() return state end
 
-local function layout()
-    local narrow = ns.UI.Main:GetFrame():GetWidth() < PREVIEW_MIN_WIDTH
+-- Resizing is followed frame by frame and kept cheap: the pets are not filtered again
+-- and the preview is left alone. Within the same number of columns the tiles only
+-- stretch; a new number of columns regroups the pets already shown into rows.
+
+-- as many columns as fit, tiles stretched to fill the row -> columns, tile width
+function Tab.Columns(width)
+    local n = math.max(1, math.floor(width / MIN_TILE_W))
+    return n, math.floor(width / n)
+end
+
+-- regroup into rows, keeping the pet at the top of the view at the top
+local function regroup(oldColumns)
+    if not dataProvider then return end
+    local offset = tonumber(scrollBox.GetDerivedScrollOffset and scrollBox:GetDerivedScrollOffset()) or 0
+    local firstPet = math.floor(offset / TILE_H) * oldColumns + 1
+    dataProvider = CreateDataProvider(ns.PetGridModel.Rows(shownIDs, columns))
+    scrollBox:SetDataProvider(dataProvider, ScrollBoxConstants.DiscardScrollPosition)
+    local row = math.floor((firstPet - 1) / columns) + 1
+    if row > 1 and scrollBox.ScrollToElementDataIndex then
+        scrollBox:ScrollToElementDataIndex(row, ScrollBoxConstants.AlignBegin, nil, ScrollBoxConstants.NoScrollInterpolation)
+    end
+end
+
+-- fit the tiles to the grid's width; true when the columns changed
+local function fitColumns(width)
+    width = tonumber(width) or 0
+    if width <= 0 then return false end
+    local oldColumns = columns
+    columns, tileW = Tab.Columns(width)
+    if columns ~= oldColumns then
+        regroup(oldColumns)
+        return true
+    end
+    for _, t in ipairs(allTiles) do
+        if t.col then
+            t:SetPoint("LEFT", (t.col - 1) * tileW, 0)
+            t:SetWidth(tileW - 4)
+        end
+    end
+    return false
+end
+Tab._FitColumns = fitColumns      -- for tests
+
+-- the preview beside the grid, or a floating one over it when the window is narrow
+local function placeGrid()
+    local narrow = (tonumber(ns.UI.Main:GetFrame():GetWidth()) or 0) < PREVIEW_MIN_WIDTH
     local previewPanel = ns.UI.Preview:GetPanel()
     previewPanel:SetShown(not narrow)
     if narrow and not floatingPreview then
@@ -260,14 +307,17 @@ local function layout()
     end
     if not narrow and floatingPreview then floatingPreview:Hide() floatingPreview = nil end
     grid:SetPoint("BOTTOMRIGHT", narrow and page or previewPanel, narrow and "BOTTOMRIGHT" or "BOTTOMLEFT", narrow and -18 or -22, 0)
+    return narrow
+end
+
+local function layout()
+    local narrow = placeGrid()
     -- measure the grid itself; before the first frame it has no size yet, so derive it
-    local gridWidth = grid:GetWidth()
-    if not gridWidth or gridWidth <= 0 then
+    local gridWidth = tonumber(grid:GetWidth()) or 0
+    if gridWidth <= 0 then
         gridWidth = ns.UI.Main:GetContentWidth() - (narrow and 18 or (240 + 22))
     end
-    -- as many columns as fit, tiles stretched to fill the row
-    columns = math.max(1, math.floor(gridWidth / MIN_TILE_W))
-    tileW = math.floor(gridWidth / columns)
+    columns, tileW = Tab.Columns(gridWidth)
     Tab:Rebuild()
 end
 
@@ -363,6 +413,7 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     grid = CreateFrame("Frame", nil, page)
     grid:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -GRID_TOP)
     grid:SetClipsChildren(true)
+    grid:SetScript("OnSizeChanged", function(_, w) if page:IsVisible() then fitColumns(w) end end)
     page.grid = grid
     scrollBox = CreateFrame("Frame", nil, grid, "WowScrollBoxList")
     scrollBox:SetAllPoints()
@@ -412,7 +463,6 @@ end, 1)
 local rebuildSoon = ns.Debounce(0.05, function() Tab:Rebuild() end)
 ns:RegisterCallback(Tab, "PetsChanged", rebuildSoon)
 ns:RegisterCallback(Tab, "SetsChanged", function(_, name) if set and (not name or name == set.name) then rebuildSoon() end end)
--- while the window is being dragged to a new size the tiles keep their size (the grid
--- clips them); the grid is laid out again once the size settles
-local layoutSoon = ns.Debounce(0.12, function() if page and page:IsVisible() then layout() end end)
-ns:RegisterCallback(Tab, "WindowResized", layoutSoon)
+-- the window being dragged to a new size: only the preview may come or go here; the
+-- grid's own size handler fits the tiles
+ns:RegisterCallback(Tab, "WindowResized", function() if page and page:IsVisible() then placeGrid() end end)
