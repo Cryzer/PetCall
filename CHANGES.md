@@ -3,19 +3,32 @@
 
 ## v2.0.0 (unreleased)
 
-- New PetCall window (/pcall): sets on the left, Pets / When / Set settings tabs, a status bar, resizable and scalable.
-- Pets tab: a fast grid of all your pets with search, filters and sorting; click to include or exclude a pet, right-click to set its weight; bulk weight for all visible pets.
-- 3D preview panel with the pet's chance in the active set, a weight slider and a Summon button.
-- Auto rules (favorites, pet type, level) shown as chips above the grid replace the old Filters tab.
-- When tab: conditions read like sentences, with live green/grey dots and reasons; add "or another set of conditions" groups; one-click templates (in a city, in a raid or dungeon, here, my spec, in a group).
-- New conditions: several places at once, place types (city, dungeon, raid, scenario, delve, PvP, open world), solo/party/raid, character name, time of day.
-- The status bar and the minimap tooltip show why no pet is summoned ("Paused by: In combat").
-- Settings moved to the game's native Options panel, with Profiles and About pages and a window scale slider.
-- EllesmereUI users get the PetCall window in their EllesmereUI skin; the PetCall data block works in data bars.
-- Right-click pet menu with recently summoned pets and all pets in alphabetical pages with a 3D preview; Addon Compartment support.
-- Sets exported from PetCall 1.x still import; new exports are shorter. Imported Lua code stays disabled until you review it.
-- Faster and lighter: no Ace3, events only for your own character, fewer updates in raids.
-- Fixed: Lua code conditions, the Party/Raid group setting being ignored, "Any" class for specializations, renaming a set, changes needing /reload, the Special Items entry for spell 100959.
+PetCall 2.0 is a complete rebuild. One new window, sets that know when to show up, and pets that fit the moment, all without you lifting a finger. Your PetCall 1.x and PetLeash sets come along as they are.
+
+### Highlights
+
+- A brand-new PetCall window (/pcall): your sets on the left, everything about the selected set on the right, and a status bar that tells you what PetCall is doing.
+- Pets for every moment: water pets while you swim, flyers in the open world, your rarest pets in cities, your favorites at home. Each set knows when it should be used.
+- Conditions that read like sentences, with a live dot that shows what is true right now. New: several places at once, place types (city, dungeon, raid, delve, battleground, open world), your house, activities like swimming or AFK, solo/party/raid, one character by name, time of day and holidays.
+- Not just "this and that": add "or another set of conditions" when a set should also be used somewhere else.
+- 20 ready-made templates, from "Water pets while swimming" to "Night owls" and "Visiting friends". One click and the set is yours to change.
+- A fast pet grid for even the biggest collections: search, filters, sorting, copies of one pet on one tile.
+- Decide how often each pet comes out, from Never to Very often, or let rules do it for whole groups: favorites, a pet type, a level, rare quality, where a pet comes from, or pets native to where you are. Pets you collect later follow the rules too.
+- A 3D preview of every pet with its exact chance to come out next.
+- No more guessing: PetCall tells you why no pet is out ("Paused by: In combat").
+- Built-in help: click the "i" next to the logo and every part of the window explains itself.
+
+### Also new
+
+- A pet menu on the minimap button: summon another, your recently summoned pets, or any pet from alphabetical pages with a 3D preview. Also in the Addon Compartment.
+- Settings in the game's own Options panel, with profiles, a What's new page and a window scale slider.
+- Choose the window look: Blizzard's frames, PetCall dark, or your EllesmereUI skin. The PetCall block also works in EllesmereUI data bars.
+- Share sets as shorter text; sets exported from PetCall 1.x still import. Lua code in an imported set stays off until you check it.
+- Lighter than ever: no Ace3, events only for your own character, fewer updates in raids and almost no cost while the window is closed.
+
+### Fixed
+
+- Lua code conditions, the Party/Raid group setting being ignored, "Any" class for specializations, renaming a set, changes that needed a /reload, and the Special Items entry for spell 100959.
 
 ## v1.0.15 (2026-10-15)
 
