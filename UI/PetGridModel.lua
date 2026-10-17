@@ -52,6 +52,18 @@ function M.Filter(set, state)
     return out
 end
 
+-- tiles in the set and left out, in one pass (copies grouped, no filters)
+function M.Counts(set)
+    local inSet, all = 0, 0
+    for _, id in ns.PetCache:IteratePetIDs() do
+        if ns.PetCache:IsPrimary(id) then
+            all = all + 1
+            if isSelected(set, id) then inSet = inSet + 1 end
+        end
+    end
+    return inSet, all - inSet
+end
+
 function M.Rows(ids, columns)
     local rows = {}
     for i, id in ipairs(ids) do

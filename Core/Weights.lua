@@ -47,10 +47,14 @@ function Weights.PetWeight(settings, petID)
     return settings.defaultValue or 0
 end
 
+-- out.auto: petID -> the tickets its rules give it (summonable or not), so the UI
+-- can tell "in through a rule" without judging every pet against the rules again
 function Weights.Build(settings, out)
     out = out or {}
+    local auto = out.auto
     wipe(out)
-    out.total = 0
+    if auto then wipe(auto) else auto = {} end
+    out.total, out.auto = 0, auto
     local filters = settings.filter
     local hasFilters = filters and #filters > 0
     for _, petID in ns.PetCache:IteratePetIDs() do
@@ -65,6 +69,7 @@ function Weights.Build(settings, out)
                     local w = ns.AutoRules.Weight(entry)
                     out[#out + 1], out[#out + 2] = w, petID
                     out.total = out.total + w
+                    auto[petID] = (auto[petID] or 0) + w
                 end
             end
         end

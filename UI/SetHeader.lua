@@ -43,11 +43,7 @@ local function describeConditions(set)
 end
 
 -- counts tiles (one per pet, copies grouped), as the grid shows them
-local function counts(set)
-    local inSet = #ns.PetGridModel.Filter(set, { show = "selected" })
-    local all = #ns.PetGridModel.Filter(set, {})
-    return inSet, all - inSet
-end
+local function counts(set) return ns.PetGridModel.Counts(set) end
 
 function Header.Counts(set) return counts(set) end
 

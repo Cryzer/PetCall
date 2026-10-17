@@ -1223,4 +1223,34 @@ describe("UI smoke", function()
         assert.equal(0, cleared)
         assert.equal("a", ns.UI.Preview:GetShown())
     end)
+    it("a grid rebuild judges each pet against the rules once, while drawing the set's table", function()
+        for i = 1, 6 do W.world.pets["p" .. i] = { species = 10 + i, name = "P" .. i } end
+        ns.PetCache:Rescan()
+        local set = ns.Sets:Get("$Default")
+        set.settings.filter = { { "favorites", 8 } }
+        set:FiltersChanged()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        ns.UI.PetsTabState().show = "selected"
+        W.advance(1)
+        local matches = 0
+        local match = ns.AutoRules.Match
+        ns.AutoRules.Match = function(...) matches = matches + 1 return match(...) end
+        set:SetPetWeight("p1", 0)
+        W.advance(1)
+        ns.AutoRules.Match = match
+        ns.UI.PetsTabState().show = "all"
+        assert.equal(ns.PetCache:NumPets(), matches, "one look per pet, when the set's table is drawn again")
+    end)
+    it("the rule weight of a pet comes from the set's table and follows rule changes", function()
+        W.world.favorites = { a = true }
+        ns.PetCache:Rescan()
+        local set = ns.Sets:Get("$Default")
+        assert.equal(0, set:GetAutoWeight("a"))
+        ns.AutoRules.AddChip(set.settings.filter, "favorites", 8)
+        set:FiltersChanged()
+        assert.equal(8, set:GetAutoWeight("a"))
+        local inSet, leftOut = ns.UI.SetHeader.Counts(set)
+        assert.equal(ns.PetCache:NumPets(), inSet + leftOut)
+    end)
 end)

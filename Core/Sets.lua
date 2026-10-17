@@ -144,12 +144,9 @@ function SetMixin:SetPetWeights(petIDs, w)
 end
 function SetMixin:ClearPetWeights() wipe(self.settings.pets) changed(self) end
 
+-- the tickets the set's rules give a pet, worked out with the set's draw table
 function SetMixin:GetAutoWeight(petID)
-    local sum = 0
-    for _, e in ipairs(self.settings.filter or {}) do
-        if ns.AutoRules.Match(e, petID) then sum = sum + ns.AutoRules.Weight(e) end
-    end
-    return sum
+    return self:GetWeightTable().auto[petID] or 0
 end
 
 function SetMixin:GetAutoRules() return ns.AutoRules.ToChips(self.settings.filter) end
