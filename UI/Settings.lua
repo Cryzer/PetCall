@@ -84,6 +84,28 @@ local function build()
             function() return ns.db.global.window.scale or 1 end, function(v) ns.UI.Main:SetScale(v) end,
             L["Scale of the PetCall window on top of the game's UI scale."], "slider", opts)
     end
+    do
+        local CHOICES = { "auto", "flat", "blizzard" }
+        local function options()
+            local c = Settings.CreateControlTextContainer()
+            c:Add(1, L["Automatic"])
+            c:Add(2, L["PetCall dark"])
+            c:Add(3, L["Blizzard"])
+            return c:GetData()
+        end
+        local function get()
+            for i, v in ipairs(CHOICES) do if v == ns.Skin:GetChoice() then return i end end
+            return 1
+        end
+        proxy("look", Settings.VarType.Number, L["Window look"], 1, get, function(v)
+            if CHOICES[v] == ns.Skin:GetChoice() then return end
+            ns.db.global.look = CHOICES[v]
+            -- frames are styled as they are built: the new look needs a reload
+            StaticPopup_Show("PETCALL_CONFIRM", L["The new look shows after the interface reloads. Reload now?"], nil,
+                { onAccept = function() C_UI.Reload() end })
+        end, L["Automatic: EllesmereUI's look when it is installed, PetCall dark with QUI (in QUI's colours), otherwise Blizzard's frames."],
+            "dropdown", options)
+    end
 
     header(L["Where"])
     whereSetting("bg", L["Battlegrounds and arenas"], L["What PetCall does in battlegrounds and arenas."], "enableInBattleground", "dismissInBattleground")

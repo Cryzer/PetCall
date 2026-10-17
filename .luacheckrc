@@ -94,7 +94,7 @@ read_globals = {
 
     -- WoW pet/class/specialization constants
     "PET_TYPE_SUFFIX", "TOOLTIP_WILDBATTLEPET_LEVEL_CLASS",
-    "CLASS_SORT_ORDER", "LOCALIZED_CLASS_NAMES_MALE", "GetNumClasses", "GetClassInfo", "GetSpecializationInfoForClassID",
+    "CLASS_SORT_ORDER", "LOCALIZED_CLASS_NAMES_MALE", "C_UI", "QUI", "GetNumClasses", "GetClassInfo", "GetSpecializationInfoForClassID",
 
     -- Trigger type locale strings (WoW globals used as display names)
     "ZONE", "BATTLEGROUND", "TYPE", "GROUP", "PARTY", "RAID",

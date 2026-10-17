@@ -31,6 +31,7 @@ DB.defaults = {
 DB.globalDefaults = {
     -- room for the sets list, three columns of pets and the preview at first open
     window = { scale = 1, width = 940, height = 640, setsCollapsed = nil },
+    look = "auto",          -- window look: auto, flat (PetCall dark) or blizzard; see UI/Skin.lua
     recentPets = {},
 }
 

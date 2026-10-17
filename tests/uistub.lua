@@ -184,7 +184,7 @@ function MenuMT:Click()
 end
 
 -- Globals that must stay nil (optional addons) even though they are capitalized.
-local ABSENT = { EllesmereUI = true, ElvUI = true, LibStub = true }
+local ABSENT = { EllesmereUI = true, ElvUI = true, LibStub = true, QUI = true }
 
 function U.install()
     U.created = {}

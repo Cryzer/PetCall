@@ -22,6 +22,7 @@ local function build()
     tinsert(UISpecialFrames, "PetCallShareDialog")
     ns.Skin:Apply("Shell", dialog)
     ns.Skin:Apply("CloseButton", dialog.CloseButton)
+    ns.Skin:Apply("Inset", dialog.Inset)
 
     dialog.hint = ns.Widgets.Label(dialog.Inset, "")
     dialog.hint:SetPoint("TOPLEFT", 8, -8)

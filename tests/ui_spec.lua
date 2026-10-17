@@ -995,4 +995,35 @@ describe("UI smoke", function()
         assert.equal("Hedly", panel.name:GetText())
         assert.is_true(panel.sub:GetText():find("^Ageless Bronze Drake · ") ~= nil, panel.sub:GetText())
     end)
+    it("the look: EllesmereUI when present, PetCall dark with QUI, or as chosen in the settings", function()
+        local R = ns.Skin.Resolve
+        assert.equal("eui", R("auto", true, false))
+        assert.equal("eui", R("auto", true, true))
+        assert.equal("flat", R("auto", false, true))
+        assert.equal("blizzard", R("auto", false, false))
+        assert.equal("flat", R("flat", true, false))
+        assert.equal("blizzard", R("blizzard", false, true))
+        -- QUI installed: PetCall dark in QUI's colours
+        rawset(_G, "QUI", {
+            GetSkinColor = function() return 0.2, 0.6, 1, 1 end,
+            GetSkinBgColor = function() return 0.02, 0.03, 0.04, 0.9 end,
+        })
+        ns.Skin._Forget()
+        assert.equal("flat", ns.Skin:Look())
+        assert.is_true(ns.Skin:IsActive())
+        local r, g, b = ns.Skin:Accent()
+        assert.same({ 0.2, 0.6, 1 }, { r, g, b })
+        ns.UI.Main:Show()
+        local f = ns.UI.Main:GetFrame()
+        assert.is_not_nil(f.pcFlat)                         -- the window got the flat body
+        assert.is_not_nil(f.Inset.pcFlat)
+        ns.UI.Main:SelectTab("pets")
+        ns.UI.Main:SelectTab("settings")
+        -- the player can opt out
+        ns.db.global.look = "blizzard"
+        ns.Skin._Forget()
+        assert.equal("blizzard", ns.Skin:Look())
+        assert.is_false(ns.Skin:IsActive())
+        rawset(_G, "QUI", nil)
+    end)
 end)
