@@ -371,12 +371,21 @@ function render()
         if gi > 1 then
             local orLabel = track(ns.Widgets.Label(content, L["OR"], "GameFontNormalLarge"))
             orLabel:SetPoint("TOPLEFT", 12, y)
+            -- a frame, not a bare texture, so the next redraw clears it with the rest
+            local rule = track(CreateFrame("Frame", nil, content))
+            rule:SetHeight(1)
+            rule:SetPoint("LEFT", orLabel, "RIGHT", 8, 0)
+            rule:SetPoint("RIGHT", content, "RIGHT", -8, 0)
+            local orLine = rule:CreateTexture(nil, "ARTWORK")
+            orLine:SetAllPoints()
+            orLabel.line = orLine
+            ns.Skin:Divider(orLabel, orLine)
             y = y - 24
         end
         local card = track(CreateFrame("Frame", nil, content, "InsetFrameTemplate"))
         card:SetPoint("TOPLEFT", 4, y)
         card:SetPoint("RIGHT", -4, 0)
-        ns.Skin:Apply("Inset", card)
+        ns.Skin:Card(card)
         local cy = -6
         for ri, e in ipairs(group.rows) do cy = cy - buildRow(card, group, ri, e, cy) end
         local add = track(ns.Widgets.Dropdown(card, 180, addMenu(group)))

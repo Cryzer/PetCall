@@ -78,6 +78,23 @@ end
 
 function Skin:OnLooksChanged(fn) accentListeners[#accentListeners + 1] = fn end
 
+-- A block that groups things (a set of conditions): Blizzard's inset frame on its own
+-- look; on the dark looks a lighter card with a hairline and an accent bar down its
+-- left edge, so groups stand apart even over a see-through window
+function Skin:Card(frame)
+    if self:Look() == "blizzard" then return end
+    Flat.Card(frame, self:Accent())
+end
+
+-- the line that joins two blocks ("OR"): accent text and a hairline on the dark looks
+function Skin:Divider(label, line)
+    if self:Look() == "blizzard" then line:Hide() return end
+    local r, g, b = self:Accent()
+    label:SetTextColor(r, g, b)
+    line:SetColorTexture(r, g, b, 0.35)
+    line:Show()
+end
+
 -- The logo's ring takes the look's colour: gold next to Blizzard's gold frames, the
 -- accent on the dark looks
 function Skin:PaintBadge(badge)
@@ -264,6 +281,18 @@ function Flat.SetTabSelection(tab, selected)
         text:SetPoint("CENTER", tab, "CENTER", 0, 0)
         text:SetTextColor(1, selected and 1 or 0.82, selected and 1 or 0)
     end
+end
+
+function Flat.Card(frame, r, g, b)
+    dropNineSlice(frame)
+    hide(frame.Bg)
+    local lr, lg, lb = lighter(0.05)
+    fill(frame, lr, lg, lb, 0.85, { 1, 1, 1, 0.14 })
+    frame.pcBar = frame.pcBar or frame:CreateTexture(nil, "BORDER", nil, 7)
+    frame.pcBar:SetPoint("TOPLEFT", 1, -1)
+    frame.pcBar:SetPoint("BOTTOMLEFT", 1, 1)
+    frame.pcBar:SetWidth(2)
+    frame.pcBar:SetColorTexture(r, g, b, 1)
 end
 
 function Flat.CloseButton(button)

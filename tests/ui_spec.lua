@@ -164,6 +164,31 @@ describe("UI smoke", function()
         ns.db.global.look = "auto"
         ns.Skin._Forget()
     end)
+    it("condition groups are cards with an accent bar on the dark looks, Blizzard's inset on its own", function()
+        local function cardsFor(look)
+            ns.db.global.look = look
+            ns.Skin._Forget()
+            ns.UI.Main:Show()
+            local set = ns.Sets:Get("Groups") or ns.Sets:Create("Groups")
+            ns.UI.Main:SelectSet("Groups")
+            set:SetConditionModel({ groups = { { rows = { { "groupType", party = true } } }, { rows = { { "groupType", raid = true } } } } })
+            ns.UI.Main:SelectTab("settings")
+            ns.UI.Main:SelectTab("when")
+            local cards = {}
+            for _, f in ipairs(U.created) do
+                if f._template == "InsetFrameTemplate" and f:IsShown() and f._parent and f._parent._parent then cards[#cards + 1] = f end
+            end
+            return cards
+        end
+        local flat = cardsFor("flat")
+        assert.is_true(#flat >= 2)
+        local r, g, b = ns.Skin.Flat.Accent()
+        local bar = flat[#flat].pcBar
+        assert.is_not_nil(bar)
+        assert.same({ r, g, b }, { bar._color[1], bar._color[2], bar._color[3] })
+        ns.db.global.look = "auto"
+        ns.Skin._Forget()
+    end)
     it("share dialog shows export and import", function()
         assert.has_no_error(function()
             ns.Sets:Create("Src")
