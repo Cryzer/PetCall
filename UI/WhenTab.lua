@@ -4,8 +4,7 @@ local L = ns.L
 local CreateFrame = CreateFrame
 local Tab = {}
 local page, scroll, content, set, model
-local pool = {}          -- frames shown by the last redraw
-local free = {}          -- kind -> frames put away by a redraw, taken again by the next one
+local frames = ns.Widgets.NewPool()   -- each redraw takes back the frames of the last one
 local dots, header = {}, nil                                  -- redrawn in place when condition states change
 local drafts = setmetatable({}, { __mode = "k" })             -- entry -> unsaved code text
 local results = setmetatable({}, { __mode = "k" })            -- entry -> last "Check" result text
@@ -20,88 +19,14 @@ local TEMPLATES = {
 local function save() set:SetConditionModel(model) end
 local function changedInPlace() set:ConditionsChanged() end
 
--- A redraw puts every frame away and takes back what it needs: the game never frees
--- frames, so making new ones on each edit would only pile them up.
 local function clear()
-    for _, f in ipairs(pool) do
-        f:Hide()
-        f:ClearAllPoints()
-        if f.tipHooked then ns.Widgets.Tooltip(f, nil) end
-        local list = free[f.poolKind]
-        list[#list + 1] = f
-    end
-    wipe(pool)
+    frames:Release()
     wipe(dots)
     header = nil
 end
 
--- a frame of this kind put away earlier, or a new one from make(); the caller sets it up
-local function take(kind, parent, make)
-    local list = free[kind]
-    if not list then list = {} free[kind] = list end
-    local f = table.remove(list)
-    if f then
-        f:SetParent(parent)
-        f:Show()
-    else
-        f = make()
-        f.poolKind = kind
-    end
-    pool[#pool + 1] = f
-    return f
-end
-
-local function noop() end
-
-local function label(parent, text, font)
-    local fs = take("label", parent, function() return ns.Widgets.Label(parent) end)
-    fs:SetFontObject(font or "GameFontHighlight")
-    fs:SetWidth(0)
-    fs:SetText(text or "")
-    return fs
-end
-
-local function button(parent, text, onClick, kind)
-    local b = take(kind or "button", parent, function() return ns.Widgets.Button(parent, "", noop) end)
-    b:SetText(text)
-    b:SetHeight(22)
-    b:SetWidth(math.max(80, b:GetFontString():GetStringWidth() + 24))
-    b:SetEnabled(true)
-    b.onClick = onClick
-    return b
-end
-
-local function dropdown(parent, width, buildMenu, defaultText)
-    local dd = take(defaultText and "addDropdown" or "dropdown", parent, function() return ns.Widgets.Dropdown(parent, width, noop) end)
-    dd:SetWidth(width)
-    dd:SetupMenu(buildMenu)
-    if defaultText then dd:SetDefaultText(defaultText) end
-    return dd
-end
-
-local function checkbox(parent, text, get, set)
-    local cb = take("checkbox", parent, function() return ns.Widgets.Checkbox(parent, "", noop, noop) end)
-    cb.text:SetText(text)
-    cb.getter, cb.setter = get, set
-    cb:SetChecked(get() and true or false)
-    return cb
-end
-
-local function editBox(parent, kind)
-    return take(kind, parent, function()
-        local eb = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
-        eb:SetAutoFocus(false)
-        ns.Skin:Apply("EditBox", eb)
-        return eb
-    end)
-end
-
-local function plainFrame(parent, kind)
-    return take(kind, parent, function() return CreateFrame("Frame", nil, parent) end)
-end
-
 local function chip(parent, text, onRemove)
-    local b = button(parent, text .. "  ×", onRemove, "chip")
+    local b = frames:Button(parent, text .. "  ×", onRemove, "chip")
     b:SetHeight(20)
     b:SetWidth(b:GetFontString():GetStringWidth() + 20)
     return b
@@ -117,7 +42,7 @@ local function buildField(row, e, field, prev)
         for i, n in ipairs(e.zoneNames or {}) do names[#names + 1] = { text = n, remove = function() table.remove(e.zoneNames, i) end } end
         for i, id in ipairs(e.mapIDs or {}) do names[#names + 1] = { text = mapName(id), remove = function() table.remove(e.mapIDs, i) end } end
         for _, n in ipairs(names) do place(chip(row, n.text, function() n.remove() changedInPlace() Tab:Refresh(set) end)) end
-        local addHere = place(button(row, L["+ current"], function()
+        local addHere = place(frames:Button(row, L["+ current"], function()
             if ns.Conditions.AddCurrentPlace(e) then changedInPlace() Tab:Refresh(set) end
         end))
         local here = ns.Conditions.HasCurrentPlace(e)
@@ -125,7 +50,7 @@ local function buildField(row, e, field, prev)
         ns.Widgets.Tooltip(addHere, L["+ current"], here and L["You are already in one of these places."] or L["Add the place you are in now."])
     elseif field.kind == "multiChoice" then
         local values = field.values()
-        local dd = dropdown(row, 200, function(owner, root)
+        local dd = frames:Dropdown(row, 200, function(owner, root)
             for _, v in ipairs(values) do
                 root:CreateCheckbox(v.label, function()
                     local cur = e[field.key] or (e[1] == "specialLocation" and ({ city = { "city" }, battleground = { "pvp" }, instance = { "dungeon", "raid" } })[e.loc]) or {}
@@ -145,7 +70,7 @@ local function buildField(row, e, field, prev)
         -- each box starts after the label before it, measured, so labels never run into boxes
         local gap = 12
         for _, v in ipairs(field.values()) do
-            local cb = checkbox(row, v.label, function() return e[v.value] end,
+            local cb = frames:Checkbox(row, v.label, function() return e[v.value] end,
                 function(on) e[v.value] = on or nil changedInPlace() end)
             cb.text:ClearAllPoints()
             cb.text:SetPoint("LEFT", cb, "RIGHT", 2, 0)
@@ -154,14 +79,14 @@ local function buildField(row, e, field, prev)
         end
         prev = prev.text or prev          -- what comes next (the remove ×) follows the last label
     elseif field.kind == "class" then
-        place(dropdown(row, 150, function(owner, root)
+        place(frames:Dropdown(row, 150, function(owner, root)
             root:CreateRadio(L["Any class"], function() return not e.class or e.class == "" end, function() e.class = "" changedInPlace() end)
             for _, c in ipairs(CLASS_SORT_ORDER) do
                 root:CreateRadio(LOCALIZED_CLASS_NAMES_MALE[c] or c, function() return e.class == c end, function() e.class = c changedInPlace() end)
             end
         end))
     elseif field.kind == "spec" then
-        place(dropdown(row, 170, function(owner, root)
+        place(frames:Dropdown(row, 170, function(owner, root)
             root:CreateRadio(L["Any specialization"], function() return not e.spec or e.spec == -1 end, function() e.spec = -1 changedInPlace() end)
             for i = 1, 4 do
                 local _, name = C_SpecializationInfo.GetSpecializationInfo(i)
@@ -171,7 +96,7 @@ local function buildField(row, e, field, prev)
             end
         end))
     elseif field.kind == "text" then
-        local eb = editBox(row, "textBox")
+        local eb = frames:EditBox(row, "textBox")
         eb:SetSize(field.optional and 120 or 220, 20)
         eb:SetText(e[field.key] or "")
         eb:SetScript("OnEnterPressed", function(self) e[field.key] = self:GetText() self:ClearFocus() changedInPlace() end)
@@ -180,7 +105,7 @@ local function buildField(row, e, field, prev)
         place(eb, 10)
     elseif field.kind == "timeRange" then
         local function timeBox(key)
-            local eb = editBox(row, "timeBox")
+            local eb = frames:EditBox(row, "timeBox")
             eb:SetSize(50, 20)
             eb:SetText(format("%02d:%02d", math.floor((e[key] or 0) / 60), (e[key] or 0) % 60))
             eb:SetScript("OnEnterPressed", function(self)
@@ -192,7 +117,7 @@ local function buildField(row, e, field, prev)
             return eb
         end
         place(timeBox("from"), 10)
-        local dash = label(row, "–")
+        local dash = frames:Label(row, "–")
         place(dash, 4)
         place(timeBox("to"), 4)
     elseif field.kind == "code" then
@@ -203,7 +128,7 @@ local function buildField(row, e, field, prev)
 end
 
 local function codeEditor(parent, e, anchor)
-    local box = take("code", parent, function()
+    local box = frames:Take("code", parent, function()
         local f = CreateFrame("Frame", nil, parent, "InsetFrameTemplate")
         local sf = CreateFrame("ScrollFrame", nil, f, "ScrollFrameTemplate")
         sf:SetPoint("TOPLEFT", 6, -6)
@@ -226,11 +151,11 @@ local function codeEditor(parent, e, anchor)
     eb:SetScript("OnEditFocusLost", function(self)
         if drafts[e] and drafts[e] ~= e.code then e.code = drafts[e] drafts[e] = nil changedInPlace() end
     end)
-    local result = label(parent, "", "GameFontHighlightSmall")
+    local result = frames:Label(parent, "", "GameFontHighlightSmall")
     result:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -4)
     result:SetPoint("RIGHT", -8, 0)
     result:SetText(results[e] or "")
-    local check = button(parent, L["Check"], function()
+    local check = frames:Button(parent, L["Check"], function()
         e.code = eb:GetText()
         drafts[e] = nil
         local ok, res = ns.Conditions.CheckLua(e.code)
@@ -240,9 +165,9 @@ local function codeEditor(parent, e, anchor)
     end)
     check:SetPoint("TOPRIGHT", box, "BOTTOMRIGHT", 0, -2)
     if e.disabledByImport then
-        local warn = label(parent, "|cffff4040" .. L["Imported code is disabled until you review it."] .. "|r")
+        local warn = frames:Label(parent, "|cffff4040" .. L["Imported code is disabled until you review it."] .. "|r")
         warn:SetPoint("TOPLEFT", result, "BOTTOMLEFT", 0, -6)
-        local enable = button(parent, L["Review done – enable"], function()
+        local enable = frames:Button(parent, L["Review done – enable"], function()
             e.disabledByImport = nil changedInPlace() Tab:Refresh(set)
         end)
         enable:SetPoint("LEFT", warn, "RIGHT", 8, 0)
@@ -266,10 +191,10 @@ local function paintHeader()
 end
 
 local function stateDot(row, e)
-    local dot = label(row, "", "GameFontNormal")
+    local dot = frames:Label(row, "", "GameFontNormal")
     paintDot(dot, e)
     dots[#dots + 1] = { dot = dot, e = e }
-    local hit = plainFrame(row, "hit")
+    local hit = frames:Frame(row, "hit")
     hit:SetAllPoints(dot)
     hit:EnableMouse(true)
     ns.Widgets.Tooltip(hit, function() return state(e) and state(e).value and L["Met right now"] or L["Not met right now"] end,
@@ -284,7 +209,7 @@ local function repaintStates()
 end
 
 local function buildRow(parent, group, index, e, y)
-    local row = plainFrame(parent, "row")
+    local row = frames:Frame(parent, "row")
     row.codeEditor, row.negate, row.last = nil, nil, nil
     row:SetPoint("TOPLEFT", 8, y)
     row:SetPoint("RIGHT", -8, 0)
@@ -293,12 +218,12 @@ local function buildRow(parent, group, index, e, y)
     dot:SetPoint("LEFT")
     local height = 28
     if ns.Conditions.IsLegacyNode(e) then
-        local text = label(row, L["Complex rule (previous version)"] .. ": " .. ns.Conditions.Describe(e), "GameFontHighlightSmall")
+        local text = frames:Label(row, L["Complex rule (previous version)"] .. ": " .. ns.Conditions.Describe(e), "GameFontHighlightSmall")
         text:SetPoint("LEFT", dot, "RIGHT", 6, 0)
         text:SetPoint("RIGHT", -120, 0)
         text:SetWordWrap(true)
         local simplified = ns.Conditions.Simplify(e)
-        local simplify = button(row, L["Simplify"], function()
+        local simplify = frames:Button(row, L["Simplify"], function()
             table.remove(group.rows, index)
             for k = #simplified, 1, -1 do tinsert(group.rows, index, simplified[k]) end
             save() Tab:Refresh(set)
@@ -309,11 +234,11 @@ local function buildRow(parent, group, index, e, y)
         height = 40
     else
         local def = ns.Conditions.GetType(e[1])
-        local name = label(row, def.label, "GameFontNormal")
+        local name = frames:Label(row, def.label, "GameFontNormal")
         name:SetPoint("LEFT", dot, "RIGHT", 6, 0)
         name:SetWidth(110)
         -- "is / is not" sits where it is read, between the condition and its values
-        local negate = button(row, "", function(self)
+        local negate = frames:Button(row, "", function(self)
             e.negate = not e.negate or nil
             changedInPlace()
             self:Paint()
@@ -332,7 +257,7 @@ local function buildRow(parent, group, index, e, y)
         row.last = prev
         if row.codeEditor then height = 28 + codeEditor(parent, e, row) end
     end
-    local remove = button(row, "×", function()
+    local remove = frames:Button(row, "×", function()
         table.remove(group.rows, index)
         save() Tab:Refresh(set)
     end)
@@ -408,18 +333,18 @@ end
 function render()
     clear()
     local y = -8
-    header = label(content, "", "GameFontNormal")
+    header = frames:Label(content, "", "GameFontNormal")
     header:SetPoint("TOPLEFT", 8, y)
     paintHeader()
     y = y - 24
     if not set:HasConditions() then
-        local note = label(content, "|cffffb040" .. L["Without conditions this set is always active."] .. "|r")
+        local note = frames:Label(content, "|cffffb040" .. L["Without conditions this set is always active."] .. "|r")
         note:SetPoint("TOPLEFT", 8, y)
         y = y - 22
         local prev
         -- four per row so the row never runs past a narrow window
         for i, t in ipairs(TEMPLATES) do
-            local b = button(content, t.label, function() set:ApplyTemplate(t.key) Tab:Refresh(set) end)
+            local b = frames:Button(content, t.label, function() set:ApplyTemplate(t.key) Tab:Refresh(set) end)
             if i % 4 == 1 then
                 if i > 1 then y = y - 26 end
                 b:SetPoint("TOPLEFT", 8, y)
@@ -430,7 +355,7 @@ function render()
         end
         y = y - 30
         if #model.groups[1].rows == 0 then
-            local add = dropdown(content, 180, addMenu(model.groups[1]), L["+ Add condition"])
+            local add = frames:Dropdown(content, 180, addMenu(model.groups[1]), L["+ Add condition"])
             add:SetPoint("TOPLEFT", 8, y)
             y = y - 30
         end
@@ -439,7 +364,7 @@ function render()
         if #group.rows == 0 and gi == 1 and not set:HasConditions() then break end
         if gi > 1 then
             -- "OR" and a line to the edge in one frame, so a redraw puts both away
-            local orRow = take("or", content, function()
+            local orRow = frames:Take("or", content, function()
                 local f = CreateFrame("Frame", nil, content)
                 f:SetHeight(20)
                 f.label = ns.Widgets.Label(f, L["OR"], "GameFontNormalLarge")
@@ -456,16 +381,16 @@ function render()
             ns.Skin:Divider(orRow.label, orRow.line)
             y = y - 24
         end
-        local card = take("card", content, function() return CreateFrame("Frame", nil, content, "InsetFrameTemplate") end)
+        local card = frames:Take("card", content, function() return CreateFrame("Frame", nil, content, "InsetFrameTemplate") end)
         card:SetPoint("TOPLEFT", 4, y)
         card:SetPoint("RIGHT", -4, 0)
         ns.Skin:Card(card)
         local cy = -6
         for ri, e in ipairs(group.rows) do cy = cy - buildRow(card, group, ri, e, cy) end
-        local add = dropdown(card, 180, addMenu(group), L["+ Add condition"])
+        local add = frames:Dropdown(card, 180, addMenu(group), L["+ Add condition"])
         add:SetPoint("TOPLEFT", 8, cy - 2)
         if #model.groups > 1 then
-            local removeGroup = button(card, L["Remove group"], function()
+            local removeGroup = frames:Button(card, L["Remove group"], function()
                 table.remove(model.groups, gi) save() Tab:Refresh(set)
             end)
             removeGroup:SetPoint("LEFT", add, "RIGHT", 8, 0)
@@ -475,7 +400,7 @@ function render()
         y = y + cy - 10
     end
     if set:HasConditions() then
-        local orLink = button(content, L["+ Or another set of conditions"], function()
+        local orLink = frames:Button(content, L["+ Or another set of conditions"], function()
             tinsert(model.groups, { rows = {} }) render()
         end)
         orLink:SetPoint("TOPLEFT", 8, y)

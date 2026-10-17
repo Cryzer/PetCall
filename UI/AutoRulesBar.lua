@@ -7,6 +7,7 @@ local Bar = {}
 ns.UI.AutoRulesBar = Bar
 
 local bar, set, chips, editor = nil, nil, {}, nil
+local frames = ns.Widgets.NewPool()   -- the editor's controls, taken back each time it opens
 Bar._chips = chips      -- for tests
 
 local function list() return set.settings.filter end
@@ -33,6 +34,9 @@ local function buildEditor()
     editor.done = ns.Widgets.Button(editor, L["Done"], closeEditor)
     editor.done:SetWidth(90)
     editor.done:SetPoint("BOTTOMRIGHT", -12, 10)
+    editor.content = CreateFrame("Frame", nil, editor)
+    editor.content:SetPoint("TOPLEFT", 12, -12)
+    editor.content:SetPoint("BOTTOMRIGHT", -12, 40)
     -- the main window closing, or the tab changing, takes the popover with it
 
     bar:HookScript("OnHide", closeEditor)
@@ -40,7 +44,7 @@ end
 
 local function fieldControl(parent, leaf, field)
     if field.kind == "multiChoice" then
-        return ns.Widgets.Dropdown(parent, 160, function(owner, root)
+        return frames:Dropdown(parent, 160, function(owner, root)
             for _, v in ipairs(field.values()) do
                 root:CreateCheckbox(v.label, function()
                     for _, x in ipairs(leaf.petTypes or { tonumber(leaf.petType) }) do if x == v.value then return true end end
@@ -54,15 +58,14 @@ local function fieldControl(parent, leaf, field)
             end
         end)
     elseif field.kind == "operator" then
-        return ns.Widgets.Dropdown(parent, 60, function(owner, root)
+        return frames:Dropdown(parent, 60, function(owner, root)
             for _, op in ipairs(ns.AutoRules.OPERATORS) do
                 root:CreateRadio(op, function() return leaf.operator == op end, function() ns.AutoRules.SetField(leaf, "operator", op) commit() end)
             end
         end)
     elseif field.kind == "number" then
-        local eb = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+        local eb = frames:EditBox(parent, "numberBox")
         eb:SetSize(40, 20)
-        eb:SetAutoFocus(false)
         eb:SetNumeric(true)
         eb:SetText(tostring(leaf[field.key] or ""))
         eb:SetScript("OnEnterPressed", function(self)
@@ -71,19 +74,16 @@ local function fieldControl(parent, leaf, field)
             self:ClearFocus()
             commit()
         end)
-        ns.Skin:Apply("EditBox", eb)
         return eb
     elseif field.kind == "text" then
-        local eb = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+        local eb = frames:EditBox(parent, "textBox")
         eb:SetSize(160, 20)
-        eb:SetAutoFocus(false)
         eb:SetText(leaf[field.key] or "")
         eb:SetScript("OnEnterPressed", function(self)
             ns.AutoRules.SetField(leaf, field.key, strtrim(self:GetText()))
             self:ClearFocus()
             commit()
         end)
-        ns.Skin:Apply("EditBox", eb)
         return eb
     end
 end
@@ -101,28 +101,25 @@ function openEditor(anchor, chip)
     editor:SetSize(460, 120)
     editor:ClearAllPoints()
     editor:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
-    if editor.content then editor.content:Hide() end
-    local c = CreateFrame("Frame", nil, editor)
-    c:SetPoint("TOPLEFT", 12, -12)
-    c:SetPoint("BOTTOMRIGHT", -12, 40)
-    editor.content = c
+    frames:Release()
+    local c = editor.content
     local y = 0
     if chip.legacy then
-        local t = ns.Widgets.Label(c, ns.AutoRules.Describe(chip.entry))
+        local t = frames:Label(c, ns.AutoRules.Describe(chip.entry))
         t:SetPoint("TOPLEFT")
         t:SetPoint("RIGHT")
         t:SetWordWrap(true)
-        local simplify = ns.Widgets.Button(c, L["Simplify"], function()
+        local simplify = frames:Button(c, L["Simplify"], function()
             if ns.AutoRules.Simplify(list(), chip.index) then commit() closeEditor() end
         end)
         simplify:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -6)
     else
         for ci, leaf in ipairs(chip.criteria) do
-            local row = CreateFrame("Frame", nil, c)
+            local row = frames:Frame(c, "row")
             row:SetPoint("TOPLEFT", 0, y)
             row:SetPoint("RIGHT")
             row:SetHeight(26)
-            local label = ns.Widgets.Label(row, ns.AutoRules.Label(leaf[1]))
+            local label = frames:Label(row, ns.AutoRules.Label(leaf[1]))
             label:SetPoint("LEFT")
             label:SetWidth(110)
             label:SetWordWrap(false)
@@ -138,7 +135,9 @@ function openEditor(anchor, chip)
             end
             -- a rule with one condition is removed with the × on its chip
             if #chip.criteria > 1 then
-                local remove = CreateFrame("Button", nil, row, "UIPanelCloseButtonNoScripts")
+                local remove = frames:Take("remove", row, function()
+                    return CreateFrame("Button", nil, row, "UIPanelCloseButtonNoScripts")
+                end)
                 remove:SetSize(18, 18)
                 remove:SetPoint("LEFT", prev, "RIGHT", 6, 0)
                 remove:SetScript("OnClick", function()
@@ -150,30 +149,29 @@ function openEditor(anchor, chip)
         end
         -- with several conditions: must a pet meet all of them, or one is enough
         if #chip.criteria > 1 then
-            local matchLabel = ns.Widgets.Label(c, L["Pets must match"])
+            local matchLabel = frames:Label(c, L["Pets must match"])
             matchLabel:SetPoint("TOPLEFT", 0, y - 9)
             matchLabel:SetWidth(110)
-            local match = ns.Widgets.Dropdown(c, 160, function(owner, root)
+            local match = frames:Dropdown(c, 160, function(owner, root)
                 root:CreateRadio(L["All of these"], function() return chip.match == "all" end, function() ns.AutoRules.SetMatch(list(), chip.index, "all") commit() reopen(chip.index) end)
                 root:CreateRadio(L["Any one of these"], function() return chip.match == "any" end, function() ns.AutoRules.SetMatch(list(), chip.index, "any") commit() reopen(chip.index) end)
             end)
             match:SetPoint("LEFT", matchLabel, "RIGHT", 6, 0)
             y = y - 30
         end
-        local add = ns.Widgets.Dropdown(c, 160, function(owner, root)
+        local add = frames:Dropdown(c, 160, function(owner, root)
             for _, def in ipairs(ns.AutoRules.Types()) do
                 root:CreateButton(def.label, function() ns.AutoRules.AddCriterion(list(), chip.index, def.key) commit() reopen(chip.index) end)
             end
-        end)
-        add:SetDefaultText(L["+ Another condition"])
+        end, L["+ Another condition"])
         add:SetPoint("TOPLEFT", 116, y - 4)
         ns.Widgets.Tooltip(add, L["+ Another condition"], L["Narrow the rule down, for example: source mentions Trading Post and the pet is a Beast."])
         y = y - 30
     end
-    local weightLabel = ns.Widgets.Label(c, L["How often"])
+    local weightLabel = frames:Label(c, L["How often"])
     weightLabel:SetPoint("TOPLEFT", 0, y - 9)
     weightLabel:SetWidth(110)
-    local weight = ns.Widgets.Dropdown(c, 160, function(owner, root)
+    local weight = frames:Dropdown(c, 160, function(owner, root)
         for _, lvl in ipairs(ns.Weights.LEVELS) do
             root:CreateRadio(lvl.label, function() return ns.Weights.Nearest(ns.AutoRules.Weight(chip.entry)) == lvl.value end,
                 function() ns.AutoRules.SetChipWeight(list(), chip.index, lvl.value) commit() reopen(chip.index) end)

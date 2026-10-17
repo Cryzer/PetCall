@@ -163,3 +163,91 @@ function Widgets.Tooltip(frame, title, body)
     end)
     frame:HookScript("OnLeave", function(self) if self.tipTitle or self.tipBody then GameTooltip:Hide() end end)
 end
+
+local function noop() end
+
+-- Frames for a view that is drawn again from scratch: Release() puts every one away and
+-- Take (or Label, Button...) gives back one of that kind, or makes it the first time.
+-- The game never frees frames, so a redraw must not make new ones each time.
+function Widgets.NewPool()
+    local pool, used, free = {}, {}, {}
+
+    -- make() builds a new frame; whoever takes it sets it up for its new use
+    function pool:Take(kind, parent, make)
+        local list = free[kind]
+        if not list then list = {} free[kind] = list end
+        local f = table.remove(list)
+        if f then
+            f:SetParent(parent)
+            f:Show()
+        else
+            f = make()
+            f.poolKind = kind
+        end
+        used[#used + 1] = f
+        return f
+    end
+
+    function pool:Release()
+        for _, f in ipairs(used) do
+            f:Hide()
+            f:ClearAllPoints()
+            if f.tipHooked then Widgets.Tooltip(f, nil) end
+            local list = free[f.poolKind]
+            list[#list + 1] = f
+        end
+        wipe(used)
+    end
+
+    function pool:Label(parent, text, font)
+        local fs = self:Take("label", parent, function() return Widgets.Label(parent) end)
+        fs:SetFontObject(font or "GameFontHighlight")
+        fs:SetWidth(0)
+        fs:SetWordWrap(true)
+        fs:SetText(text or "")
+        return fs
+    end
+
+    -- kind: buttons a view changes further (colours, sizes) are kept apart from plain ones
+    function pool:Button(parent, text, onClick, kind)
+        local b = self:Take(kind or "button", parent, function() return Widgets.Button(parent, "", noop) end)
+        b:SetText(text)
+        b:SetHeight(22)
+        b:SetWidth(math.max(80, b:GetFontString():GetStringWidth() + 24))
+        b:SetEnabled(true)
+        b.onClick = onClick
+        return b
+    end
+
+    function pool:Dropdown(parent, width, buildMenu, defaultText)
+        local dd = self:Take(defaultText and "textDropdown" or "dropdown", parent, function() return Widgets.Dropdown(parent, width, noop) end)
+        dd:SetWidth(width)
+        dd:SetupMenu(buildMenu)
+        if defaultText then dd:SetDefaultText(defaultText) end
+        return dd
+    end
+
+    function pool:Checkbox(parent, text, get, set)
+        local cb = self:Take("checkbox", parent, function() return Widgets.Checkbox(parent, "", noop, noop) end)
+        cb.text:SetText(text)
+        cb.getter, cb.setter = get, set
+        cb:SetChecked(get() and true or false)
+        return cb
+    end
+
+    -- kind keeps boxes with different scripts apart; the caller sets size, text and scripts
+    function pool:EditBox(parent, kind)
+        return self:Take(kind, parent, function()
+            local eb = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+            eb:SetAutoFocus(false)
+            ns.Skin:Apply("EditBox", eb)
+            return eb
+        end)
+    end
+
+    function pool:Frame(parent, kind)
+        return self:Take(kind, parent, function() return CreateFrame("Frame", nil, parent) end)
+    end
+
+    return pool
+end

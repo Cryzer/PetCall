@@ -1295,4 +1295,28 @@ describe("UI smoke", function()
         assert.equal(before, #U.created)
         assert.equal(0, shown("UICheckButtonTemplate"))
     end)
+    it("opening the rule editor again reuses its frames", function()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local set = ns.Sets:Get("$Default")
+        set.settings.filter = { { "favorites", 8 }, { "rare", 8 } }
+        ns.AutoRules.AddCriterion(set.settings.filter, 1, "level")
+        ns.AutoRules.AddCriterion(set.settings.filter, 1, "source")
+        ns.AutoRules.AddCriterion(set.settings.filter, 1, "petType")
+        ns.UI.AutoRulesBar:Refresh(set)
+        local chips = ns.UI.AutoRulesBar._chips
+        chips[1]:Click()
+        chips[2]:Click()
+        local before = #U.created
+        for _ = 1, 3 do chips[1]:Click() chips[2]:Click() end
+        assert.equal(before, #U.created, "no new frames for the same rules")
+        -- the small rule shows only its own controls
+        local editor = ns.UI.AutoRulesBar.GetEditor()
+        local boxes = 0
+        for _, f in ipairs(U.created) do
+            if f.poolKind and f._type == "EditBox" and f:IsVisible() then boxes = boxes + 1 end
+        end
+        assert.equal(0, boxes)
+        assert.is_true(editor:IsShown())
+    end)
 end)
