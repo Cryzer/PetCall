@@ -110,6 +110,7 @@ function Universal:SetPoint(point, rel, relPoint, x, y)
     self._points[point] = { rel = rel, relPoint = relPoint or point, x = x or 0, y = y or 0 }
 end
 function Universal:ClearAllPoints() self._points = {} end
+function Universal:SetupMenu(fn) self._setupMenu = fn end
 function Universal:SetEnabled(v) self._enabled = v and true or false end
 function Universal:IsEnabled() return self._enabled ~= false end
 function Universal:SetAllPoints(rel) self._points = { ALL = { rel = rel } } end

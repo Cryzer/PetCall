@@ -728,10 +728,9 @@ describe("UI smoke", function()
         -- build the menu the dropdown would show
         local build
         for _, def in ipairs(ns.Conditions.Types()) do assert.is_not_nil(def.hint, def.key) end
-        local orig = ns.Widgets.Dropdown
-        ns.Widgets.Dropdown = function(parent, width, fn) build = build or fn return orig(parent, width, fn) end
-        ns.UI.Main:SelectTab("pets") ns.UI.Main:SelectTab("when")
-        ns.Widgets.Dropdown = orig
+        for _, f in ipairs(U.created) do
+            if f._template == "WowStyle1DropdownTemplate" and f:IsVisible() then build = build or f._setupMenu end
+        end
         local root = U.newMenu()
         build(nil, root)
         assert.is_not_nil(root:Find("Where I am"))
@@ -1268,5 +1267,32 @@ describe("UI smoke", function()
         assert.is_true(copies <= 2, "looked up " .. copies .. " pets")
         assert.equal("p2", ns.UI.Preview:GetShown())
         assert.equal(format("%.1f%%", 100 / ns.PetCache:NumPets()), ns.UI.Preview:GetPanel().chance:GetText())
+    end)
+    it("drawing the When tab again reuses its frames instead of making new ones", function()
+        ns.UI.Main:Show()
+        local set = ns.Sets:Create("Reuse")
+        ns.UI.Main:SelectSet("Reuse")
+        local m = set:GetConditionModel()
+        m.groups = { { rows = { { "housing", ownHome = true }, { "zone", zoneName = "Dalaran" } } }, { rows = { { "specialization", class = "MAGE", spec = -1, name = "Jaina" } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:SelectTab("when")
+        local function shown(template)
+            local n = 0
+            for _, f in ipairs(U.created) do if f.poolKind and f._template == template and f:IsVisible() then n = n + 1 end end
+            return n
+        end
+        local boxes, buttons = shown("UICheckButtonTemplate"), shown("UIPanelButtonTemplate")
+        local before = #U.created
+        for _ = 1, 3 do ns.UI.Main:SelectTab("when") end
+        assert.equal(before, #U.created, "no new frames for the same conditions")
+        assert.equal(boxes, shown("UICheckButtonTemplate"))
+        assert.equal(buttons, shown("UIPanelButtonTemplate"))
+        -- fewer conditions: the spare frames are put away, not left on screen
+        m = set:GetConditionModel()
+        m.groups = { { rows = { { "specialization", class = "", spec = -1 } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:SelectTab("when")
+        assert.equal(before, #U.created)
+        assert.equal(0, shown("UICheckButtonTemplate"))
     end)
 end)

@@ -27,7 +27,8 @@ function Widgets.Button(parent, text, onClick)
     b:SetText(text)
     b:SetHeight(22)
     b:SetWidth(math.max(80, b:GetFontString():GetStringWidth() + 24))
-    b:SetScript("OnClick", function(self, button) onClick(self, button) end)
+    b.onClick = onClick                -- a field, so a reused button can be given a new one
+    b:SetScript("OnClick", function(self, button) self.onClick(self, button) end)
     ns.Skin:Apply("Button", b)
     return b
 end
@@ -103,10 +104,11 @@ function Widgets.Checkbox(parent, label, get, set)
     cb:SetSize(24, 24)
     cb.text:SetText(label)
     cb.text:SetFontObject("GameFontHighlight")
-    cb:SetScript("OnShow", function(self) self:SetChecked(get() and true or false) end)
+    cb.getter, cb.setter = get, set    -- fields, so a reused box can be given new ones
+    cb:SetScript("OnShow", function(self) self:SetChecked(self.getter() and true or false) end)
     cb:SetScript("OnClick", function(self)
         PlaySound(self:GetChecked() and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
-        set(self:GetChecked())
+        self.setter(self:GetChecked())
     end)
     cb:SetChecked(get() and true or false)
     ns.Skin:Apply("Checkbox", cb)
@@ -144,13 +146,20 @@ function Widgets.Inset(parent)
     return f
 end
 
+-- Setting it again replaces the text (hooked once per frame), and nil title and body
+-- turn it off, so frames that are reused do not stack up tooltips.
 function Widgets.Tooltip(frame, title, body)
+    frame.tipTitle, frame.tipBody = title, body
+    if frame.tipHooked then return end
+    frame.tipHooked = true
     frame:HookScript("OnEnter", function(self)
+        local t, b = self.tipTitle, self.tipBody
+        if not t and not b then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        local t = type(title) == "function" and title(self) or title
+        t = type(t) == "function" and t(self) or t
         if t then GameTooltip:SetText(t, 1, 1, 1) end
-        if body then GameTooltip:AddLine(type(body) == "function" and body(self) or body, nil, nil, nil, true) end
+        if b then GameTooltip:AddLine(type(b) == "function" and b(self) or b, nil, nil, nil, true) end
         GameTooltip:Show()
     end)
-    frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    frame:HookScript("OnLeave", function(self) if self.tipTitle or self.tipBody then GameTooltip:Hide() end end)
 end
