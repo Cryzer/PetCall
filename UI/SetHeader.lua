@@ -77,8 +77,10 @@ end
 
 local header
 
+-- the summary counts the set's pets over the whole collection: not worth doing for
+-- a closed window, which catches up when it opens (WindowShown)
 function Header:Refresh()
-    if not header then return end
+    if not header or not header:IsVisible() then return end
     local set = ns.UI.Main:GetSelectedSet()
     if not set or set.deleted then return end
     header.title:SetText(set:DisplayName())

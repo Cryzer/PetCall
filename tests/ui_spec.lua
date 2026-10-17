@@ -1183,4 +1183,26 @@ describe("UI smoke", function()
         W.advance(0.1)
         assert.is_true(hasLate(), "caught up when the window opens")
     end)
+    it("the set header is not worked out while the window is closed", function()
+        local town = ns.Sets:Create("Town")
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Town")
+        W.advance(0.1)
+        local header = ns.UI.Main:GetFrame().header
+        assert.equal("Town", header.title:GetText())
+        ns.UI.Main:Hide()
+        local counted = 0
+        local counts = ns.UI.SetHeader.Counts
+        ns.UI.SetHeader.Counts = function(...) counted = counted + 1 return counts(...) end
+        local summary = ns.UI.SetHeader.Summary
+        ns.UI.SetHeader.Summary = function(...) counted = counted + 1 return summary(...) end
+        town:Rename("City")
+        W.advance(0.1)
+        ns.UI.SetHeader.Counts, ns.UI.SetHeader.Summary = counts, summary
+        assert.equal(0, counted)
+        assert.equal("Town", header.title:GetText())
+        ns.UI.Main:Show()
+        W.advance(0.1)
+        assert.equal("City", header.title:GetText(), "caught up when the window opens")
+    end)
 end)
