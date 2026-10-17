@@ -12,3 +12,7 @@ Thumbs.db
 *.zip
 tools/.luacheck/
 tools/.argparse/
+
+# Private notes, kept locally
+docs/feedback/
+docs/review/
