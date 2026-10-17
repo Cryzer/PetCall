@@ -196,6 +196,8 @@ function Preview:ShowPet(petID, forSet)
     panel.fav:GetNormalTexture():SetAlpha(info.isFavorite and 1 or 0.4)
 end
 
+-- the set whose weights and chances the panel shows; the next ShowPet or Refresh draws them
+function Preview:SetSet(forSet) set = forSet end
 function Preview:SetHover(petID)
     hoverID = petID
     if petID then lastHoverID = petID end

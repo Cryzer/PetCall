@@ -1205,4 +1205,22 @@ describe("UI smoke", function()
         W.advance(0.1)
         assert.equal("City", header.title:GetText(), "caught up when the window opens")
     end)
+    it("changing a pet's weight does not load its model again", function()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        ns.UI.Preview:SetSelected("a")
+        local viewer = ns.UI.Preview:GetViewer()
+        assert.is_not_nil(viewer:ModelID())
+        local loads, cleared = 0, 0
+        local load, clear = viewer.Load, viewer.Clear
+        viewer.Load = function(...) loads = loads + 1 return load(...) end
+        viewer.Clear = function(...) cleared = cleared + 1 return clear(...) end
+        ns.Sets:Get("$Default"):SetPetWeight("a", ns.Weights.LEVELS[5].value)
+        W.advance(1)
+        viewer.Load, viewer.Clear = load, clear
+        assert.equal(0, loads)
+        assert.equal(0, cleared)
+        assert.equal("a", ns.UI.Preview:GetShown())
+    end)
 end)

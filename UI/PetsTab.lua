@@ -247,7 +247,8 @@ function Tab:Rebuild()
     page.emptyBanner:SetShown(empty)
     grid:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -GRID_TOP - (empty and BANNER_H + 6 or 0))
     page.show:Refresh()
-    ns.UI.Preview:ShowPet(nil, set)
+    -- the same pet stays in the preview: its weight and chance change, its model does not reload
+    ns.UI.Preview:SetSet(set)
     ns.UI.Preview:Refresh()
 end
 
