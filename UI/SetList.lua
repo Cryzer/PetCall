@@ -82,7 +82,7 @@ local function stateLine(set)
     for _, g in ipairs(set:GetConditionModel().groups) do
         for _, e in ipairs(g.rows) do
             local st = states[e]
-            if st and not st.value then return "|cff9d9d9d" .. format(L["Waiting for: %s"], ns.Conditions.Describe(e)) .. "|r" end
+            if st and not st.value then return "|cff9d9d9d" .. format(L["Waiting for: %s"], ns.Conditions.DescribeShort(e)) .. "|r" end
         end
     end
     return "|cff9d9d9d" .. L["Conditions not met"] .. "|r"

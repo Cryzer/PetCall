@@ -150,9 +150,10 @@ function Preview:ShowPet(petID, forSet)
         loadModel(info)
     end
     local r, g, b = ns.Widgets.QualityColor(info.quality)
-    panel.name:SetText(info.name)
+    -- the name the player gave it, as on its tile; the species goes on the line below
+    panel.name:SetText(info.customName or info.name)
     panel.name:SetTextColor(r, g, b)
-    panel.sub:SetText(format("%s%s · %s %d · %s", info.customName and ("«" .. info.customName .. "» ") or "",
+    panel.sub:SetText(format("%s%s · %s %d · %s", info.customName and (info.name .. " · ") or "",
         _G["BATTLE_PET_NAME_" .. (info.petType or 0)] or "", L["Level"], info.level, _G["BATTLE_PET_BREED_QUALITY" .. (info.quality or 2)] or ""))
     local copies = ns.PetCache:GetCopies(petID)
     if #copies > 1 then panel.sub:SetText(panel.sub:GetText() .. " · " .. format(L["%d copies"], #copies)) end

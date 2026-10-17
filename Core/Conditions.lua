@@ -107,6 +107,15 @@ function C.Describe(e)
     return text
 end
 
+-- a shorter wording where a type has one (narrow places such as the set cards)
+function C.DescribeShort(e)
+    if isNode(e) then return C.Describe(e) end
+    local def = types[e[1]]
+    local text = def and (def.short or def.describe)(e) or L["Unknown condition"]
+    if e.negate then text = L["not"] .. " " .. text end
+    return text
+end
+
 --
 -- Model
 --

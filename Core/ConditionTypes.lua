@@ -157,12 +157,38 @@ C.RegisterType({
     describe = function(e)
         local class = (e.class and e.class ~= "") and (LOCALIZED_CLASS_NAMES_MALE[e.class] or e.class) or L["Any class"]
         local spec = L["Any specialization"]
-        if e.spec and e.spec ~= -1 then spec = format("#%d", e.spec) end
+        if e.spec and e.spec ~= -1 then spec = C.SpecName(e.class, e.spec) end
         local s = format("%s: %s, %s", L["Character"], class, spec)
         if e.name and e.name ~= "" then s = s .. ", " .. e.name end
         return s
     end,
+    -- for the narrow set cards: "Mage, Frost" instead of "Character: Mage, ..."
+    short = function(e)
+        local parts = {}
+        if e.class and e.class ~= "" then parts[#parts + 1] = LOCALIZED_CLASS_NAMES_MALE[e.class] or e.class end
+        if e.spec and e.spec ~= -1 then parts[#parts + 1] = C.SpecName(e.class, e.spec) end
+        if e.name and e.name ~= "" then parts[#parts + 1] = e.name end
+        if #parts == 0 then return L["Any class"] end
+        return table.concat(parts, ", ")
+    end,
 })
+
+-- "Frost" for the mage's third specialization; "#3" when the client cannot say
+function C.SpecName(class, index)
+    if class and class ~= "" and GetNumClasses and GetClassInfo and GetSpecializationInfoForClassID then
+        for id = 1, GetNumClasses() do
+            local _, file = GetClassInfo(id)
+            if file == class then
+                local _, name = GetSpecializationInfoForClassID(id, index)
+                if name then return name end
+            end
+        end
+    end
+    -- no class chosen: the specialization of that number of the player's own class
+    local _, name = C_SpecializationInfo.GetSpecializationInfo(index)
+    if (not class or class == "") and name then return name end
+    return format("#%d", index)
+end
 
 local function fmtTime(min) return format("%02d:%02d", math.floor(min / 60), min % 60) end
 C.RegisterType({

@@ -26,6 +26,17 @@ describe("Conditions", function()
         assert.is_false(eval({ "zone", mapIDs = { 85 } }))
     end)
 
+    it("character conditions name the specialization; the short form drops the type name", function()
+        local e = { "specialization", class = "HUNTER", spec = 2 }
+        assert.equal("Character: Hunter, Marksmanship", C.Describe(e))
+        assert.equal("Hunter, Marksmanship", C.DescribeShort(e))
+        assert.equal("Hunter", C.DescribeShort({ "specialization", class = "HUNTER", spec = -1 }))
+        assert.equal("not Hunter", C.DescribeShort({ "specialization", class = "HUNTER", spec = -1, negate = true }))
+        -- a type without a short form keeps its usual wording
+        local zone = { "zone", zoneName = "Stormwind City" }
+        assert.equal(C.Describe(zone), C.DescribeShort(zone))
+    end)
+
     it("location types incl. legacy values", function()
         assert.is_true(eval({ "specialLocation", loc = "city" }))
         W.world.instanceType, W.world.resting = "party", false

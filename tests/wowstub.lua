@@ -158,6 +158,13 @@ function W.reset()
     DEFAULT, ZONE, PARTY, RAID, CLASS = "Default", "Zone", "Party", "Raid", "Class"
     CLASS_SORT_ORDER = { "HUNTER", "WARRIOR" }
     LOCALIZED_CLASS_NAMES_MALE = { HUNTER = "Hunter", WARRIOR = "Warrior" }
+    local classFiles = { "WARRIOR", "HUNTER" }
+    GetNumClasses = function() return #classFiles end
+    GetClassInfo = function(id) return LOCALIZED_CLASS_NAMES_MALE[classFiles[id]], classFiles[id], id end
+    GetSpecializationInfoForClassID = function(id, i)
+        local specs = ({ { "Arms", "Fury", "Protection" }, { "Beast Mastery", "Marksmanship", "Survival" } })[id]
+        if specs and specs[i] then return id * 100 + i, specs[i] end
+    end
     Enum = { PetJournalFilter = {} }
     C_Timer = {
         After = function(sec, fn) timers[#timers + 1] = { at = w.time + sec, fn = fn } end,
