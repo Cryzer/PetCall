@@ -50,7 +50,8 @@ read_globals = {
     "LibStub",
 
     -- WoW C_ namespaces
-    "C_PetJournal", "C_Timer", "C_AddOns", "C_Item", "C_Map", "C_Housing", "C_MountJournal", "C_Calendar", "C_DateAndTime",
+    "C_PetJournal", "C_Timer", "C_AddOns", "C_Item", "C_Map", "C_Housing", "C_MountJournal", "MountJournal", "MOUNT_JOURNAL_FILTER_GROUND", "MOUNT_JOURNAL_FILTER_FLYING",
+    "MOUNT_JOURNAL_FILTER_AQUATIC", "MOUNT_JOURNAL_FILTER_DRAGONRIDING", "MOUNT_JOURNAL_FILTER_RIDEALONG", "C_Calendar", "C_DateAndTime",
     "C_QuestLog", "C_SettingsUtil", "C_Spell", "C_UnitAuras", "issecretvalue",
     "C_ChatInfo", "C_SpecializationInfo",
 

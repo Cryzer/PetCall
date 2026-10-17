@@ -229,6 +229,27 @@ describe("Conditions", function()
         for _, m in ipairs(C.CollectedMounts()) do names[#names + 1] = m.name end
         assert.same({ "Black Drake", "Swift Spectral Tiger" }, names)
     end)
+    it("mount kinds come from the journal's type filter; the player's filters and search are put back", function()
+        W.world.mounts = {
+            { id = 7, name = "Tiger", collected = true, types = { 1 } },
+            { id = 9, name = "Drake", collected = true, types = { 2, 4 }, source = 3 },
+            { id = 4, name = "Turtle", collected = true, types = { 3 } },
+            { id = 6, name = "Mount I lack", collected = false, types = { 1 } },
+        }
+        local f = W.world.mountFilters
+        f.types[2], f.collected[2], f.sources[3], f.search = false, false, false, "tig"
+        _G.MountJournal = { searchBox = { GetText = function() return "tig" end } }
+        local kinds = C.MountKindsFromJournal()
+        _G.MountJournal = nil
+        assert.same({ ground = true }, kinds[7])
+        assert.same({ flying = true, skyriding = true }, kinds[9])
+        assert.same({ aquatic = true }, kinds[4])
+        assert.same({ true, false, true, true, true }, f.types)
+        assert.same({ true, false, true }, f.collected)
+        assert.same({ true, true, false }, f.sources)
+        assert.equal("tig", f.search)
+        assert.same({ flying = true, skyriding = true }, C.CollectedMounts()[1].kinds)    -- Drake, first by name
+    end)
     it("holiday: a running holiday from the calendar, by id or any", function()
         local hallows = { eventID = 324, title = "Hallow's End", calendarType = "HOLIDAY", sequenceType = "ONGOING",
             startTime = { year = 2026, month = 10, monthDay = 10, hour = 10, minute = 0 },

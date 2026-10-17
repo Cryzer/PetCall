@@ -59,7 +59,9 @@ local function defaultWorld()
         macroResult = nil, locale = "enUS",
         swimming = false, indoors = false, formID = nil,
         home = { own = false, any = false, inside = false },
-        mounts = {},          -- { id, name, active, collected }
+        mounts = {},          -- { id, name, active, collected, types = { journal type filter indices } }
+        -- the journal's filters as the player left them: types/sources by index, collected 1-3, search
+        mountFilters = { types = { true, true, true, true, true }, sources = { true, true, true }, collected = { true, true, true }, search = "" },
         -- calendar: the month it shows, today, and events keyed by offset * 100 + day
         calShown = { year = 2026, month = 10 }, now = { year = 2026, month = 10, monthDay = 16, hour = 12, minute = 0 },
         calEvents = {},
@@ -166,7 +168,7 @@ function W.reset()
         local specs = ({ { "Arms", "Fury", "Protection" }, { "Beast Mastery", "Marksmanship", "Survival" } })[id]
         if specs and specs[i] then return id * 100 + i, specs[i] end
     end
-    Enum = { PetJournalFilter = {} }
+    Enum = { PetJournalFilter = {}, MountType = { Ground = 0, Flying = 1, Aquatic = 2, Dragonriding = 3, RideAlong = 4 } }
     C_Timer = {
         After = function(sec, fn) timers[#timers + 1] = { at = w.time + sec, fn = fn } end,
         NewTimer = function(sec, fn)
@@ -185,6 +187,7 @@ function W.reset()
         end,
     }
     C_PetJournal = {
+        GetNumPetSources = function() return 3 end,
         GetOwnedPetIDs = function()
             local r = {}
             for id in pairs(w.pets) do r[#r + 1] = id end
@@ -257,6 +260,29 @@ function W.reset()
                 end
             end
         end,
+        IsValidTypeFilter = function(i) return i >= 1 and i <= 5 end,
+        IsTypeChecked = function(i) return w.mountFilters.types[i] end,
+        SetTypeFilter = function(i, on) w.mountFilters.types[i] = on end,
+        IsValidSourceFilter = function(i) return w.mountFilters.sources[i] ~= nil end,
+        IsSourceChecked = function(i) return w.mountFilters.sources[i] end,
+        SetSourceFilter = function(i, on) w.mountFilters.sources[i] = on end,
+        SetAllSourceFilters = function(on) for i in pairs(w.mountFilters.sources) do w.mountFilters.sources[i] = on end end,
+        GetCollectedFilterSetting = function(i) return w.mountFilters.collected[i] end,
+        SetCollectedFilterSetting = function(i, on) w.mountFilters.collected[i] = on end,
+        SetSearch = function(text) w.mountFilters.search = text end,
+        -- what the journal lists under the filters: collected mounts of a ticked type, if the search is empty
+        GetNumDisplayedMounts = function()
+            local f, n = w.mountFilters, 0
+            w.displayedMounts = {}
+            if f.search ~= "" or not f.collected[1] then return 0 end
+            for _, m in ipairs(w.mounts) do
+                local shown = false
+                for _, t in ipairs(m.types or {}) do if f.types[t] then shown = true end end
+                if m.collected and shown and f.sources[m.source or 1] ~= false then n = n + 1 w.displayedMounts[n] = m.id end
+            end
+            return n
+        end,
+        GetDisplayedMountID = function(n) return w.displayedMounts[n] end,
         GetMountInfoExtraByID = function(id)
             for _, m in ipairs(w.mounts) do
                 if m.id == id then return m.display or 100 + id, "", m.sourceText or "", false, m.typeID or 230, 1 end

@@ -108,9 +108,10 @@ describe("UI smoke", function()
     end)
     it("the mount picker ticks mounts for one condition and closes when that condition is out of sight", function()
         W.world.mounts = {
-            { id = 7, name = "Swift Spectral Tiger", collected = true, favorite = true },
-            { id = 9, name = "Black Drake", collected = true, typeID = 248 },
-            { id = 4, name = "Riding Turtle", collected = true, typeID = 231, source = 3 },
+            { id = 7, name = "Swift Spectral Tiger", collected = true, favorite = true, types = { 1 } },
+            { id = 9, name = "Black Drake", collected = true, types = { 2, 4 } },
+            { id = 4, name = "Riding Turtle", collected = true, types = { 3 }, source = 3 },
+            { id = 5, name = "Odd Thing", collected = true },     -- in no kind: never hidden by them
         }
         ns.UI.Main:Show()
         local set = ns.Sets:Create("Riders")
@@ -137,10 +138,13 @@ describe("UI smoke", function()
             for _, x in ipairs(P.Filter(all, st, function(id) return id == 7 end)) do out[#out + 1] = x.name end
             return out
         end
-        assert.same({ "Black Drake", "Riding Turtle", "Swift Spectral Tiger" }, names({ search = "" }))
+        assert.same({ "Black Drake", "Odd Thing", "Riding Turtle", "Swift Spectral Tiger" }, names({ search = "" }))
         assert.same({ "Black Drake" }, names({ search = "drak" }))
-        assert.same({ "Black Drake" }, names({ search = "", hiddenKinds = { ground = true, aquatic = true } }))
-        assert.same({ "Black Drake", "Swift Spectral Tiger" }, names({ search = "", hiddenSources = { [3] = true } }))
+        assert.same({ "Black Drake", "Odd Thing" }, names({ search = "", hiddenKinds = { ground = true, aquatic = true } }))
+        -- the drake also skyrides: hiding flyers keeps it while Skyriding is shown
+        assert.same({ "Black Drake", "Odd Thing" }, names({ search = "", hiddenKinds = { ground = true, aquatic = true, flying = true } }))
+        assert.same({ "Odd Thing" }, names({ search = "", hiddenKinds = { ground = true, aquatic = true, flying = true, skyriding = true } }))
+        assert.same({ "Black Drake", "Odd Thing", "Swift Spectral Tiger" }, names({ search = "", hiddenSources = { [3] = true } }))
         assert.same({ "Swift Spectral Tiger" }, names({ search = "", favoritesOnly = true }))
         assert.same({ "Swift Spectral Tiger" }, names({ search = "", chosenOnly = true }))
         -- closes with another tab, another set, the window, or the condition removed

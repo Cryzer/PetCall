@@ -11,7 +11,7 @@ ns.UI.MountPicker = Picker
 -- one condition and closes whenever that condition is out of sight.
 
 local ROW_H = 26
-local KINDS = { { key = "ground", label = L["Ground"] }, { key = "flying", label = L["Flying"] }, { key = "aquatic", label = L["Aquatic"] } }
+local KINDS = ns.Conditions.MOUNT_KINDS
 
 local win, list, scrollBox, preview, count
 local entry, onChange          -- the condition being edited and what to call when it changes
@@ -32,8 +32,9 @@ function Picker.Filter(all, st, isChosen)
         if ok and st.favoritesOnly and not m.favorite then ok = false end
         if ok and st.usableOnly and not m.usable then ok = false end
         if ok and st.hiddenSources[m.source] then ok = false end
-        if ok and next(st.hiddenKinds) then
-            -- a mount that both flies and swims stays while one of its kinds is shown
+        if ok and next(st.hiddenKinds) and next(m.kinds) then
+            -- a mount that both flies and swims stays while one of its kinds is shown;
+            -- one the journal put in no kind is never hidden by them
             local any = false
             for _, k in ipairs(KINDS) do if m.kinds[k.key] and not st.hiddenKinds[k.key] then any = true end end
             ok = any

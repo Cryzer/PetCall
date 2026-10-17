@@ -311,26 +311,71 @@ local function mountName(id)
     return name or ("#" .. id)
 end
 
--- where a mount goes, by the journal's mount type: ground and water types are listed,
--- every other type flies (some of them also swim)
-local GROUND_TYPES = { [230] = true, [241] = true, [269] = true, [284] = true, [412] = true }
-local WATER_TYPES = { [231] = true, [232] = true, [254] = true, [407] = true, [412] = true, [436] = true }
-local NOT_FLYING = { [230] = true, [231] = true, [232] = true, [241] = true, [254] = true, [269] = true, [284] = true, [412] = true }
-function C.MountKinds(typeID)
-    return { ground = GROUND_TYPES[typeID] or false, aquatic = WATER_TYPES[typeID] or false,
-        flying = typeID ~= nil and not NOT_FLYING[typeID] }
+-- The kinds of mount the Mount Journal's Type filter knows, by Enum.MountType. Which
+-- kinds a mount has is known only to the game, behind that filter.
+C.MOUNT_KINDS = {
+    { key = "ground", enum = "Ground", label = MOUNT_JOURNAL_FILTER_GROUND or L["Ground"] },
+    { key = "flying", enum = "Flying", label = MOUNT_JOURNAL_FILTER_FLYING or L["Flying"] },
+    { key = "aquatic", enum = "Aquatic", label = MOUNT_JOURNAL_FILTER_AQUATIC or L["Aquatic"] },
+    { key = "skyriding", enum = "Dragonriding", label = MOUNT_JOURNAL_FILTER_DRAGONRIDING or L["Skyriding"] },
+    { key = "rideAlong", enum = "RideAlong", label = MOUNT_JOURNAL_FILTER_RIDEALONG or L["Ride Along"] },
+}
+
+local COLLECTED_FILTERS = { 1, 2, 3 }     -- LE_MOUNT_JOURNAL_FILTER_COLLECTED, _NOT_COLLECTED, _UNUSABLE
+
+-- mountID -> { kind = true }: asks the journal's filter for each kind in turn, with every
+-- other filter open, then puts the player's filters and search back as they were
+function C.MountKindsFromJournal()
+    local J = C_MountJournal
+    local out = {}
+    if not (J and J.IsTypeChecked and J.SetTypeFilter and J.GetNumDisplayedMounts and Enum.MountType) then return out end
+    local numSources = C_PetJournal.GetNumPetSources and C_PetJournal.GetNumPetSources() or 0
+    local saved = { collected = {}, sources = {}, types = {} }
+    for _, i in ipairs(COLLECTED_FILTERS) do saved.collected[i] = J.GetCollectedFilterSetting(i) end
+    for i = 1, numSources do if J.IsValidSourceFilter(i) then saved.sources[i] = J.IsSourceChecked(i) end end
+    local typeIndex = {}
+    for _, k in ipairs(C.MOUNT_KINDS) do
+        local v = Enum.MountType[k.enum]
+        if v and J.IsValidTypeFilter(v + 1) then typeIndex[k.key] = v + 1 end
+    end
+    for _, i in pairs(typeIndex) do saved.types[i] = J.IsTypeChecked(i) end
+    -- the game keeps no copy of the search text; the journal's box has it when it is loaded
+    local box = MountJournal and MountJournal.searchBox
+    local search = box and box:GetText() or ""
+
+    J.SetCollectedFilterSetting(1, true)
+    J.SetCollectedFilterSetting(2, false)
+    J.SetCollectedFilterSetting(3, true)
+    J.SetAllSourceFilters(true)
+    J.SetSearch("")
+    for key, index in pairs(typeIndex) do
+        for _, other in pairs(typeIndex) do J.SetTypeFilter(other, other == index) end
+        for n = 1, J.GetNumDisplayedMounts() do
+            local id = J.GetDisplayedMountID(n)
+            if id then
+                out[id] = out[id] or {}
+                out[id][key] = true
+            end
+        end
+    end
+
+    for i, on in pairs(saved.collected) do J.SetCollectedFilterSetting(i, on) end
+    for i, on in pairs(saved.sources) do J.SetSourceFilter(i, on) end
+    for i, on in pairs(saved.types) do J.SetTypeFilter(i, on) end
+    J.SetSearch(search)
+    return out
 end
 
 -- every collected mount, by name, for the picker: { id, name, icon, source, favorite, usable, kinds }
 function C.CollectedMounts()
     local out = {}
     if not C_MountJournal then return out end
+    local kinds = C.MountKindsFromJournal()
     for _, id in ipairs(C_MountJournal.GetMountIDs()) do
         local name, _, icon, _, usable, source, favorite, _, _, _, collected = C_MountJournal.GetMountInfoByID(id)
         if name and collected then
-            local _, _, _, _, typeID = C_MountJournal.GetMountInfoExtraByID(id)
             out[#out + 1] = { id = id, name = name, icon = icon, source = source, favorite = favorite or false,
-                usable = usable or false, kinds = C.MountKinds(typeID) }
+                usable = usable or false, kinds = kinds[id] or {} }
         end
     end
     table.sort(out, function(a, b) return a.name < b.name end)
