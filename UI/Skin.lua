@@ -78,16 +78,11 @@ end
 
 function Skin:OnLooksChanged(fn) accentListeners[#accentListeners + 1] = fn end
 
--- The logo tile in the window's corner, framed to suit the look: a gold ring with a
--- darker bevel next to Blizzard's gold frames, the accent colour on the dark looks.
--- Layers from the outside in: a dark edge, the coloured ring, an inner line.
+-- The logo's ring takes the look's colour: gold next to Blizzard's gold frames, the
+-- accent on the dark looks
 function Skin:PaintBadge(badge)
-    local gold = self:Look() == "blizzard"
-    local r, g, b = 1, 0.82, 0
-    if not gold then r, g, b = self:Accent() end
-    Flat.Fill(badge, 0, 0, 0, 0.9, { 0, 0, 0, 0.9 })
-    Flat.Fill(badge.ring, 0.04, 0.04, 0.05, 1, { r, g, b, 1 })
-    Flat.Fill(badge.inner, 0, 0, 0, 0, gold and { 0.55, 0.4, 0.05, 1 } or { 0, 0, 0, 0.7 })
+    if self:Look() == "blizzard" then badge.ring:SetVertexColor(1, 0.82, 0)
+    else badge.ring:SetVertexColor(self:Accent()) end
 end
 
 if hasEUI() then

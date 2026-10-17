@@ -95,6 +95,7 @@ function Universal:GetValue() return self._value or 0 end
 function Universal:SetTexture(t) self._texture = t end
 function Universal:SetColorTexture(r, g, b, a) self._color = { r, g, b, a } end
 function Universal:SetTexCoord(...) self._texCoord = { ... } end
+function Universal:SetVertexColor(r, g, b, a) self._vertexColor = { r, g, b, a } end
 function Universal:LockHighlight() self._highlightLocked = true end
 function Universal:UnlockHighlight() self._highlightLocked = false end
 -- anchors are recorded so layout tests can check them

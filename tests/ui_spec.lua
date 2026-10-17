@@ -142,13 +142,13 @@ describe("UI smoke", function()
         ns.UI.Main:Show()
         local badge = ns.UI.Main:GetFrame().badge
         assert.is_not_nil(badge)
-        assert.equal("Interface\\AddOns\\PetCall\\Media\\icon", badge.logo._texture)
+        assert.equal("Interface\\AddOns\\PetCall\\Media\\logo", badge.logo._texture)
         assert.is_nil(badge.logo._texCoord, "the logo is never cropped")
         local function ringColour(look)
             ns.db.global.look = look
             ns.Skin._Forget()
             ns.Skin:PaintBadge(badge)
-            return badge.ring.pcFlat.top._color
+            return badge.ring._vertexColor
         end
         local gold = ringColour("blizzard")
         assert.same({ 1, 0.82, 0 }, { gold[1], gold[2], gold[3] })

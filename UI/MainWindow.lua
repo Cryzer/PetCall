@@ -24,25 +24,29 @@ end
 
 local ICON = "Interface\\AddOns\\PetCall\\Media\\icon"
 
--- The logo in a framed square tile in the window's corner instead of the round
--- portrait: the logo carries its own lettering, so it is shown whole, never cropped.
-local BADGE, LOGO = 60, 52
+-- The logo as an app icon hanging over the window's corner, where Blizzard's frames
+-- put their portrait: rounded corners, a ring in the look's colour and a soft shadow,
+-- baked at 64 px so it shows pixel for pixel, whole, never cropped.
+local MEDIA = "Interface\\AddOns\\PetCall\\Media\\"
+local BADGE, HANG_X, HANG_Y = 64, -11, 10
 function Main.BuildBadge(f)
     ButtonFrameTemplate_HidePortrait(f)
     local badge = CreateFrame("Frame", nil, f)
     badge:SetSize(BADGE, BADGE)
-    badge:SetPoint("TOPLEFT", 3, -3)
+    badge:SetPoint("TOPLEFT", HANG_X, HANG_Y)
     badge:SetFrameLevel((tonumber(f:GetFrameLevel()) or 0) + 20)
-    badge.ring = CreateFrame("Frame", nil, badge)
-    badge.ring:SetPoint("TOPLEFT", 1, -1)
-    badge.ring:SetPoint("BOTTOMRIGHT", -1, 1)
-    badge.inner = CreateFrame("Frame", nil, badge.ring)
-    badge.inner:SetPoint("TOPLEFT", 1, -1)
-    badge.inner:SetPoint("BOTTOMRIGHT", -1, 1)
-    badge.logo = badge.inner:CreateTexture(nil, "ARTWORK")
-    badge.logo:SetTexture(ICON)
-    badge.logo:SetSize(LOGO, LOGO)
-    badge.logo:SetPoint("CENTER")
+    badge.shadow = badge:CreateTexture(nil, "BACKGROUND")
+    badge.shadow:SetTexture(MEDIA .. "logo-shadow")
+    badge.shadow:SetSize(BADGE * 2, BADGE * 2)
+    badge.shadow:SetPoint("CENTER", 0, -2)
+    badge.logo = badge:CreateTexture(nil, "ARTWORK")
+    badge.logo:SetTexture(MEDIA .. "logo")
+    badge.logo:SetAllPoints()
+    badge.ring = badge:CreateTexture(nil, "OVERLAY")
+    badge.ring:SetTexture(MEDIA .. "logo-ring")
+    badge.ring:SetAllPoints()
+    -- the screen edge keeps the whole icon in view, not only the window
+    f:SetClampRectInsets(HANG_X, 0, HANG_Y, 0)
     ns.Skin:PaintBadge(badge)
     ns.Skin:OnLooksChanged(function() ns.Skin:PaintBadge(badge) end)
     f.badge = badge
