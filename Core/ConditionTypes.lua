@@ -366,14 +366,15 @@ function C.MountKindsFromJournal()
     return out
 end
 
--- every collected mount, by name, for the picker: { id, name, icon, source, favorite, usable, kinds }
+-- every collected mount this character can ride, by name, for the picker (the journal
+-- hides the others, such as another class's mounts): { id, name, icon, source, favorite, usable, kinds }
 function C.CollectedMounts()
     local out = {}
     if not C_MountJournal then return out end
     local kinds = C.MountKindsFromJournal()
     for _, id in ipairs(C_MountJournal.GetMountIDs()) do
-        local name, _, icon, _, usable, source, favorite, _, _, _, collected = C_MountJournal.GetMountInfoByID(id)
-        if name and collected then
+        local name, _, icon, _, usable, source, favorite, _, _, hidden, collected = C_MountJournal.GetMountInfoByID(id)
+        if name and collected and not hidden then
             out[#out + 1] = { id = id, name = name, icon = icon, source = source, favorite = favorite or false,
                 usable = usable or false, kinds = kinds[id] or {} }
         end

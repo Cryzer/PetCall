@@ -256,7 +256,7 @@ function W.reset()
         GetMountInfoByID = function(id)
             for _, m in ipairs(w.mounts) do
                 if m.id == id then
-                    return m.name, 1, m.icon or 1, m.active, m.usable ~= false, m.source or 1, m.favorite or false, false, nil, false, m.collected, id
+                    return m.name, 1, m.icon or 1, m.active, m.usable ~= false, m.source or 1, m.favorite or false, false, nil, m.hidden or false, m.collected, id
                 end
             end
         end,

@@ -225,6 +225,7 @@ describe("Conditions", function()
         assert.same({ "mount", mountIDs = { 7 } }, C.GetType("mount").new())
         -- the picker lists only collected mounts, by name
         W.world.mounts[3] = { id = 3, name = "Albino Drake", collected = false }
+        W.world.mounts[4] = { id = 4, name = "Acherus Deathcharger", collected = true, hidden = true }   -- another class's
         local names = {}
         for _, m in ipairs(C.CollectedMounts()) do names[#names + 1] = m.name end
         assert.same({ "Black Drake", "Swift Spectral Tiger" }, names)
