@@ -97,6 +97,8 @@ function Main:Build()
     local gear = CreateFrame("Button", nil, frame)
     gear:SetSize(20, 20)
     gear:SetPoint("RIGHT", frame.CloseButton, "LEFT", -2, 0)
+    -- on the close button's level: Blizzard's border sits high and would cover it
+    gear:SetFrameLevel(frame.CloseButton:GetFrameLevel())
     gear:SetNormalAtlas("mechagon-projects")
     gear:SetHighlightAtlas("mechagon-projects", "ADD")
     gear:SetScript("OnClick", function() ns:OpenSettings() end)
