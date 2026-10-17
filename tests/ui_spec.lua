@@ -688,7 +688,7 @@ describe("UI smoke", function()
         assert.equal("when", ns.UI.Main:GetSelectedTab())
         ns.UI.SetList._newButton:Click()
         root = U.lastMenu
-        root:Find("From a recipe"):Click()
+        root:Find("From a template"):Click()
         assert.is_true(ns.UI.RecipeGallery:IsShown())
         ns.UI.Main:SelectSet("$Default")
         assert.is_false(ns.UI.RecipeGallery:IsShown())
@@ -741,7 +741,7 @@ describe("UI smoke", function()
         G.Menu, G.MenuVariants, G.AnchorUtil, G.MenuUtil.CreateRootMenuDescription = nil, nil, nil, nil
         assert.equal(ns.UI.SetList._newButton, opened.anchor.rel)
         assert.equal("BOTTOMLEFT", opened.anchor.point)
-        assert.is_not_nil(opened.root:Find("From a recipe"))
+        assert.is_not_nil(opened.root:Find("From a template"))
     end)
     it("a pet in the set through a rule has a lit tick that cannot be ticked off", function()
         W.world.pets.b = { species = 2, name = "B" }

@@ -189,7 +189,7 @@ local function build()
     -- the area of the header, the tab row and the pages, which hide while it is open
     gallery:SetPoint("TOPLEFT", f.header, "TOPLEFT", 0, 0)
     gallery:SetPoint("BOTTOMRIGHT", f.content, "BOTTOMRIGHT", 0, 0)
-    local title = ns.Widgets.Label(gallery, L["New set from a recipe"], "GameFontNormalHuge")
+    local title = ns.Widgets.Label(gallery, L["New set from a template"], "GameFontNormalHuge")
     title:SetPoint("TOPLEFT", 10, -8)
     local sub = ns.Widgets.Label(gallery, L["Pick one; afterwards it is an ordinary set and you can change everything."], "GameFontHighlightSmall")
     sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)

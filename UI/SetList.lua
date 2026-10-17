@@ -409,7 +409,7 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     local new = ns.Widgets.Button(panel, L["+ New"], function(self)
         ns.Widgets.OpenMenuAbove(self, function(owner, root)
             root:CreateButton(L["Empty set"], openNameBox)
-            root:CreateButton(L["From a recipe..."], function() ns.UI.RecipeGallery:Show() end)
+            root:CreateButton(L["From a template..."], function() ns.UI.RecipeGallery:Show() end)
         end)
     end)
     SetList._newButton = new
