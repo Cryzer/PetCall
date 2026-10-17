@@ -174,52 +174,25 @@ local function build()
     win:RegisterForDrag("LeftButton")
     win:SetScript("OnDragStart", win.StartMoving)
     win:SetScript("OnDragStop", win.StopMovingOrSizing)
-    win:SetScript("OnHide", function() entry, onChange, current = nil, nil, nil end)
+    win:SetScript("OnHide", function()
+        entry, onChange, current = nil, nil, nil
+        ns.UI.Help:HidePicker()
+    end)
     tinsert(UISpecialFrames, "PetCallMountPicker")
     ns.Skin:Apply("Shell", win)
     ns.Skin:Apply("CloseButton", win.CloseButton)
     ns.Skin:Apply("Inset", win.Inset)
     local inset = win.Inset
+    win.helpButton = ns.UI.Help.NewButton(win, function() ns.UI.Help:TogglePicker(win) end)
+    win.helpButton:SetPoint("CENTER", win, "TOPLEFT", 16, -11)
+    win.helpButton:SetFrameLevel(win.CloseButton:GetFrameLevel())
 
-    local search = ns.Widgets.Search(inset, function(text) state.search = text Picker:Redraw() end)
-    search:SetPoint("TOPLEFT", 12, -8)
-    search:SetWidth(200)
-    win.search = search
-    local filterBtn = CreateFrame("DropdownButton", nil, inset, "WowStyle1FilterDropdownTemplate")
-    filterBtn:SetPoint("LEFT", search, "RIGHT", 8, 0)
-    filterBtn:SetupMenu(filterMenu)
-    ns.Skin:Apply("Dropdown", filterBtn)
-
-    -- the preview on the right, the list fills the rest
-    preview = ns.Widgets.Inset(inset)
-    preview:SetPoint("TOPRIGHT", -6, -6)
-    preview:SetPoint("BOTTOMRIGHT", -6, 40)
-    preview:SetWidth(220)
-    local useScene = C_XMLUtil and C_XMLUtil.GetTemplateInfo and C_XMLUtil.GetTemplateInfo("WrappedAndUnwrappedModelScene") ~= nil
-    preview.scene = useScene
-    preview.model = CreateFrame(useScene and "ModelScene" or "PlayerModel", nil, preview, useScene and "WrappedAndUnwrappedModelScene" or nil)
-    preview.model:SetPoint("TOPLEFT", 4, -4)
-    preview.model:SetPoint("BOTTOMRIGHT", -4, 70)
-    preview.name = ns.Widgets.Label(preview, "", "GameFontNormal")
-    preview.name:SetPoint("TOPLEFT", preview.model, "BOTTOMLEFT", 6, -6)
-    preview.name:SetPoint("RIGHT", -8, 0)
-    preview.source = ns.Widgets.Label(preview, "", "GameFontHighlightSmall")
-    preview.source:SetPoint("TOPLEFT", preview.name, "BOTTOMLEFT", 0, -4)
-    preview.source:SetPoint("BOTTOMRIGHT", -8, 6)
-    preview.source:SetJustifyV("TOP")
-    preview.source:SetWordWrap(true)
-    preview.empty = ns.Widgets.Label(preview, L["Point at a mount to see it."], "GameFontDisableSmall")
-    preview.empty:SetPoint("CENTER", preview.model, "CENTER")
-
-    scrollBox = CreateFrame("Frame", nil, inset, "WowScrollBoxList")
-    scrollBox:SetPoint("TOPLEFT", search, "BOTTOMLEFT", -6, -6)
-    scrollBox:SetPoint("BOTTOMRIGHT", preview, "BOTTOMLEFT", -24, 0)
-
-    -- over the search: the condition does nothing while PetCall waits for you to dismount
+    -- over everything, the whole width: the condition does nothing while PetCall waits
+    -- for you to dismount
     local warn = CreateFrame("Frame", nil, inset)
     warn:SetPoint("TOPLEFT", 6, -6)
-    warn:SetPoint("RIGHT", preview, "LEFT", -8, 0)
-    warn:SetHeight(58)
+    warn:SetPoint("TOPRIGHT", -6, -6)
+    warn:SetHeight(36)
     warn.bg = warn:CreateTexture(nil, "BACKGROUND")
     warn.bg:SetAllPoints()
     warn.bg:SetColorTexture(1, 0.82, 0, 0.12)
@@ -240,7 +213,49 @@ local function build()
     warn.text:SetPoint("RIGHT", warn.button, "LEFT", -8, 0)
     warn.text:SetWordWrap(true)
     win.warn = warn
-    local bar = CreateFrame("EventFrame", nil, inset, "MinimalScrollBar")
+
+    -- the rest: search and list on the left, the preview on the right; it starts under
+    -- the warning while that shows
+    local body = CreateFrame("Frame", nil, inset)
+    body:SetPoint("BOTTOMRIGHT", -6, 40)
+    win.body = body
+
+    local search = ns.Widgets.Search(body, function(text) state.search = text Picker:Redraw() end)
+    search:SetPoint("TOPLEFT", 6, -2)
+    search:SetWidth(200)
+    win.search = search
+    local filterBtn = CreateFrame("DropdownButton", nil, body, "WowStyle1FilterDropdownTemplate")
+    filterBtn:SetPoint("LEFT", search, "RIGHT", 8, 0)
+    filterBtn:SetupMenu(filterMenu)
+    ns.Skin:Apply("Dropdown", filterBtn)
+    win.filterBtn = filterBtn
+
+    preview = ns.Widgets.Inset(body)
+    preview:SetPoint("TOPRIGHT")
+    preview:SetPoint("BOTTOMRIGHT")
+    preview:SetWidth(250)
+    win.preview = preview
+    local useScene = C_XMLUtil and C_XMLUtil.GetTemplateInfo and C_XMLUtil.GetTemplateInfo("WrappedAndUnwrappedModelScene") ~= nil
+    preview.scene = useScene
+    preview.model = CreateFrame(useScene and "ModelScene" or "PlayerModel", nil, preview, useScene and "WrappedAndUnwrappedModelScene" or nil)
+    -- the model fills the panel, as in the Mount Journal; name and source sit over its foot
+    preview.model:SetPoint("TOPLEFT", 4, -4)
+    preview.model:SetPoint("BOTTOMRIGHT", -4, 4)
+    preview.source = ns.Widgets.Label(preview, "", "GameFontHighlightSmall")
+    preview.source:SetPoint("BOTTOMLEFT", 10, 10)
+    preview.source:SetPoint("RIGHT", -10, 0)
+    preview.source:SetWordWrap(true)
+    preview.name = ns.Widgets.Label(preview, "", "GameFontNormal")
+    preview.name:SetPoint("BOTTOMLEFT", preview.source, "TOPLEFT", 0, 4)
+    preview.name:SetPoint("RIGHT", -10, 0)
+    preview.empty = ns.Widgets.Label(preview, L["Point at a mount to see it."], "GameFontDisableSmall")
+    preview.empty:SetPoint("CENTER", preview.model, "CENTER")
+
+    scrollBox = CreateFrame("Frame", nil, body, "WowScrollBoxList")
+    scrollBox:SetPoint("TOPLEFT", search, "BOTTOMLEFT", -6, -6)
+    scrollBox:SetPoint("BOTTOMRIGHT", preview, "BOTTOMLEFT", -24, 0)
+    win.list = scrollBox
+    local bar = CreateFrame("EventFrame", nil, body, "MinimalScrollBar")
     bar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 6, 0)
     bar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 6, 0)
     local view = CreateScrollBoxListLinearView()
@@ -253,6 +268,7 @@ local function build()
     count:SetPoint("BOTTOMLEFT", 12, 14)
     local done = ns.Widgets.Button(inset, L["Done"], function() win:Hide() end)
     done:SetPoint("BOTTOMRIGHT", -8, 8)
+    win.count, win.done = count, done
 end
 
 function Picker:Redraw()
@@ -276,13 +292,14 @@ function Picker:Open(e, anchor, onChanged)
     previewMount(visible[1])
 end
 
--- the warning shows while "Don't summon while mounted" is on; the search moves under it
+-- the warning shows while "Don't summon while mounted" is on; the rest moves under it
 function Picker:PaintWarning()
     if not win then return end
     local on = ns.db.profile.noSummonMounted and true or false
     win.warn:SetShown(on)
-    win.search:ClearAllPoints()
-    if on then win.search:SetPoint("TOPLEFT", win.warn, "BOTTOMLEFT", 6, -8) else win.search:SetPoint("TOPLEFT", 12, -8) end
+    win.body:ClearAllPoints()
+    win.body:SetPoint("BOTTOMRIGHT", -6, 40)
+    if on then win.body:SetPoint("TOPLEFT", win.warn, "BOTTOMLEFT", 0, -8) else win.body:SetPoint("TOPLEFT", 6, -8) end
 end
 
 function Picker:Close() if win then win:Hide() end end

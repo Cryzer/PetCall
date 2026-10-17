@@ -1547,6 +1547,31 @@ describe("UI smoke", function()
         assert.is_nil(shown)
         ns.UI.Main:Show()
         assert.equal(1, tutorial)                        -- once
+        -- the mount picker has an "i" of its own, with boxes for its parts
+        W.world.mounts = { { id = 7, name = "Tiger", collected = true, types = { 1 } } }
+        local set = ns.Sets:Create("Riders")
+        local e = { "mount", mountIDs = {} }
+        ns.UI.MountPicker:Open(e, f, function() set:ConditionsChanged() end)
+        local win = _G.PetCallMountPicker
+        place(win, 1010, 800, 600, 500)
+        place(win.Inset, 1014, 740, 592, 436)
+        place(win.warn, 1020, 734, 580, 36)
+        place(win.search, 1026, 690, 200, 20)
+        place(win.filterBtn, 1234, 690, 90, 22)
+        place(win.list, 1020, 664, 300, 320)
+        place(win.preview, 1350, 690, 250, 346)
+        place(win.count, 1026, 324, 120, 12)
+        place(win.done, 1520, 330, 80, 22)
+        win.helpButton:Click()
+        local picker = {}
+        for _, tile in ipairs(shown) do picker[#picker + 1] = tile.ToolTipText end
+        assert.equal(5, #shown)
+        for _, text in ipairs(picker) do assert.is_nil(text:find("^HELP_")) end
+        local keys2 = {}
+        for _, a in ipairs(ns.UI.Help.PickerAreas()) do keys2[#keys2 + 1] = a.key end
+        assert.same({ "mountsWarning", "mountsToolbar", "mountsList", "mountsPreview", "mountsFooter" }, keys2)
+        ns.UI.MountPicker:Close()                        -- the help goes with the window
+        assert.is_nil(shown)
         rawset(_G, "HelpPlate", nil)
         rawset(_G, "HelpPlateTooltip", nil)
     end)
