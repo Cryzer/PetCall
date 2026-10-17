@@ -140,8 +140,14 @@ describe("UI smoke", function()
     end)
     it("the window shows its logo whole in a framed corner tile, gold on Blizzard's look, accent on the dark ones", function()
         ns.UI.Main:Show()
-        local badge = ns.UI.Main:GetFrame().badge
+        local f = ns.UI.Main:GetFrame()
+        local badge = f.badge
         assert.is_not_nil(badge)
+        -- Blizzard's border sits far above the window: the logo must sit above it
+        f.NineSlice = CreateFrame("Frame", nil, f)
+        f.NineSlice:SetFrameLevel(500)
+        badge.Lift()
+        assert.is_true(badge:GetFrameLevel() > 500)
         assert.equal("Interface\\AddOns\\PetCall\\Media\\logo", badge.logo._texture)
         assert.is_nil(badge.logo._texCoord, "the logo is never cropped")
         local function ringColour(look)

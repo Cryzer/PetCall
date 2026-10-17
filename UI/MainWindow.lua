@@ -34,7 +34,16 @@ function Main.BuildBadge(f)
     local badge = CreateFrame("Frame", nil, f)
     badge:SetSize(BADGE, BADGE)
     badge:SetPoint("TOPLEFT", HANG_X, HANG_Y)
-    badge:SetFrameLevel((tonumber(f:GetFrameLevel()) or 0) + 20)
+    -- above every part of the window's frame: Blizzard's border sits high on its own
+    local function lift()
+        local top = tonumber(f:GetFrameLevel()) or 0
+        for _, part in ipairs({ f.NineSlice, f.TitleContainer, f.PortraitContainer, f.CloseButton, f.Inset }) do
+            if part and part.GetFrameLevel then top = math.max(top, tonumber(part:GetFrameLevel()) or 0) end
+        end
+        badge:SetFrameLevel(top + 10)
+    end
+    lift()
+    badge.Lift = lift
     badge.shadow = badge:CreateTexture(nil, "BACKGROUND")
     badge.shadow:SetTexture(MEDIA .. "logo-shadow")
     badge.shadow:SetSize(BADGE * 2, BADGE * 2)
