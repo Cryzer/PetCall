@@ -59,9 +59,11 @@ function Help.Areas()
     local f = Main.GetFrameRaw()
     if not f then return {} end
     local out = {}
-    local function add(key, rect, dir, outside)
+    -- where the box's "i" goes: the middle, or "past" its right edge / at its right "end"
+    -- where the middle would cover a label
+    local function add(key, rect, dir, place)
         if rect and rect.r - rect.l > 4 and rect.t - rect.b > 4 then
-            out[#out + 1] = { key = key, rect = rect, dir = dir, text = TEXT[key], outside = outside }
+            out[#out + 1] = { key = key, rect = rect, dir = dir, text = TEXT[key], place = place }
         end
     end
     add("sets", box(f.left), "RIGHT")
@@ -70,13 +72,13 @@ function Help.Areas()
         add("gallery", box(gallery:GetFrame()), "LEFT")
     else
         add("header", box(f.header), "DOWN")
-        add("tabs", union(Main:GetTabButtons()), "DOWN", true)    -- its "i" past the names, not over one
+        add("tabs", union(Main:GetTabButtons()), "DOWN", "past")
         local tab = Main:GetSelectedTab()
         local content = box(f.content)
         if tab == "pets" and content then
             local page = ns.UI.PetsTabPage
             local rules = box(ns.UI.PetsTabRulesBar)
-            if rules then add("toolbar", { l = content.l, t = content.t, r = content.r, b = rules.t }, "DOWN") end
+            if rules then add("toolbar", { l = content.l, t = content.t, r = content.r, b = rules.t }, "DOWN", "end") end
             add("rules", rules, "DOWN")
             add("grid", box(page and page.grid), "RIGHT")
             add("preview", box(ns.UI.Preview:GetPanel()), "LEFT")
@@ -103,7 +105,10 @@ local function fill()
         local x, y = (a.rect.l - ox) / scale, (a.rect.t - oy) / scale
         local w, h = (a.rect.r - a.rect.l) / scale, (a.rect.t - a.rect.b) / scale
         plate[#plate + 1] = {
-            ButtonPos = { x = a.outside and x + w + 2 or x + w / 2 - 23, y = y - h / 2 + 23 },
+            ButtonPos = {
+                x = a.place == "past" and x + w + 2 or a.place == "end" and x + w - 50 or x + w / 2 - 23,
+                y = y - h / 2 + 23,
+            },
             HighLightBox = { x = x, y = y, width = w, height = h },
             ToolTipDir = a.dir,
             ToolTipText = a.text,
