@@ -199,7 +199,7 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     ns.Skin:Apply("EditBox", page.name)
     local rename = ns.Widgets.Button(n, L["Rename"], function()
         local ok, err = set:Rename(page.name:GetText())
-        if not ok then UIErrorsFrame:AddMessage(err, 1, 0.3, 0.3) PlaySound(SOUNDKIT.IG_PLAYER_INVITE_DECLINE) end
+        if not ok then UIErrorsFrame:AddMessage(err, 1, 0.3, 0.3) ns.Widgets.ErrorSound() end
         page.name:ClearFocus()
     end)
     rename:SetPoint("LEFT", page.name, "RIGHT", 8, 0)

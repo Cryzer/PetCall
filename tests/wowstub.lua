@@ -154,7 +154,10 @@ function W.reset()
     SecureCmdOptionParse = function() return w.macroResult end
     JumpOrAscendStart, SitStandOrDescendStart = noop, noop
     GetBindingKey = function() return nil end
-    PlaySound = noop
+    -- only the sounds the client has: a missing SOUNDKIT name is nil, and the game errors on PlaySound(nil)
+    SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 856, IG_MAINMENU_OPTION_CHECKBOX_OFF = 857,
+        IG_CHARACTER_INFO_OPEN = 839, IG_CHARACTER_INFO_CLOSE = 840, IG_QUEST_LOG_ABANDON_QUEST = 846 }
+    PlaySound = function(id) assert(type(id) == "number", "PlaySound needs a sound id") end
     ReloadUI = function() w.reloaded = true end
     ERR_MUST_BE_STANDING = "You must be standing to do that"
     SPELL_FAILED_NOT_STANDING = "You must be standing to do that"

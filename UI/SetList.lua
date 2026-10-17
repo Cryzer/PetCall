@@ -452,7 +452,7 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
         local set, ok, err = ns.Sets:Create(newBox.edit:GetText())
         if not ok then
             UIErrorsFrame:AddMessage(err, 1, 0.3, 0.3)
-            PlaySound(SOUNDKIT.IG_PLAYER_INVITE_DECLINE)
+            ns.Widgets.ErrorSound()
             return
         end
         closeNameBox()

@@ -134,7 +134,7 @@ local function buildField(row, e, field, prev)
             eb:SetScript("OnEnterPressed", function(self)
                 local h, m = self:GetText():match("^(%d%d?):(%d%d)$")
                 h, m = tonumber(h), tonumber(m)
-                if h and m and h < 24 and m < 60 then e[key] = h * 60 + m changedInPlace() else PlaySound(SOUNDKIT.IG_PLAYER_INVITE_DECLINE) end
+                if h and m and h < 24 and m < 60 then e[key] = h * 60 + m changedInPlace() else ns.Widgets.ErrorSound() end
                 self:ClearFocus()
             end)
             return eb

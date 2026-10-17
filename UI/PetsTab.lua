@@ -62,7 +62,7 @@ local function check_OnClick(self)
     local _, kind = ns.PetGridModel.Badge(set, id)
     if kind == "auto" then
         UIErrorsFrame:AddMessage(L["This pet is in the set through a \"More chance for\" rule. Change or remove the rule to leave it out."], 1, 0.82, 0)
-        PlaySound(SOUNDKIT.IG_PLAYER_INVITE_DECLINE)
+        ns.Widgets.ErrorSound()
         return
     end
     local included = set:GetPetWeight(id) > 0

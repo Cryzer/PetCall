@@ -33,6 +33,13 @@ function Widgets.Button(parent, text, onClick)
     return b
 end
 
+-- the "no" sound for a refused input; some SOUNDKIT names are gone in newer clients,
+-- and PlaySound(nil) is an error
+function Widgets.ErrorSound()
+    local id = SOUNDKIT.IG_PLAYER_INVITE_DECLINE or SOUNDKIT.IG_QUEST_LOG_ABANDON_QUEST
+    if id then PlaySound(id) end
+end
+
 -- Quality colour lifted towards white when it is dark: the stock rare blue is hard to read
 -- on dark backgrounds
 function Widgets.QualityColor(quality)
