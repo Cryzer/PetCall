@@ -39,4 +39,20 @@ describe("SpecialItems", function()
         assert.is_true(#list >= 18)
         assert.is_not_nil(list[1].name)
     end)
+    it("reads the quest log once per burst of quest updates; taking a quest counts at once", function()
+        local reads = 0
+        local num = C_QuestLog.GetNumQuestLogEntries
+        rawset(C_QuestLog, "GetNumQuestLogEntries", function(...) reads = reads + 1 return num(...) end)
+        W.world.quests = { 26831 }
+        for _ = 1, 10 do W.fire("QUEST_LOG_UPDATE") end
+        assert.equal(0, reads)
+        W.advance(0.6)
+        assert.equal(1, reads)
+        assert.is_true(ns.Ready.is_false["quest:26831"])
+        W.world.quests = {}
+        W.fire("QUEST_REMOVED", 26831)
+        assert.equal(2, reads)
+        assert.is_nil(ns.Ready.is_false["quest:26831"])
+        rawset(C_QuestLog, "GetNumQuestLogEntries", num)
+    end)
 end)

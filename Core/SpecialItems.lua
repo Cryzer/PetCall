@@ -54,7 +54,9 @@ function SI:OnInitialize()
     self.db = ns.DB:Namespace("SpecialItems", defaults)
     self.quests = {}
     self.byEvent = {}
-    self:RegisterEvent("QUEST_LOG_UPDATE", "UpdateQuestList")
+    -- comes with every bit of quest progress: read the log once the burst settles
+    self.QueueQuestList = ns.Debounce(0.5, function() SI:UpdateQuestList() end)
+    self:RegisterEvent("QUEST_LOG_UPDATE", "QueueQuestList")
     self:RegisterEvent("QUEST_ACCEPTED", "UpdateQuestList")
     self:RegisterEvent("QUEST_REMOVED", "UpdateQuestList")
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "CheckAll")
