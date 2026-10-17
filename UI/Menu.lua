@@ -13,12 +13,15 @@ local function petName(id) local i = ns.PetCache:GetInfo(id) return i and (i.cus
 
 -- one entry per pet as the player sees it (copies collapse into PetCache's primary copy)
 function Menu.UniquePets()
-    local ids = {}
+    local ids, key = {}, {}
     for _, id in ns.PetCache:IteratePetIDs() do
-        if ns.PetCache:IsPrimary(id) then ids[#ids + 1] = id end
+        if ns.PetCache:IsPrimary(id) then
+            ids[#ids + 1] = id
+            key[id] = strlower(petName(id))     -- once per pet, not once per comparison
+        end
     end
     table.sort(ids, function(a, b)
-        local na, nb = strlower(petName(a)), strlower(petName(b))
+        local na, nb = key[a], key[b]
         if na == nb then return a < b end
         return na < nb
     end)
@@ -98,12 +101,50 @@ local function showPreview(info, frame)
     end
 end
 
+-- Our share of a menu that lists every pet, made once until the pets change: the
+-- sorted list, its letter groups, the favourites, and each pet's label and handlers.
+-- The menu's own entries are made by the game on every opening.
+local lists          -- { ids, favorites, groups }
+local entries = {}   -- petID -> { label, click, enter }, false when not owned
+
+local function entry(id)
+    local e = entries[id]
+    if e == nil then
+        local info = ns.PetCache:GetInfo(id)
+        e = info and {
+            label = format("|T%s:16|t %s", info.icon or 0, petName(id)),
+            click = function() ns:SummonPet(id) end,
+            enter = function(frame) showPreview(info, frame) end,
+        } or false
+        entries[id] = e
+    end
+    return e or nil
+end
+
+local function petLists()
+    if not lists then
+        local ids, favorites = Menu.UniquePets(), {}
+        for _, id in ipairs(ids) do
+            if ns.PetCache:GetInfo(id).isFavorite then favorites[#favorites + 1] = id end
+        end
+        lists = { ids = ids, favorites = favorites, groups = Menu.Groups(ids, GROUP_SIZE) }
+    end
+    return lists
+end
+
+ns:RegisterCallback(Menu, "PetsChanged", function()
+    lists = nil
+    wipe(entries)
+end)
+
+local function leave() if preview then preview:ScheduleHide() end end
+
 local function addPet(root, id)
-    local info = ns.PetCache:GetInfo(id)
-    if not info then return end
-    local b = root:CreateButton(format("|T%s:16|t %s", info.icon or 0, petName(id)), function() ns:SummonPet(id) end)
-    b:SetOnEnter(function(frame) showPreview(info, frame) end)
-    b:SetOnLeave(function() if preview then preview:ScheduleHide() end end)
+    local e = entry(id)
+    if not e then return end
+    local b = root:CreateButton(e.label, e.click)
+    b:SetOnEnter(e.enter)
+    b:SetOnLeave(leave)
 end
 
 function Menu:Build(owner, root)
@@ -121,19 +162,15 @@ function Menu:Build(owner, root)
         local r = root:CreateButton(L["Recently summoned"])
         for _, id in ipairs(recent) do addPet(r, id) end
     end
-    local ids = Menu.UniquePets()
-    local favorites = {}
-    for _, id in ipairs(ids) do
-        if ns.PetCache:GetInfo(id).isFavorite then favorites[#favorites + 1] = id end
-    end
-    if #favorites > 0 then
+    local pets = petLists()
+    if #pets.favorites > 0 then
         local fav = root:CreateButton(L["Favorites"])
         fav:SetScrollMode(20 * 26)
-        for _, id in ipairs(favorites) do addPet(fav, id) end
+        for _, id in ipairs(pets.favorites) do addPet(fav, id) end
     end
-    if #ids > 0 then
+    if #pets.ids > 0 then
         local all = root:CreateButton(L["All pets"])
-        for _, g in ipairs(Menu.Groups(ids, GROUP_SIZE)) do
+        for _, g in ipairs(pets.groups) do
             local page = all:CreateButton(format("%s  |cff808080(%d)|r", g.label, #g.ids))
             page:SetScrollMode(20 * 26)
             for _, id in ipairs(g.ids) do addPet(page, id) end

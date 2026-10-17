@@ -1389,4 +1389,26 @@ describe("UI smoke", function()
             assert.equal(before + 1, (ns.UI.SetHeader.Counts(set)))
         end
     end)
+    it("the pet menu sorts and labels the pets once until they change", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        local sorts = 0
+        local unique = ns.UI.Menu.UniquePets
+        ns.UI.Menu.UniquePets = function(...) sorts = sorts + 1 return unique(...) end
+        ns.UI.Menu:Open()
+        local first = U.lastMenu:Find("All pets").items[1].items[2]
+        ns.UI.Menu:Open()
+        local again = U.lastMenu:Find("All pets").items[1].items[2]
+        assert.equal(1, sorts)
+        assert.equal(first.text, again.text)
+        -- a renamed pet shows its new name
+        W.world.pets.b.custom = "Bobby"
+        ns.PetCache:Rescan()
+        ns.UI.Menu:Open()
+        assert.equal(2, sorts)
+        local names = {}
+        for _, item in ipairs(U.lastMenu:Find("All pets").items[1].items) do names[#names + 1] = item.text end
+        assert.is_not_nil(table.concat(names, "|"):find("Bobby", 1, true))
+        ns.UI.Menu.UniquePets = unique
+    end)
 end)
