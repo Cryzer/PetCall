@@ -7,7 +7,7 @@ PetCall 2.0 is a complete rebuild. You collected hundreds of pets; now you get t
 
 ### Highlights
 
-- A brand-new window (/pcall): your sets on the left, the chosen set on the right, and a status bar that always says what PetCall is doing.
+- A brand-new window (/pcall): your sets on the left, the chosen set on the right, and a status bar along the bottom that always says what PetCall is doing.
 - Sets that know when to show up: water pets while you swim, flyers in the open world, rare pets in cities, your favorites at home.
 - Conditions that read like sentences, with a live dot that shows what is true right now.
 - Many new conditions: several places at once, place types (city, dungeon, raid, delve, battleground, open world), your house, swimming or AFK, solo, party or raid, one character by name, time of day and holidays.
@@ -16,7 +16,7 @@ PetCall 2.0 is a complete rebuild. You collected hundreds of pets; now you get t
 - 20 ready-made templates, plus one for your class and one for each holiday. One click and the set is yours to change.
 - Decide how often each pet comes out, from Never to Very often, or let rules do it for whole groups: favorites, a pet type, a level, rare quality, where a pet comes from, or pets native to where you are. Pets you collect later follow the rules too.
 - A fast pet grid for even the biggest collections, and a 3D preview with the exact chance a pet comes out next.
-- No more guessing: the status bar says why no pet is out, for example "Paused by: In combat".
+- No more guessing: the status bar at the bottom of the window says why no pet is out, for example "Paused by: In combat".
 - Built-in help: click the "i" and every part of the window explains itself.
 
 ### Also new

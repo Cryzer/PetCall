@@ -40,7 +40,7 @@ You decide what fits by making **sets** of pets and telling each set **when** to
 - A 3D preview with the exact chance the pet comes out next.
 
 **Always clear**
-- A status bar that says what PetCall is doing, and why no pet is out ("Paused by: In combat").
+- A status bar along the bottom of the window that says what PetCall is doing, and why no pet is out ("Paused by: In combat").
 - Built-in help: click the **i** and every part of the window explains itself.
 
 **Fits your game**
@@ -87,7 +87,7 @@ Now a dragonkin pet runs next to you whenever you ride one of those drakes.
 2. **Which pets.** Only the pets ticked in that set take part. Rules tick whole groups of pets for you.
 3. **Which one.** Each pet's **How often** sets its odds: *Never*, *Very rarely*, *Rarely*, *Normal*, *Often* or *Very often*. Each step makes a pet about eight times as likely as the one before. The preview shows the exact chance.
 
-**When PetCall waits:** in combat, while flying, in stealth or invisible, in a vehicle, while dead, looting or at the barber, and in the cases you choose in the settings. The status bar says what it is waiting for.
+**When PetCall waits:** in combat, while flying, in stealth or invisible, in a vehicle, while dead, looting or at the barber, and in the cases you choose in the settings. The status bar at the bottom of the window says what it is waiting for.
 
 ---
 
@@ -129,6 +129,12 @@ All conditions in a group must be met. **+ Or another set of conditions** adds a
 | Lua code | your own function that returns true or false |
 
 Mounted and Mount need *Don't summon while mounted* turned off in the settings, or PetCall waits until you dismount.
+
+### Status bar (bottom)
+
+- On the left: whether auto-summon is on, and *ready* or what PetCall is waiting for. Point at it for details.
+- **Summon another** draws a new pet from the set in use.
+- **Auto-summon** turns automatic summoning on or off.
 
 ### Set settings tab
 
@@ -207,7 +213,7 @@ Right-click a set, choose **Export** and send the text to a friend. They click *
 ## FAQ
 
 **Why is no pet out?**
-The status bar says why: combat, flying, stealth, a set with *no pet* and so on. Point at it for details.
+Open the window with `/pcall` and look at the status bar along its bottom edge. Where it usually says *Auto-summon: ready*, it says what is in the way: combat, flying, stealth, a set with *no pet* and so on. Point at the text for details.
 
 **My Mount condition does nothing.**
 Turn off *Don't summon while mounted* in the settings. While it is on, PetCall waits until you dismount. It is on by default because a summon on a mount uses the global cooldown and can get in the way of Skyriding.
