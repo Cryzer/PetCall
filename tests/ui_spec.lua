@@ -1345,4 +1345,25 @@ describe("UI smoke", function()
         ns.PetCache:Rescan()
         assert.is_true(ns.Recipes.Count(ns.Recipes.List()[1]) >= n)
     end)
+    it("redrawing the sets panel reads the kept sums and counts: no pass over the pets", function()
+        ns.UI.Main:Show()
+        ns.UI.SetList:Refresh()
+        local passes = 0
+        local iterate = ns.PetCache.IteratePetIDs
+        ns.PetCache.IteratePetIDs = function(...) passes = passes + 1 return iterate(...) end
+        for _ = 1, 5 do ns.UI.SetList:Refresh() end
+        ns.PetCache.IteratePetIDs = iterate
+        assert.equal(0, passes)
+        -- a weight change starts over
+        local set = ns.Sets:GetCurrent()
+        local before = ns.UI.SetHeader.Counts(set)
+        local id
+        for _, p in ns.PetCache:IteratePetIDs() do
+            if ns.PetCache:IsPrimary(p) and set:GetPetWeight(p) == 0 and set:GetAutoWeight(p) == 0 then id = p break end
+        end
+        if id then
+            set:SetPetWeight(id, ns.Weights.LEVELS[3].value)
+            assert.equal(before + 1, (ns.UI.SetHeader.Counts(set)))
+        end
+    end)
 end)

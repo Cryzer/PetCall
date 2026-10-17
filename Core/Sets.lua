@@ -170,20 +170,20 @@ function SetMixin:GetChance(petID)
     return ns.Weights.Chance(self:GetWeightTable(), petID), self:Unavailable(petID)
 end
 
--- tickets per tile (copies add up on their primary) and the most any tile has,
--- added up once per draw table: hovering the grid only reads them
+-- tickets per tile (copies add up on their primary), the most any tile has and the
+-- tile that has it, added up once per draw table: hovering the grid only reads them
 function SetMixin:GetTileSums()
     local tbl = self:GetWeightTable()
     if not tbl.tiles then
-        local sums, top = {}, 0
+        local sums, top, best = {}, 0, nil
         for i = 1, #tbl, 2 do
             local primary = ns.PetCache:GetCopies(tbl[i + 1])[1]
             sums[primary] = (sums[primary] or 0) + tbl[i]
-            if sums[primary] > top then top = sums[primary] end
+            if sums[primary] > top then top, best = sums[primary], primary end
         end
-        tbl.tiles = { sums = sums, top = top }
+        tbl.tiles = { sums = sums, top = top, best = best }
     end
-    return tbl.tiles.sums, tbl.tiles.top
+    return tbl.tiles.sums, tbl.tiles.top, tbl.tiles.best
 end
 
 function SetMixin:PickPet(exclude) return ns.Weights.Pick(self:GetWeightTable(), fastrandom(), exclude) end

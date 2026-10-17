@@ -52,12 +52,7 @@ local FALLBACK_ICON = "Interface\\Icons\\Tracking_WildPet"
 
 -- the pet a set is most likely to summon stands for the set
 local function setIcon(set)
-    local tbl, sums, best, bestW = set:GetWeightTable(), {}, nil, 0
-    for i = 1, #tbl, 2 do
-        local id = tbl[i + 1]
-        sums[id] = (sums[id] or 0) + tbl[i]
-        if sums[id] > bestW then best, bestW = id, sums[id] end
-    end
+    local _, _, best = set:GetTileSums()
     local info = best and ns.PetCache:GetInfo(best)
     return info and info.icon or FALLBACK_ICON
 end

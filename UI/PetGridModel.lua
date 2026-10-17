@@ -45,16 +45,21 @@ function M.Filter(set, state)
     return out
 end
 
--- tiles in the set and left out, in one pass (copies grouped, no filters)
+-- tiles in the set and left out, in one pass (copies grouped, no filters); kept with
+-- the draw table, which is rebuilt whenever the set or the pets change
 function M.Counts(set)
-    local inSet, all = 0, 0
-    for _, id in ns.PetCache:IteratePetIDs() do
-        if ns.PetCache:IsPrimary(id) then
-            all = all + 1
-            if isSelected(set, id) then inSet = inSet + 1 end
+    local tbl = set:GetWeightTable()
+    if not tbl.counts then
+        local inSet, all = 0, 0
+        for _, id in ns.PetCache:IteratePetIDs() do
+            if ns.PetCache:IsPrimary(id) then
+                all = all + 1
+                if isSelected(set, id) then inSet = inSet + 1 end
+            end
         end
+        tbl.counts = { inSet, all - inSet }
     end
-    return inSet, all - inSet
+    return tbl.counts[1], tbl.counts[2]
 end
 
 function M.Rows(ids, columns)
