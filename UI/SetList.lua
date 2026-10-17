@@ -8,6 +8,7 @@ ns.UI.SetList = SetList
 
 local COLLAPSE_BELOW = 700
 local panel, rail, rows, newBox, nowCard = nil, nil, {}, nil, nil
+local list, scroll = nil, 0      -- the clipped area the cards sit in, and how far it is scrolled
 SetList._rows = rows      -- for tests
 local RAIL_W, PANEL_W = 34, 190
 local collapsedNow = false
@@ -43,7 +44,10 @@ local function setMenu(owner, root, set)
 end
 
 local CARD_H = 42
+local STEP = CARD_H + 4
 local LIST_TOP = 40          -- below the title and the hint
+local FOOT_H = 30            -- + New and Import
+local NOW_H = 62 + 22        -- the Out now card and its caption
 local FALLBACK_ICON = "Interface\\Icons\\Tracking_WildPet"
 
 -- the pet a set is most likely to summon stands for the set
@@ -86,7 +90,7 @@ end
 
 local function row(i)
     if rows[i] then return rows[i] end
-    local r = CreateFrame("Button", nil, panel)
+    local r = CreateFrame("Button", nil, list)
     r:SetHeight(CARD_H)
     r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     r:SetHighlightAtlas("PetList-ButtonHighlight", "ADD")
@@ -140,15 +144,15 @@ local function row(i)
 end
 
 function SetList:Refresh()
-    if not panel then return end
+    if not list then return end
     local sets = ns.Sets:List()
     local selected = ns.UI.Main:GetSelectedSet()
     for i, set in ipairs(sets) do
         local r = row(i)
         r.set = set
         r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", 4, -LIST_TOP - (i - 1) * (CARD_H + 4))
-        r:SetPoint("RIGHT", -4, 0)
+        r:SetPoint("TOPLEFT", 4, -(i - 1) * STEP + scroll)
+        r:SetPoint("RIGHT", SetList.CanScroll() and -10 or -4, 0)
         r.icon:SetTexture(setIcon(set))
         local paused = set:IsPaused()
         r.icon:SetDesaturated(paused)
@@ -163,7 +167,51 @@ function SetList:Refresh()
     end
     for i = #sets + 1, #rows do rows[i]:Hide() end
     rail.count:SetText(#sets)
+    SetList:PaintScroll()
 end
+
+-- Scrolling: the cards move inside the clipped list; a thin bar shows where you are.
+local function contentHeight()
+    local n = 0
+    for _, r in ipairs(rows) do if r:IsShown() then n = n + 1 end end
+    return n * STEP - 4
+end
+local function listHeight() return tonumber(list and list:GetHeight()) or 0 end
+local function maxScroll() return math.max(0, contentHeight() - listHeight()) end
+function SetList.CanScroll() return list ~= nil and maxScroll() > 0 end
+
+function SetList:ScrollBy(dy)
+    local s = math.max(0, math.min(maxScroll(), scroll + dy))
+    if s == scroll then return end
+    scroll = s
+    self:Refresh()
+end
+function SetList:GetScroll() return scroll end
+
+function SetList:PaintScroll()
+    if not list then return end
+    scroll = math.min(scroll, maxScroll())
+    local can, h = SetList.CanScroll(), listHeight()
+    list.track:SetShown(can)
+    list.thumb:SetShown(can)
+    if not can then return end
+    local total = contentHeight()
+    local th = math.max(16, h * h / total)
+    list.thumb:SetHeight(th)
+    list.thumb:SetPoint("TOPRIGHT", 0, -(h - th) * scroll / (total - h))
+end
+
+-- Room for the list: the Out now card goes when it would leave fewer than three cards.
+local function layoutPanel()
+    if not nowCard then return end
+    local h = tonumber(panel:GetHeight()) or 0
+    local showNow = h - LIST_TOP - FOOT_H - NOW_H >= 3 * STEP
+    nowCard:SetShown(showNow)
+    nowCard.caption:SetShown(showNow)
+    list:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, FOOT_H + (showNow and NOW_H or 0) + 4)
+    SetList:Refresh()
+end
+SetList.LayoutPanel = layoutPanel
 
 function SetList:SetCollapsed(collapsed, user)
     local f = ns.UI.Main:GetFrame()
@@ -197,8 +245,7 @@ end
 -- Drag and drop: the card is lifted and follows the cursor above the others; the
 -- other cards slide apart to leave the gap where it will land. Dropping it there
 -- moves the set to that place.
-local STEP = CARD_H + 4
-local function slotY(pos) return -LIST_TOP - (pos - 1) * STEP end
+local function slotY(pos) return -(pos - 1) * STEP + scroll end
 
 -- the place (1..n) for a card whose top is `top` pixels below the start of the list
 function SetList.SlotFor(top, n)
@@ -214,10 +261,10 @@ local function orderRows()
     return out
 end
 
--- how far below the top of the panel the cursor is
+-- how far below the top of the list's content (scrolled away part included) the cursor is
 local function cursorBelowTop()
     local _, y = GetCursorPosition()
-    return (panel:GetTop() or 0) - y / panel:GetEffectiveScale()
+    return (list:GetTop() or 0) - y / list:GetEffectiveScale() + scroll
 end
 
 local function place(r, y)
@@ -227,9 +274,14 @@ local function place(r, y)
 end
 
 local function follow()
-    local top = cursorBelowTop() - drag.grab - LIST_TOP
+    -- held near the edge of a long list: scroll it along
+    local _, y = GetCursorPosition()
+    y = y / list:GetEffectiveScale()
+    if y > (list:GetTop() or 0) - 12 then scroll = math.max(0, scroll - 4)
+    elseif y < (list:GetBottom() or 0) + 12 then scroll = math.min(maxScroll(), scroll + 4) end
+    local top = cursorBelowTop() - drag.grab
     top = math.max(0, math.min((drag.n - 1) * STEP, top))
-    place(drag.row, -LIST_TOP - top)
+    place(drag.row, -top + scroll)
     drag.slot = SetList.SlotFor(top, drag.n)
     local pos = 1
     for _, r in ipairs(drag.others) do
@@ -241,27 +293,27 @@ end
 
 function SetList.StartDrag(r)
     if not r.set or r.set:IsDefault() then return end
-    local list = orderRows()
-    drag = { row = r, others = {}, n = #list }
-    for k, x in ipairs(list) do
+    local order = orderRows()
+    drag = { row = r, others = {}, n = #order }
+    for k, x in ipairs(order) do
         if x == r then drag.from = k else drag.others[#drag.others + 1] = x end
     end
     drag.slot = drag.from
     -- where on the card it was picked up, so it does not jump to the cursor
-    drag.grab = cursorBelowTop() - ((panel:GetTop() or 0) - (r:GetTop() or 0))
-    r:SetFrameLevel(panel:GetFrameLevel() + 20)
+    drag.grab = cursorBelowTop() - ((list:GetTop() or 0) - (r:GetTop() or 0) + scroll)
+    r:SetFrameLevel(list:GetFrameLevel() + 20)
     r:LockHighlight()
     r.selected:Show()
-    panel:SetScript("OnUpdate", follow)
+    list:SetScript("OnUpdate", follow)
 end
 
 function SetList.StopDrag(r)
     if not drag or drag.row ~= r then return end
     local slot, from = drag.slot, drag.from
     drag = nil
-    panel:SetScript("OnUpdate", nil)
+    list:SetScript("OnUpdate", nil)
     r:UnlockHighlight()
-    r:SetFrameLevel(panel:GetFrameLevel() + 1)
+    r:SetFrameLevel(list:GetFrameLevel() + 1)
     -- MoveTo counts places with the card still in its old one
     ns.Sets:MoveTo(r.set, slot > from and slot + 1 or slot)
     SetList:Refresh()
@@ -302,8 +354,8 @@ end
 local function buildNowCard()
     local c = CreateFrame("Button", nil, panel)
     c:SetHeight(62)
-    c:SetPoint("BOTTOMLEFT", 4, 58)
-    c:SetPoint("BOTTOMRIGHT", -4, 58)
+    c:SetPoint("BOTTOMLEFT", 4, FOOT_H + 4)
+    c:SetPoint("BOTTOMRIGHT", -4, FOOT_H + 4)
     c.bg = c:CreateTexture(nil, "BACKGROUND")
     c.bg:SetAllPoints()
     c.bg:SetAtlas("PetList-ButtonBackground")
@@ -359,6 +411,23 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     collapse:SetNormalAtlas("common-icon-backarrow")
     collapse:SetScript("OnClick", function() SetList:SetCollapsed(true, true) end)
     ns.Widgets.Tooltip(collapse, L["Collapse"])
+
+    list = CreateFrame("Frame", nil, panel)
+    list:SetPoint("TOPLEFT", 0, -LIST_TOP)
+    list:SetPoint("BOTTOMRIGHT", 0, FOOT_H + NOW_H + 4)
+    list:SetClipsChildren(true)
+    list:EnableMouseWheel(true)
+    list:SetScript("OnMouseWheel", function(_, delta) SetList:ScrollBy(-delta * STEP) end)
+    list:SetScript("OnSizeChanged", function() SetList:Refresh() end)
+    list.track = list:CreateTexture(nil, "BACKGROUND")
+    list.track:SetColorTexture(1, 1, 1, 0.06)
+    list.track:SetPoint("TOPRIGHT")
+    list.track:SetPoint("BOTTOMRIGHT")
+    list.track:SetWidth(4)
+    list.thumb = list:CreateTexture(nil, "ARTWORK")
+    list.thumb:SetColorTexture(1, 1, 1, 0.35)
+    list.thumb:SetWidth(4)
+    SetList._list = list
 
     -- naming a new set: a popover above "+ New", on the window so no card covers it
     newBox = CreateFrame("Frame", nil, frame, "TooltipBackdropTemplate")
@@ -419,6 +488,7 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
 
     nowCard = buildNowCard()
     SetList._nowCard = nowCard
+    panel:SetScript("OnSizeChanged", layoutPanel)
 
     rail = CreateFrame("Button", nil, frame.left)
     rail:SetAllPoints()
@@ -439,6 +509,7 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     rail.count:SetPoint("TOP", rail.label, "BOTTOM", 0, -4)
     rail:SetScript("OnClick", function() SetList:SetCollapsed(false, true) end)
     ns.Widgets.Tooltip(rail, L["Show sets"])
+    layoutPanel()
     autoCollapse()
 end)
 

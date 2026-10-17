@@ -942,4 +942,31 @@ describe("UI smoke", function()
         ns.Widgets.Dropdown = real
         assert.equal(0, n)
     end)
+    it("a long sets list scrolls inside its own area; Out now steps aside in a short window", function()
+        for i = 1, 14 do ns.Sets:Create("Set " .. i) end
+        ns.UI.Main:Show()
+        local SL = ns.UI.SetList
+        local list = SL._list
+        list.GetHeight = function() return 230 end            -- room for five cards
+        SL:Refresh()
+        assert.is_true(SL.CanScroll())
+        assert.is_true(list.thumb:IsShown())
+        SL:ScrollBy(1000)
+        local most = SL:GetScroll()
+        assert.equal(15 * 46 - 4 - 230, most)                   -- stops at the last card
+        list._scripts.OnMouseWheel(list, 1)
+        assert.equal(most - 46, SL:GetScroll())
+        -- short window: the list keeps at least three cards, Out now goes
+        local panel = list:GetParent()
+        panel.GetHeight = function() return 250 end
+        SL.LayoutPanel()
+        assert.is_false(SL._nowCard:IsShown())
+        panel.GetHeight = function() return 700 end
+        SL.LayoutPanel()
+        assert.is_true(SL._nowCard:IsShown())
+        list.GetHeight = function() return 2000 end
+        SL:Refresh()
+        assert.is_false(SL.CanScroll())
+        assert.equal(0, SL:GetScroll())
+    end)
 end)
