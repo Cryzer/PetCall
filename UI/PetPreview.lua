@@ -9,6 +9,7 @@ ns.UI.Preview = Preview
 local panel, viewer, set, hoverID, selectedID, lastHoverID
 local shownID
 local loadModel        -- assigned above Preview:ShowPet
+local hovering         -- true while SetHover draws: the model waits for the cursor to rest
 -- The text and the controls under the model need this much; the model takes the rest,
 -- so a tall window gets a big model and a short one never pushes the controls out.
 -- When room runs short the parts go in this order: the source lines (still in the
@@ -139,9 +140,27 @@ function Preview:Attach(parent)
     return panel
 end
 
--- loads at once: responsiveness beats saving loads; a dropped load is retried by ShowPet
-function loadModel(info)
-    viewer:Load(info)
+-- Each load sets up the whole model scene (3-30 ms). Sweeping the cursor over the grid
+-- would load every tile it crosses, so a hover loads once the cursor rests on a tile;
+-- the text changes at once. A click loads at once. A dropped load is retried by ShowPet.
+local HOVER_DELAY = 0.08
+local pending
+
+local function cancelLoad()
+    if pending then pending:Cancel() pending = nil end
+end
+
+function loadModel(info, later)
+    cancelLoad()
+    if not later then
+        viewer.creatureID = info.creatureID
+        viewer:Load(info)
+        return
+    end
+    pending = ns:After(HOVER_DELAY, function()
+        pending = nil
+        if ns.PetCache:GetInfo(shownID) == info then loadModel(info) end
+    end)
 end
 
 function Preview:ShowPet(petID, forSet)
@@ -150,6 +169,7 @@ function Preview:ShowPet(petID, forSet)
     local info = petID and ns.PetCache:GetInfo(petID)
     shownID = info and petID or nil
     if not info then
+        cancelLoad()
         panel.name:SetText(L["No pet selected"])
         panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("") panel.reason:SetText("")
         panel.chanceBar:SetValue(0)
@@ -159,8 +179,9 @@ function Preview:ShowPet(petID, forSet)
     end
     -- (re)load when the pet changed or the client dropped the previous load
     if viewer.creatureID ~= info.creatureID or not viewer:ModelID() then
-        viewer.creatureID = info.creatureID
-        loadModel(info)
+        loadModel(info, hovering)
+    else
+        cancelLoad()      -- back on the pet already shown: a load on the way is not wanted
     end
     local r, g, b = ns.Widgets.QualityColor(info.quality)
     -- the name the player gave it, as on its tile; the species goes on the line below
@@ -197,7 +218,9 @@ function Preview:SetSet(forSet) set = forSet end
 function Preview:SetHover(petID)
     hoverID = petID
     if petID then lastHoverID = petID end
+    hovering = true
     self:ShowPet(petToShow())
+    hovering = false
 end
 function Preview:SetSelected(petID) selectedID = petID self:ShowPet(petToShow()) end
 function Preview:Refresh() self:ShowPet(petToShow()) end

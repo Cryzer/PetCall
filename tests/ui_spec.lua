@@ -439,14 +439,37 @@ describe("UI smoke", function()
         assert.equal(5001, viewer:ModelID())
     end)
 
-    it("hovering a pet shows its model at once", function()
-        W.world.pets.b = { species = 2, name = "B" }
+    it("hovering shows the pet at once and loads its model once the cursor rests", function()
+        for i = 1, 5 do W.world.pets["h" .. i] = { species = 20 + i, name = "H" .. i } end
         ns.PetCache:Rescan()
         ns.UI.Main:GetFrame().GetWidth = function() return 900 end
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
-        ns.UI.Preview:SetHover("b")
-        assert.equal(5002, ns.UI.Preview:GetViewer():ModelID())   -- no W.advance: immediate
+        W.advance(1)
+        local viewer = ns.UI.Preview:GetViewer()
+        local loads = {}
+        local load = viewer.Load
+        viewer.Load = function(v, info) loads[#loads + 1] = info.petID return load(v, info) end
+        -- a sweep over five tiles: the text follows, only the last model loads
+        for i = 1, 5 do
+            ns.UI.Preview:SetHover("h" .. i)
+            assert.equal("H" .. i, ns.UI.Preview:GetPanel().name:GetText())
+            W.advance(0.02)
+        end
+        assert.same({}, loads)
+        W.advance(0.1)
+        assert.same({ "h5" }, loads)
+        assert.equal(5025, viewer:ModelID())
+        -- back on the pet already shown: nothing loads
+        ns.UI.Preview:SetHover("h4")
+        ns.UI.Preview:SetHover("h5")
+        W.advance(0.2)
+        assert.same({ "h5" }, loads)
+        -- a click loads at once
+        ns.UI.Preview:SetHover(nil)
+        ns.UI.Preview:SetSelected("h2")
+        assert.equal("h2", loads[#loads])
+        viewer.Load = load
     end)
     it("a freshly loaded model faces front and holds still before it turns", function()
         W.world.pets.b = { species = 2, name = "B" }
