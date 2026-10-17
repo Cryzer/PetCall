@@ -1,7 +1,7 @@
 ## Interface: 120105
 ## Title: PetCall
 ## Version: @project-version@
-## Notes: Automatically summons your companion pet based on configurable triggers and conditions.
+## Notes: Keeps a companion pet at your side and picks one that fits the moment: sets with conditions, templates and built-in help.
 ## Author: End, Cryzer
 ## X-Credits: Various Translators
 ## X-Curse-Project-ID: 1470918

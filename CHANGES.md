@@ -1,7 +1,7 @@
 
 # Changelog
 
-## v2.0.0 (unreleased)
+## v2.0.0 (2026-10-17)
 
 PetCall 2.0 is a complete rebuild. You collected hundreds of pets; now you get to see them. Sets that know when to show up, a pet that fits the moment, and a window that explains itself. Your PetCall 1.x and PetLeash sets come along as they are.
 
