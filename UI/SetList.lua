@@ -496,6 +496,8 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     nowCard = buildNowCard()
     SetList._nowCard = nowCard
     panel:SetScript("OnSizeChanged", layoutPanel)
+    -- changes made while it was hidden (window closed, panel folded) are drawn now
+    panel:SetScript("OnShow", function() SetList:Refresh() end)
 
     rail = CreateFrame("Button", nil, frame.left)
     rail:SetAllPoints()
@@ -520,7 +522,11 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     autoCollapse()
 end)
 
-local refresh = function() SetList:Refresh() end
+-- Each card works out its pets from the set's draw table, so redraws are batched
+-- and skipped while nobody can see the panel; showing it catches up (OnShow, WindowShown).
+local refresh = ns.Debounce(0.05, function()
+    if panel and panel:IsVisible() then SetList:Refresh() end
+end)
 for _, cb in ipairs({ "SetsChanged", "CurrentSetChanged", "ConditionStateChanged", "SelectedSetChanged", "PetsChanged", "WindowShown" }) do
     ns:RegisterCallback(SetList, cb, refresh)
 end

@@ -1153,4 +1153,34 @@ describe("UI smoke", function()
         ns:Fire("SummonedPetChanged")
         assert.equal("A", panel.name:GetText())
     end)
+    it("the sets panel redraws once per burst of changes, and not at all while the window is closed", function()
+        ns.UI.Main:GetFrame().GetWidth = function() return 900 end
+        ns.UI.Main:Show()
+        ns.UI.SetList:SetCollapsed(false)
+        W.advance(1)
+        local lists = 0
+        local list = ns.Sets.List
+        ns.Sets.List = function(...) lists = lists + 1 return list(...) end
+        for _ = 1, 5 do ns:Fire("ConditionStateChanged", "x") end
+        W.advance(0.1)
+        assert.equal(1, lists, "one redraw for the burst")
+        ns.UI.Main:Hide()
+        lists = 0
+        for _ = 1, 5 do ns:Fire("ConditionStateChanged", "x") end
+        W.advance(0.1)
+        assert.equal(0, lists, "nothing is drawn behind a closed window")
+        ns.Sets.List = list
+        ns.Sets:Create("Late")
+        W.advance(0.1)
+        local function hasLate()
+            for _, r in ipairs(ns.UI.SetList._rows) do
+                if r:IsShown() and r.set and r.set.name == "Late" then return true end
+            end
+            return false
+        end
+        assert.is_false(hasLate())
+        ns.UI.Main:Show()
+        W.advance(0.1)
+        assert.is_true(hasLate(), "caught up when the window opens")
+    end)
 end)

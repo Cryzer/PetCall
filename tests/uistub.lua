@@ -60,7 +60,12 @@ function Universal:HookScript(n, f)
     self._scripts[n] = function(...) if old then old(...) end f(...) end
 end
 function Universal:IsShown() return self._shown end
-function Universal:IsVisible() return self._shown end
+-- as in the game: shown, and every parent up the chain shown too
+function Universal:IsVisible()
+    if not self._shown then return false end
+    local p = rawget(self, "_parent")
+    return p == nil or p:IsVisible()
+end
 function Universal:Show()
     if self._shown then return end
     self._shown = true
@@ -203,6 +208,7 @@ function U.install()
         if template == "ButtonFrameTemplate" then
             f.Inset, f.CloseButton = universal(), universal()
             f.Inset._shown, f.CloseButton._shown = true, true
+            f.Inset._parent, f.CloseButton._parent = f, f
         end
         if name then rawset(_G, name, f) end
         W.track(f)
