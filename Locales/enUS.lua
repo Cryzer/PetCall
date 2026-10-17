@@ -454,3 +454,5 @@ L["All of these"] = true
 L["Any one of these"] = true
 L["+ Another condition"] = true
 L["Narrow the rule down, for example: source mentions Trading Post and the pet is a Beast."] = true
+L["Name the new set"] = true
+L["Cancel"] = true

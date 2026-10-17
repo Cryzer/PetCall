@@ -678,7 +678,16 @@ describe("UI smoke", function()
         ns.UI.Main:Show()
         ns.UI.SetList._newButton:Click()
         local root = U.lastMenu
-        assert.is_not_nil(root:Find("Empty set"))
+        root:Find("Empty set"):Click()
+        local box = ns.UI.SetList._nameBox
+        assert.is_true(box:IsShown())
+        box.edit:SetText("Fishing")
+        box.create:Click()
+        assert.is_false(box:IsShown())
+        assert.is_not_nil(ns.Sets:Get("Fishing"))
+        assert.equal("when", ns.UI.Main:GetSelectedTab())
+        ns.UI.SetList._newButton:Click()
+        root = U.lastMenu
         root:Find("From a recipe"):Click()
         assert.is_true(ns.UI.RecipeGallery:IsShown())
         ns.UI.Main:SelectSet("$Default")

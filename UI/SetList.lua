@@ -360,27 +360,51 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     collapse:SetScript("OnClick", function() SetList:SetCollapsed(true, true) end)
     ns.Widgets.Tooltip(collapse, L["Collapse"])
 
-    newBox = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
-    newBox:SetHeight(20)
-    newBox:SetPoint("BOTTOMLEFT", 8, 32)
-    newBox:SetPoint("BOTTOMRIGHT", -4, 32)
-    newBox:SetAutoFocus(false)
+    -- naming a new set: a popover above "+ New", on the window so no card covers it
+    newBox = CreateFrame("Frame", nil, frame, "TooltipBackdropTemplate")
+    newBox:SetSize(PANEL_W + 40, 86)
+    newBox:SetFrameStrata("DIALOG")
+    newBox:SetToplevel(true)
+    newBox:EnableMouse(true)
     newBox:Hide()
-    newBox:SetScript("OnEscapePressed", function(self) self:SetText("") self:Hide() end)
-    newBox:SetScript("OnEnterPressed", function(self)
-        local set, ok, err = ns.Sets:Create(self:GetText())
+    ns.Skin:Apply("Panel", newBox)
+    newBox.title = ns.Widgets.Label(newBox, L["Name the new set"], "GameFontNormal")
+    newBox.title:SetPoint("TOPLEFT", 12, -10)
+    newBox.edit = CreateFrame("EditBox", nil, newBox, "InputBoxTemplate")
+    newBox.edit:SetHeight(20)
+    newBox.edit:SetPoint("TOPLEFT", newBox.title, "BOTTOMLEFT", 4, -6)
+    newBox.edit:SetPoint("RIGHT", -12, 0)
+    newBox.edit:SetAutoFocus(false)
+    ns.Skin:Apply("EditBox", newBox.edit)
+    local function closeNameBox() newBox.edit:SetText("") newBox.edit:ClearFocus() newBox:Hide() end
+    local function create()
+        local set, ok, err = ns.Sets:Create(newBox.edit:GetText())
         if not ok then
             UIErrorsFrame:AddMessage(err, 1, 0.3, 0.3)
             PlaySound(SOUNDKIT.IG_PLAYER_INVITE_DECLINE)
             return
         end
-        self:SetText("") self:Hide()
+        closeNameBox()
         ns.UI.Main:SelectSet(set.name)
         ns.UI.Main:SelectTab("when")
-    end)
-    ns.Skin:Apply("EditBox", newBox)
+    end
+    newBox.edit:SetScript("OnEscapePressed", closeNameBox)
+    newBox.edit:SetScript("OnEnterPressed", create)
+    newBox.create = ns.Widgets.Button(newBox, L["Create"], create)
+    newBox.create:SetWidth(80)
+    newBox.create:SetPoint("BOTTOMRIGHT", -12, 10)
+    newBox.cancel = ns.Widgets.Button(newBox, L["Cancel"], closeNameBox)
+    newBox.cancel:SetWidth(80)
+    newBox.cancel:SetPoint("RIGHT", newBox.create, "LEFT", -6, 0)
+    newBox:SetScript("OnHide", function() newBox.edit:ClearFocus() end)
+    SetList._nameBox = newBox
 
-    local function openNameBox() newBox:Show() newBox:SetFocus() end
+    local function openNameBox()
+        newBox:ClearAllPoints()
+        newBox:SetPoint("BOTTOMLEFT", SetList._newButton, "TOPLEFT", 0, 6)
+        newBox:Show()
+        newBox.edit:SetFocus()
+    end
     SetList.OpenNew = openNameBox
     local new = ns.Widgets.Button(panel, L["+ New"], function(self)
         ns.Widgets.OpenMenuAbove(self, function(owner, root)
