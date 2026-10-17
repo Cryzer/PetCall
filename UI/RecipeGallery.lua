@@ -8,20 +8,42 @@ ns.UI.RecipeGallery = G
 
 -- "+ New > From a recipe...": a page of ready-made sets that takes the place of the
 -- set header, tabs and pages; the sets panel and the status bar stay. Cards come in
--- sections, two per row when the window is wide enough.
+-- sections, two per row when the window is wide enough. Group buttons, a search and
+-- "Only with pets" narrow the list down.
 
 local ROW_H, HEADER_H, TWO_COLUMNS_FROM = 76, 28, 860
 local PET_ICONS = 5
+local CHIP_H, CHIPS_TOP = 22, 66
+-- sections by when a set is used; each belongs to one group button
 local SECTIONS = {
-    { key = "places", label = L["Places"] },
-    { key = "moments", label = L["Moments"] },
+    { key = "everyday", label = L["Everyday"], group = "everyday" },
+    { key = "town", label = L["Cities and home"], group = "town" },
+    { key = "world", label = L["World and instances"], group = "world" },
+    { key = "moving", label = L["On the move"], group = "moving" },
+    { key = "time", label = L["Time of day"], group = "time" },
+    { key = "company", label = L["Company"], group = "company" },
+    { key = "families", label = L["Pet families"], group = "collections" },
+    { key = "sources", label = L["Where pets come from"], group = "collections" },
+    { key = "class", label = L["Your class"], group = "seasons" },
+    { key = "holiday", label = L["Holidays"], group = "seasons" },
+}
+local GROUPS = {
+    { key = "all", label = L["All"] },
+    { key = "everyday", label = L["Everyday"] },
+    { key = "town", label = L["Cities and home"] },
+    { key = "world", label = L["World and instances"] },
+    { key = "moving", label = L["On the move"] },
+    { key = "time", label = L["Time of day"] },
     { key = "company", label = L["Company"] },
     { key = "collections", label = L["Collections"] },
-    { key = "class", label = L["Your class"] },
-    { key = "holiday", label = L["Holidays"] },
+    { key = "seasons", label = L["Class and holidays"] },
 }
-local gallery, scrollBox, cards = nil, nil, {}
-G._cards = cards
+G.SECTIONS, G.GROUPS = SECTIONS, GROUPS
+-- kept while the session lasts
+local view = { group = "all", search = "", withPets = false }
+G._view = view
+local gallery, scrollBox, chips, cards = nil, nil, {}, {}
+G._cards, G._chips = cards, chips
 
 local function petsText(n) return format(n == 1 and L["%d pet"] or L["%d pets"], n) end
 
@@ -67,7 +89,7 @@ local function initCard(card, recipe)
         card.create:SetEnabled(true)
         card.reason:SetText("")
     else
-        card.count:SetText(n > 0 and petsText(n) or "")
+        card.count:SetText(recipe.noPet and L["No pet"] or n > 0 and petsText(n) or "")
         card.create:SetText(L["Create"])
         card.create:SetEnabled(ok)
         card.reason:SetText(reason or "")
@@ -76,7 +98,7 @@ local function initCard(card, recipe)
 end
 
 local function cardTooltip(c)
-    local lines = {}
+    local lines = { c.recipe.hint, " " }
     for _, e in ipairs(c.recipe.conditions) do lines[#lines + 1] = L["When"] .. ": " .. ns.Conditions.Describe(e) end
     if #c.recipe.conditions == 0 then lines[#lines + 1] = L["Used everywhere, before the Default set."] end
     local r = c.recipe
@@ -86,6 +108,11 @@ local function cardTooltip(c)
     end
     lines[#lines + 1] = format("%s: %s", L["Other pets"], ns.Weights.Label(r.defaultValue or 0))
     if r.immediate then lines[#lines + 1] = L["Summons as soon as the set becomes active."] end
+    if r.noPet then lines[#lines + 1] = L["No pet while this set is used"] end
+    if r.switchMinutes then lines[#lines + 1] = format(L["A new pet every %d minutes."], r.switchMinutes) end
+    if r.needsMounted and ns.db.profile.noSummonMounted then
+        lines[#lines + 1] = "|cffffd100" .. L["Turn off \"Don't summon while mounted\" in the settings, or this set never brings a pet."] .. "|r"
+    end
     return table.concat(lines, "\n")
 end
 
@@ -159,28 +186,61 @@ local function initRow(frame, data)
     end
 end
 
+-- does the recipe pass the group, the search and "Only with pets"?
+function G.Matches(r, sectionGroup, v)
+    if v.group ~= "all" and v.group ~= sectionGroup then return false end
+    if v.withPets and not ns.Recipes.Usable(r) then return false end
+    local needle = strlower(v.search or "")
+    if needle ~= "" and not (strlower(r.title):find(needle, 1, true) or strlower(r.hint or ""):find(needle, 1, true)) then
+        return false
+    end
+    return true
+end
+
 -- section headers, then the recipes of each section in rows of one or two cards;
--- inside a section usable recipes come first
+-- inside a section: new sets you can make, then the ones you have, then grey ones
 local function elements()
     local cols, out = columns(), {}
     local bySection = {}
     for _, r in ipairs(ns.Recipes.List()) do
-        bySection[r.category] = bySection[r.category] or { usable = {}, rest = {} }
+        bySection[r.category] = bySection[r.category] or { new = {}, have = {}, rest = {} }
         local b = bySection[r.category]
-        if ns.Recipes.Usable(r) or ns.Recipes.Existing(r) then b.usable[#b.usable + 1] = r else b.rest[#b.rest + 1] = r end
+        local into = ns.Recipes.Existing(r) and b.have or ns.Recipes.Usable(r) and b.new or b.rest
+        into[#into + 1] = r
     end
     for _, s in ipairs(SECTIONS) do
-        local b = bySection[s.key]
-        if b then
+        local b, list = bySection[s.key], {}
+        for _, part in ipairs(b and { b.new, b.have, b.rest } or {}) do
+            for _, r in ipairs(part) do
+                if G.Matches(r, s.group, view) then list[#list + 1] = r end
+            end
+        end
+        if #list > 0 then
             out[#out + 1] = { header = s.label }
-            local list = b.usable
-            for _, r in ipairs(b.rest) do list[#list + 1] = r end
             for i = 1, #list, cols do
                 out[#out + 1] = { items = { list[i], cols == 2 and list[i + 1] or nil }, cols = cols }
             end
         end
     end
+    if #out == 0 then out[1] = { header = L["No template matches."] } end
+    G._elements = out
     return out
+end
+
+-- group buttons left to right, onto a new line when the next one does not fit;
+-- the list starts under the last line
+local function layoutChips()
+    local width = math.max(1, (tonumber(gallery:GetWidth()) or 0) - 18)
+    local x, y = 0, 0
+    for _, b in ipairs(chips) do
+        local w = b:GetWidth()
+        if x > 0 and x + w > width then x, y = 0, y + CHIP_H + 4 end
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", gallery, "TOPLEFT", 10 + x, -(CHIPS_TOP + y))
+        x = x + w + 4
+        ns.Widgets.SetPicked(b, b.group == view.group)
+    end
+    scrollBox:SetPoint("TOPLEFT", 6, -(CHIPS_TOP + y + CHIP_H + 8))
 end
 
 local function build()
@@ -191,12 +251,24 @@ local function build()
     gallery:SetPoint("BOTTOMRIGHT", f.content, "BOTTOMRIGHT", 0, 0)
     local title = ns.Widgets.Label(gallery, L["New set from a template"], "GameFontNormalHuge")
     title:SetPoint("TOPLEFT", 10, -8)
-    local sub = ns.Widgets.Label(gallery, L["Pick one; afterwards it is an ordinary set and you can change everything."], "GameFontHighlightSmall")
-    sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
     local back = ns.Widgets.Button(gallery, L["Back"], function() G:Hide() end)
     back:SetPoint("TOPRIGHT", -8, -8)
+    local search = ns.Widgets.Search(gallery, function(text) view.search = text G:Refresh() end)
+    search:SetPoint("TOPLEFT", 16, -38)
+    search:SetWidth(200)
+    G._search = search
+    local withPets = ns.Widgets.Checkbox(gallery, L["Only with pets"], function() return view.withPets end,
+        function(v) view.withPets = v G:Refresh() end)
+    withPets:SetPoint("LEFT", search, "RIGHT", 10, 0)
+    G._withPets = withPets
+    for _, g in ipairs(GROUPS) do
+        local b = ns.Widgets.Button(gallery, g.label, function() view.group = g.key G:Refresh() end)
+        b:SetWidth(math.max(50, (tonumber(b:GetFontString():GetStringWidth()) or 0) + 20))
+        b.group = g.key
+        chips[#chips + 1] = b
+    end
     scrollBox = CreateFrame("Frame", nil, gallery, "WowScrollBoxList")
-    scrollBox:SetPoint("TOPLEFT", 6, -48)
+    scrollBox:SetPoint("TOPLEFT", 6, -(CHIPS_TOP + CHIP_H + 8))
     scrollBox:SetPoint("BOTTOMRIGHT", -26, 6)
     local bar = CreateFrame("EventFrame", nil, gallery, "MinimalScrollBar")
     bar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 6, 0)
@@ -211,6 +283,7 @@ end
 
 function G:Refresh()
     if not self:IsShown() then return end
+    layoutChips()
     scrollBox:SetDataProvider(CreateDataProvider(elements()), ScrollBoxConstants.RetainScrollPosition)
 end
 
@@ -218,6 +291,7 @@ function G:Show()
     if not gallery then build() end
     ns.UI.Main:SetSetPagesShown(false)
     gallery:Show()
+    layoutChips()
     scrollBox:SetDataProvider(CreateDataProvider(elements()))
 end
 

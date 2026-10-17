@@ -22,7 +22,7 @@ It keeps a companion pet at your side and picks one that fits the moment: a wate
 
 You decide what fits by making **sets** of pets and telling each set **when** to be used. Or you pick one of the ready-made templates and you are done in one click.
 
-> **New in 2.0:** a complete rebuild with a new window, conditions that read like sentences, 20 templates, a mount condition and built-in help. Your PetCall 1.x and PetLeash sets carry over as they are. See [CHANGES.md](CHANGES.md).
+> **New in 2.0:** a complete rebuild with a new window, conditions that read like sentences, over 40 templates, a mount condition and built-in help. Your PetCall 1.x and PetLeash sets carry over as they are. See [CHANGES.md](CHANGES.md).
 
 ---
 
@@ -32,7 +32,7 @@ You decide what fits by making **sets** of pets and telling each set **when** to
 - Conditions for where you are (a zone, a city, a continent, a dungeon, a raid, a delve, your house), what you are doing (swimming, AFK, in a form, riding a chosen mount), who you play with, your character, the time of day and holidays.
 - Conditions read like sentences: *Activity is Swimming*, *Place type is not City*. A live dot shows what is true right now.
 - "Or" groups for a set that should also be used somewhere else.
-- 20 ready-made templates, plus one for your class and one for each holiday.
+- 29 ready-made templates, one for each pet family and pet source, one for your class and one for each holiday.
 
 **Pets the way you like them**
 - Tick the pets a set picks from, or let rules do it: favorites, a pet type, a level, rare quality, where a pet comes from, or pets native to where you are. Pets you collect later follow the rules too.
@@ -148,16 +148,20 @@ Mounted and Mount need *Don't summon while mounted* turned off in the settings, 
 
 ## Templates
 
-Click **+ New → From a template…**. Each template creates an ordinary set you can change afterwards. Grey cards need pets you do not have yet.
+Click **+ New → From a template…**. Templates are grouped by when they are used: pick a group with the buttons at the top, or search by name. Each template creates an ordinary set you can change afterwards. Point at a card for its full description. Grey cards need pets you do not have yet; **Only with pets** hides them.
 
 | Group | Templates |
 |---|---|
-| Places | Where people can see you · Flyers in the open world · Pets from this zone · At my house · Visiting friends · Dungeons and raids · Delve crew |
-| Moments | Water pets while swimming · Morning critters · Night owls · Witching hour · Indoor company · Pack of the wild · Favorites while AFK |
-| Company | Lone wanderer · Party mascots |
-| Collections | Favorites first · Walk the little ones · Trading Post finds · Festive mood |
-| Your class | pets that suit your class |
-| Holidays | the event pets of each holiday you have pets for |
+| Everyday | Favorites first · Pets from this zone · Rare parade · Battle-ready team · Walk the little ones |
+| Cities and home | Where people can see you · Evening in town · Trading Post finds · At my house · Visiting friends |
+| World and instances | Flyers in the open world · Dungeons and raids · Delve crew · Scenario sidekicks · Quiet raid nights · Quiet in PvP |
+| On the move | Water pets while swimming · Riding escort · Pack of the wild · Indoor company · Favorites while AFK |
+| Time of day | Morning critters · Elemental dusk · Night owls · Witching hour |
+| Company | Lone wanderer · Party mascots · Raid group zoo |
+| Collections | one per pet family (*Beast pets*, *Aquatic pets*…) and one per source (*Pet Battle pets*, *Vendor pets*…) |
+| Class and holidays | pets that suit your class · Festive mood · the event pets of each holiday you have pets for |
+
+*Quiet raid nights* and *Quiet in PvP* keep your pet away. *Riding escort* needs *Don't summon while mounted* turned off.
 
 ---
 

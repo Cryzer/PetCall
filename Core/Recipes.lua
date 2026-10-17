@@ -33,53 +33,98 @@ local CLASS_TYPES = {
 }
 
 local I = "Interface\\Icons\\"
+-- a source label as the game shows it in the journal ("World Event: ..."), English when it has none
+local function sourceLabel(i, english)
+    local s = _G["BATTLE_PET_SOURCE_" .. i]
+    if type(s) == "string" and s ~= "" and s ~= "BATTLE_PET_SOURCE_" .. i then return s end
+    return english
+end
+
+-- category = the gallery section, by when a set is used
 local FIXED = {
-    -- places
-    { key = "showoff", category = "places", icon = I .. "INV_Misc_Gem_Diamond_01", immediate = true,
+    -- everyday: used everywhere, just above the Default set
+    { key = "favfirst", category = "everyday", icon = I .. "Spell_Holy_SealOfSacrifice", title = L["Favorites first"],
+      hint = L["Everywhere, before the Default set: favorites very often, every other pet very rarely."],
+      conditions = {}, rules = { { "favorites", VERY_OFTEN } }, defaultValue = VERY_RARELY, lowest = true },
+    { key = "zone", category = "everyday", icon = I .. "INV_Misc_Map_01", title = L["Pets from this zone"],
+      hint = L["Everywhere, before the Default set. Pets native to the zone you are in."],
+      conditions = {}, rules = { { "nativeZone", NORMAL } }, lowest = true },
+    { key = "rareparade", category = "everyday", icon = I .. "INV_Misc_Gem_Sapphire_02", title = L["Rare parade"],
+      hint = L["Everywhere, before the Default set: rare pets very often, the rest rarely."],
+      conditions = {}, rules = { { "rare", VERY_OFTEN } }, defaultValue = RARELY, lowest = true },
+    { key = "battleready", category = "everyday", icon = I .. "INV_Pet_BattlePetTraining", title = L["Battle-ready team"],
+      hint = L["Everywhere, before the Default set: level 25 favorites very often, other level 25 pets often."],
+      conditions = {}, rules = { { "AND", VERY_OFTEN, items = { { "level", operator = ">=", level = "25" }, { "favorites" } } },
+          { "level", OFTEN, operator = ">=", level = "25" } }, lowest = true },
+    { key = "little", category = "everyday", icon = I .. "INV_Egg_03", title = L["Walk the little ones"],
+      hint = L["In the open world: pets below level 10 very often, the rest rarely."],
+      conditions = { WORLD }, rules = { { "level", VERY_OFTEN, operator = "<", level = "10" } }, defaultValue = RARELY },
+    -- cities and home
+    { key = "showoff", category = "town", icon = I .. "INV_Misc_Gem_Diamond_01", immediate = true,
       title = L["Where people can see you"], hint = L["In cities or at a friend's house: rare pets very often, summoned the moment you arrive."],
       conditions = anyOf({ CITY }, { { "housing", otherHome = true } }),
       rules = { { "rare", VERY_OFTEN }, { "favorites", NORMAL } } },
-    { key = "outdoors", category = "places", icon = I .. "Ability_Mount_Gryphon_01", title = L["Flyers in the open world"],
-      hint = L["Outdoors in the open world. Flying pets."],
-      conditions = { WORLD, { "activity", outdoors = true } }, rules = { types(NORMAL, 3) } },
-    { key = "zone", category = "places", icon = I .. "INV_Misc_Map_01", title = L["Pets from this zone"],
-      hint = L["Everywhere, before the Default set. Pets native to the zone you are in."],
-      conditions = {}, rules = { { "nativeZone", NORMAL } }, lowest = true },
-    { key = "home", category = "places", icon = I .. "INV_Misc_Rune_01", title = L["At my house"],
+    { key = "evening", category = "town", icon = I .. "INV_Misc_Candle_01", title = L["Evening in town"],
+      hint = L["In cities from 18:00 to 23:00: favorites often, humanoids now and then."],
+      conditions = { CITY, { "timeOfDay", from = 18 * 60, to = 23 * 60 } }, rules = { { "favorites", OFTEN }, types(RARELY, 1) } },
+    { key = "tradingpost", category = "town", icon = I .. "INV_Misc_Coin_01", title = L["Trading Post finds"],
+      hint = L["In cities. Pets from the Trading Post."],
+      conditions = { CITY }, rules = { { "source", NORMAL, text = sourceLabel(12, "Trading Post") } } },
+    { key = "home", category = "town", icon = I .. "INV_Misc_Rune_01", title = L["At my house"],
       hint = L["At your house and plot. Your favorites."],
       conditions = { { "housing", ownHome = true } }, rules = { { "favorites", NORMAL } } },
-    { key = "visit", category = "places", icon = I .. "INV_Misc_Note_01", title = L["Visiting friends"],
+    { key = "visit", category = "town", icon = I .. "INV_Misc_Note_01", title = L["Visiting friends"],
       hint = L["At someone else's house: mostly favorites, now and then any other pet."],
       conditions = { { "housing", otherHome = true } }, rules = { { "favorites", VERY_OFTEN } }, defaultValue = VERY_RARELY },
-    { key = "instances", category = "places", icon = I .. "INV_Misc_Bone_HumanSkull_01", title = L["Dungeons and raids"],
+    -- the world and instances
+    { key = "outdoors", category = "world", icon = I .. "Ability_Mount_Gryphon_01", title = L["Flyers in the open world"],
+      hint = L["Outdoors in the open world. Flying pets."],
+      conditions = { WORLD, { "activity", outdoors = true } }, rules = { types(NORMAL, 3) } },
+    { key = "instances", category = "world", icon = I .. "INV_Misc_Bone_HumanSkull_01", title = L["Dungeons and raids"],
       hint = L["In dungeons and raids. Your rare level 25 pets."],
       conditions = { { "specialLocation", locs = { "dungeon", "raid" } } },
       rules = { { "AND", NORMAL, items = { { "level", operator = ">=", level = "25" }, { "rare" } } } } },
-    { key = "delve", category = "places", icon = I .. "INV_Pick_02", title = L["Delve crew"],
+    { key = "delve", category = "world", icon = I .. "INV_Pick_02", title = L["Delve crew"],
       hint = L["In delves. Mechanical pets often, critters now and then."],
       conditions = { { "specialLocation", locs = { "delve" } } }, rules = { types(OFTEN, 10), types(RARELY, 5) } },
-    -- moments
-    { key = "swimming", category = "moments", icon = I .. "Spell_Frost_SummonWaterElemental", title = L["Water pets while swimming"],
+    { key = "scenario", category = "world", icon = I .. "INV_Sword_04", title = L["Scenario sidekicks"],
+      hint = L["In scenarios. Humanoids and beasts."],
+      conditions = { { "specialLocation", locs = { "scenario" } } }, rules = { types(NORMAL, 1, 8) } },
+    { key = "quietraid", category = "world", icon = I .. "Spell_Holy_Silence", title = L["Quiet raid nights"],
+      hint = L["In raids: no pet at all."],
+      conditions = { { "specialLocation", locs = { "raid" } } }, rules = {}, noPet = true },
+    { key = "quietpvp", category = "world", icon = I .. "Achievement_BG_winWSG", title = L["Quiet in PvP"],
+      hint = L["In battlegrounds and arenas: no pet at all."],
+      conditions = { { "specialLocation", locs = { "pvp" } } }, rules = {}, noPet = true },
+    -- on the move
+    { key = "swimming", category = "moving", icon = I .. "Spell_Frost_SummonWaterElemental", title = L["Water pets while swimming"],
       hint = L["When you swim. Aquatic pets."],
       conditions = { { "activity", swimming = true } }, rules = { types(NORMAL, 9) } },
-    { key = "morning", category = "moments", icon = I .. "INV_Drink_05", title = L["Morning critters"],
-      hint = L["From 06:00 to 10:00. Small critters to start the day."],
-      conditions = { { "timeOfDay", from = 6 * 60, to = 10 * 60 } }, rules = { types(NORMAL, 5) } },
-    { key = "night", category = "moments", icon = I .. "Spell_Shadow_Twilight", title = L["Night owls"],
-      hint = L["From 20:00 to 06:00. Undead and magic pets."],
-      conditions = { { "timeOfDay", from = 20 * 60, to = 6 * 60 } }, rules = { types(NORMAL, 4, 6) } },
-    { key = "witching", category = "moments", icon = I .. "Spell_Shadow_RaiseDead", title = L["Witching hour"],
-      hint = L["From midnight to 03:00. Undead very often, magic pets sometimes."],
-      conditions = { { "timeOfDay", from = 0, to = 3 * 60 } }, rules = { types(VERY_OFTEN, 4), types(RARELY, 6) } },
-    { key = "indoors", category = "moments", icon = I .. "INV_Misc_Lantern_01", title = L["Indoor company"],
-      hint = L["Indoors. Critters and humanoids that fit under a roof."],
-      conditions = { { "activity", indoors = true } }, rules = { types(NORMAL, 5, 1) } },
-    { key = "form", category = "moments", icon = I .. "Ability_Druid_TravelForm", title = L["Pack of the wild"],
+    { key = "riding", category = "moving", icon = I .. "Ability_Mount_RidingHorse", title = L["Riding escort"],
+      hint = L["While you ride on the ground: flyers and dragonkin keep up with you."],
+      conditions = { { "activity", mounted = true } }, rules = { types(NORMAL, 3, 2) }, needsMounted = true },
+    { key = "form", category = "moving", icon = I .. "Ability_Druid_TravelForm", title = L["Pack of the wild"],
       hint = L["While in a shapeshift form: beasts run with you."],
       conditions = { { "activity", form = true } }, rules = { types(OFTEN, 8) } },
-    { key = "afk", category = "moments", icon = I .. "Spell_Nature_Sleep", title = L["Favorites while AFK"],
+    { key = "indoors", category = "moving", icon = I .. "INV_Misc_Lantern_01", title = L["Indoor company"],
+      hint = L["Indoors. Critters and humanoids that fit under a roof."],
+      conditions = { { "activity", indoors = true } }, rules = { types(NORMAL, 5, 1) } },
+    { key = "afk", category = "moving", icon = I .. "Spell_Nature_Sleep", title = L["Favorites while AFK"],
       hint = L["While you are AFK. Your favorites."],
       conditions = { { "activity", afk = true } }, rules = { { "favorites", NORMAL } } },
+    -- time of day
+    { key = "morning", category = "time", icon = I .. "INV_Drink_05", title = L["Morning critters"],
+      hint = L["From 06:00 to 10:00. Small critters to start the day."],
+      conditions = { { "timeOfDay", from = 6 * 60, to = 10 * 60 } }, rules = { types(NORMAL, 5) } },
+    { key = "dusk", category = "time", icon = I .. "Spell_Fire_Elemental_Totem", title = L["Elemental dusk"],
+      hint = L["From 18:00 to 21:00. Elemental and magic pets."],
+      conditions = { { "timeOfDay", from = 18 * 60, to = 21 * 60 } }, rules = { types(NORMAL, 7, 6) } },
+    { key = "night", category = "time", icon = I .. "Spell_Shadow_Twilight", title = L["Night owls"],
+      hint = L["From 20:00 to 06:00. Undead and magic pets."],
+      conditions = { { "timeOfDay", from = 20 * 60, to = 6 * 60 } }, rules = { types(NORMAL, 4, 6) } },
+    { key = "witching", category = "time", icon = I .. "Spell_Shadow_RaiseDead", title = L["Witching hour"],
+      hint = L["From midnight to 03:00. Undead very often, magic pets sometimes."],
+      conditions = { { "timeOfDay", from = 0, to = 3 * 60 } }, rules = { types(VERY_OFTEN, 4), types(RARELY, 6) } },
     -- company
     { key = "solo", category = "company", icon = I .. "Ability_Hunter_Pathfinding", title = L["Lone wanderer"],
       hint = L["Playing alone in the open world: beasts and flyers keep you company."],
@@ -88,19 +133,13 @@ local FIXED = {
       hint = L["In a party or raid: favorites very often, other level 25 pets sometimes."],
       conditions = { { "groupType", party = true, raid = true } },
       rules = { { "favorites", VERY_OFTEN }, { "level", RARELY, operator = ">=", level = "25" } } },
-    -- collections
-    { key = "favfirst", category = "collections", icon = I .. "Spell_Holy_SealOfSacrifice", title = L["Favorites first"],
-      hint = L["Everywhere, before the Default set: favorites very often, every other pet very rarely."],
-      conditions = {}, rules = { { "favorites", VERY_OFTEN } }, defaultValue = VERY_RARELY, lowest = true },
-    { key = "little", category = "collections", icon = I .. "INV_Egg_03", title = L["Walk the little ones"],
-      hint = L["In the open world: pets below level 10 very often, the rest rarely."],
-      conditions = { WORLD }, rules = { { "level", VERY_OFTEN, operator = "<", level = "10" } }, defaultValue = RARELY },
-    { key = "tradingpost", category = "collections", icon = I .. "INV_Misc_Coin_01", title = L["Trading Post finds"],
-      hint = L["In cities. Pets from the Trading Post."],
-      conditions = { CITY }, rules = { { "source", NORMAL, text = "Trading Post" } } },
-    { key = "festive", category = "collections", icon = I .. "INV_Misc_Gift_01", title = L["Festive mood"],
+    { key = "raidzoo", category = "company", icon = I .. "INV_Box_PetCarrier_01", title = L["Raid group zoo"],
+      hint = L["In a raid group: any pet you own, a new one every 5 minutes."],
+      conditions = { { "groupType", raid = true } }, rules = {}, defaultValue = NORMAL, switchMinutes = 5 },
+    -- holidays
+    { key = "festive", category = "holiday", icon = I .. "INV_Misc_Gift_01", title = L["Festive mood"],
       hint = L["During any holiday. Every world event pet you own."],
-      conditions = { { "holiday", holidayIDs = { 0 } } }, rules = { { "source", NORMAL, text = "World Event" } } },
+      conditions = { { "holiday", holidayIDs = { 0 } } }, rules = { { "source", NORMAL, text = sourceLabel(7, "World Event") } } },
 }
 
 local function copy(v)
@@ -112,7 +151,7 @@ end
 
 -- a recipe without conditions must not take over: R.Create puts its set at the bottom (r.lowest)
 local function finish(r)
-    r.category = r.category or "places"
+    r.category = r.category or "everyday"
     return r
 end
 
@@ -123,6 +162,23 @@ local function classRecipe()
     return finish({ key = "class", category = "class", atlas = "classicon-" .. strlower(class), title = format(L["%s theme"], className),
         hint = format(L["On your %s characters. Pets that suit the class."], className),
         conditions = { { "specialization", class = class, spec = -1 } }, rules = { types(NORMAL, unpack(list)) } })
+end
+
+-- one set per pet family and per source, used everywhere just above the Default set
+local function familyRecipe(t)
+    local name = _G["BATTLE_PET_NAME_" .. t] or tostring(t)
+    local suffix = PET_TYPE_SUFFIX and PET_TYPE_SUFFIX[t]
+    return finish({ key = "family:" .. t, category = "families", icon = suffix and (I .. "Pet_Type_" .. suffix) or nil,
+        title = format(L["%s pets"], name), hint = format(L["Everywhere, before the Default set. Pet type: %s."], name),
+        conditions = {}, rules = { types(NORMAL, t) }, lowest = true })
+end
+
+local function sourceRecipe(i)
+    local label = sourceLabel(i)
+    if not label then return nil end
+    return finish({ key = "source:" .. i, category = "sources",
+        title = format(L["%s pets"], label), hint = format(L["Everywhere, before the Default set. Source: %s."], label),
+        conditions = {}, rules = { { "source", NORMAL, text = label } }, lowest = true })
 end
 
 local function holidayRecipe(h)
@@ -175,6 +231,7 @@ function R.ForgetCounts() wipe(counts) end
 ns:RegisterCallback(R, "PetsChanged", R.ForgetCounts)
 
 function R.Usable(r)
+    if r.noPet then return true end                         -- a set for no pet needs none
     if R.Count(r) == 0 then return false, L["You have no pets for this yet."] end
     return true
 end
@@ -182,6 +239,15 @@ end
 function R.List()
     local out = {}
     for _, r in ipairs(FIXED) do out[#out + 1] = finish(r) end
+    for t = 1, 10 do
+        local r = familyRecipe(t)
+        if R.Count(r) > 0 then out[#out + 1] = r end
+    end
+    local sources = C_PetJournal.GetNumPetSources and C_PetJournal.GetNumPetSources() or 0
+    for i = 1, sources do
+        local r = sourceRecipe(i)
+        if r and R.Count(r) > 0 then out[#out + 1] = r end
+    end
     local class = classRecipe()
     if class then out[#out + 1] = class end
     for _, h in ipairs(ns.Conditions.KnownHolidays()) do
@@ -212,6 +278,8 @@ function R.Create(r)
     for _, e in ipairs(r.rules) do filter[#filter + 1] = copy(e) end
     if r.lowest then ns.Sets:MoveToBottom(set) end
     if r.immediate then set:SetImmediate(true) end
+    if r.noPet then set:SetNoPet(true) end
+    if r.switchMinutes then set:SetSwitchMinutes(r.switchMinutes) end
     set:FiltersChanged()
     set:ConditionsChanged()
     return set

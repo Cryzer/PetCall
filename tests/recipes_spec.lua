@@ -102,7 +102,38 @@ describe("Recipes", function()
         assert.is_true(R.Count(byKey("favfirst")) == 3)
     end)
     it("every recipe has a section the gallery knows", function()
-        local known = { places = true, moments = true, company = true, collections = true, class = true, holiday = true }
+        local known = {}
+        for _, s in ipairs(ns.UI and ns.UI.RecipeGallery and ns.UI.RecipeGallery.SECTIONS or {}) do known[s.key] = true end
+        if not next(known) then
+            known = { everyday = true, town = true, world = true, moving = true, time = true, company = true,
+                families = true, sources = true, class = true, holiday = true }
+        end
         for _, r in ipairs(R.List()) do assert.is_true(known[r.category], r.key) end
+    end)
+    it("one recipe per pet family and per source you have pets for", function()
+        _G.BATTLE_PET_SOURCE_1 = "Drop"
+        W.world.sources[1] = "Drop: Somewhere"
+        W.world.pets.rock = { species = 1, name = "Rock", type = 9 }
+        ns.PetCache:Rescan()
+        R.ForgetCounts()
+        assert.is_not_nil(byKey("family:9"))                -- aquatic: the fish
+        assert.is_nil(byKey("family:2"))                    -- no dragonkin
+        local drop = byKey("source:1")
+        assert.is_not_nil(drop)
+        assert.is_true(drop.lowest)
+        assert.is_nil(byKey("source:2"))                    -- the stub has no name for it
+        local set = R.Create(byKey("family:9"))
+        assert.is_true(set:Contains("fish"))
+        assert.is_false(set:Contains("bird"))
+        _G.BATTLE_PET_SOURCE_1 = nil
+    end)
+    it("a no-pet recipe is usable without pets and makes a set that summons none", function()
+        local r = byKey("quietpvp")
+        assert.is_true((R.Usable(r)))
+        local set = R.Create(r)
+        assert.is_true(set:IsNoPet())
+        local zoo = R.Create(byKey("raidzoo"))
+        assert.equal(5, zoo.settings.switchMinutes)
+        assert.is_true(zoo:Contains("bird"))               -- every pet you own
     end)
 end)

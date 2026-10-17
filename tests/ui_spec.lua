@@ -876,6 +876,52 @@ describe("UI smoke", function()
         end
         assert.is_true(seen)
     end)
+    it("the template page filters by group, search and pets, and lists sets you have after new ones", function()
+        W.world.pets.fish = { species = 9, name = "Fish", type = 9 }
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        local G = ns.UI.RecipeGallery
+        G:Show()
+        local function shown()
+            local out = {}
+            for _, e in ipairs(G._elements) do for _, r in ipairs(e.items or {}) do out[r.key] = true end end
+            return out
+        end
+        local function chip(key) for _, b in ipairs(G._chips) do if b.group == key then return b end end end
+        chip("moving"):Click()
+        local s = shown()
+        assert.is_true(s.swimming)
+        assert.is_nil(s.morning, "group")
+        chip("all"):Click()
+        assert.is_true(shown().morning)
+        G._view.search = "swim"
+        G:Refresh()
+        s = shown()
+        assert.is_true(s.swimming)
+        assert.is_nil(s.morning, "search")
+        G._view.search = ""
+        G._withPets:SetChecked(true)
+        G._withPets:Click()
+        assert.is_true(G._view.withPets)
+        s = shown()
+        assert.is_true(s.swimming)                          -- the fish
+        assert.is_nil(s.night, "withPets")                  -- no undead or magic pets: hidden
+        assert.is_true(s.quietpvp)                          -- a set for no pet needs none
+        G._withPets:SetChecked(false)
+        G._withPets:Click()
+        assert.is_true(G.Matches(ns.Recipes.List()[1], "everyday", { group = "all", search = "", withPets = false }))
+        G._view.group = "all"
+    end)
+    it("a name that is taken refuses with a sound the client has", function()
+        ns.Sets:Create("Taken")
+        ns.UI.Main:Show()
+        ns.UI.SetList._newButton:Click()
+        U.lastMenu:Find("Empty set"):Click()
+        local box = ns.UI.SetList._nameBox
+        box.edit:SetText("Taken")
+        box.create:Click()                                  -- PlaySound(nil) would raise here
+        assert.is_true(box:IsShown())
+    end)
     it("+ New asks: empty set or from a recipe", function()
         ns.UI.Main:Show()
         ns.UI.SetList._newButton:Click()
@@ -1437,7 +1483,8 @@ describe("UI smoke", function()
         ns.UI.RecipeGallery:Show()
         local reopened = builds - opened - refreshed
         ns.Weights.Build = build
-        local recipes = #ns.Recipes.List() + #ns.Conditions.KnownHolidays()
+        -- every candidate: the cards, the hidden holidays, families and sources
+        local recipes = #ns.Recipes.List() + #ns.Conditions.KnownHolidays() + 10 + C_PetJournal.GetNumPetSources()
         assert.is_true(opened <= recipes, opened .. " counts for " .. recipes .. " recipes")
         assert.equal(0, refreshed, "a resize reuses the counts")
         assert.equal(0, reopened, "opening again reuses the counts")
