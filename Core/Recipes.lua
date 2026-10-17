@@ -136,17 +136,19 @@ end
 -- how many tiles (copies grouped) the set would draw from, and up to four of them, most likely first
 local function count(r)
     local tbl = ns.Weights.Build({ pets = {}, defaultValue = r.defaultValue or 0, filter = r.rules })
-    local found = {}
-    for _, id in ns.PetCache:IteratePetIDs() do
-        if ns.PetCache:IsPrimary(id) then
-            local w = 0
-            for _, c in ipairs(ns.PetCache:GetCopies(id)) do w = w + ns.Weights.Sum(tbl, c) end
-            if w > 0 then found[#found + 1] = { id = id, w = w } end
-        end
+    -- one pass over the draw table: tickets add up on the primary copy
+    local sums = {}
+    for i = 1, #tbl, 2 do
+        local primary = ns.PetCache:GetCopies(tbl[i + 1])[1]
+        sums[primary] = (sums[primary] or 0) + tbl[i]
     end
+    local found = {}
+    for id, w in pairs(sums) do found[#found + 1] = { id = id, w = w } end
     sort(found, function(a, b)
         if a.w ~= b.w then return a.w > b.w end
-        return ns.PetCache:GetSortKey(a.id) < ns.PetCache:GetSortKey(b.id)
+        local ka, kb = ns.PetCache:GetSortKey(a.id), ns.PetCache:GetSortKey(b.id)
+        if ka ~= kb then return ka < kb end
+        return a.id < b.id
     end)
     local sample = {}
     for i = 1, math.min(4, #found) do sample[i] = found[i].id end
@@ -154,8 +156,8 @@ local function count(r)
 end
 
 -- recipe key -> { n, sample }: the gallery asks about each recipe several times per
--- drawing, and every answer goes over all pets. Forgotten when the pets change and
--- each time the gallery opens.
+-- drawing, and every answer goes over all pets. Kept until the pets change (a new
+-- favourite or level comes with PetsChanged too).
 local counts = {}
 
 function R.Count(r)

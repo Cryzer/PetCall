@@ -34,6 +34,22 @@ describe("Recipes", function()
         assert.equal(0, set.settings.defaultValue)
         assert.is_true(#set.settings.trigger > 0)
     end)
+    it("counts tiles: copies add up on the primary, most tickets first", function()
+        W.world.pets.c1 = { species = 77, name = "Twin", level = 25 }
+        W.world.pets.c2 = { species = 77, name = "Twin", level = 1 }
+        W.world.pets.s1 = { species = 78, name = "Solo", level = 25 }
+        ns.PetCache:Rescan()
+        local primary = ns.PetCache:GetCopies("c1")[1]
+        local n, sample = R.Count({ rules = { { "level", ns.Weights.LEVELS[3].value, operator = ">=", level = "1" } } })
+        local all = 0
+        for _, id in ns.PetCache:IteratePetIDs() do
+            if ns.PetCache:IsPrimary(id) and C_PetJournal.PetIsSummonable(id) then all = all + 1 end
+        end
+        assert.equal(all, n)
+        assert.equal(primary, sample[1])            -- two copies: twice the tickets
+        for _, id in ipairs(sample) do assert.is_true(ns.PetCache:IsPrimary(id)) end
+    end)
+
     it("every recipe has conditions or puts its set at the bottom", function()
         local open
         for _, r in ipairs(R.List()) do
