@@ -220,7 +220,8 @@ end
 
 -- place in the list (1 = first) and how many sets take part in the order
 function SetMixin:GetRank()
-    for i, s in ipairs(Sets:List()) do if s == self then return i, #Sets:List() end end
+    local list = Sets:List()
+    for i, s in ipairs(list) do if s == self then return i, #list end end
 end
 
 function SetMixin:GetConditionModel() return ns.Conditions.ToModel(self.settings.trigger) end

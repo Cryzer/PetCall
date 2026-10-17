@@ -22,7 +22,6 @@ local function applyScale()
     frame:SetScale(ns.db.global.window.scale or 1)
 end
 
-local ICON = "Interface\\AddOns\\PetCall\\Media\\icon"
 
 -- The logo as an app icon hanging over the window's corner, where Blizzard's frames
 -- put their portrait: rounded corners, a ring in the look's colour and a soft shadow,
@@ -67,7 +66,6 @@ function Main:Build()
     local g = ns.db.global.window
     frame = CreateFrame("Frame", "PetCallMainWindow", UIParent, "ButtonFrameTemplate")
     frame:SetTitle("PetCall")
-    frame:SetPortraitToAsset(ICON)
     frame:SetSize(g.width or 940, g.height or 640)
     frame:SetPoint(g.point or "CENTER", UIParent, g.relPoint or "CENTER", g.x or 0, g.y or 0)
     frame:SetFrameStrata("HIGH")

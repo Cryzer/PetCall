@@ -34,10 +34,15 @@ describe("Recipes", function()
         assert.equal(0, set.settings.defaultValue)
         assert.is_true(#set.settings.trigger > 0)
     end)
-    it("every recipe has conditions or the lowest priority", function()
+    it("every recipe has conditions or puts its set at the bottom", function()
+        local open
         for _, r in ipairs(R.List()) do
-            assert.is_true(#r.conditions > 0 or r.priority == ns.Weights.LEVELS[2].value, r.key)
+            assert.is_true(#r.conditions > 0 or r.lowest == true, r.key)
+            if #r.conditions == 0 then open = r end
         end
+        ns.Sets:Create("Earlier")
+        local rank, count = R.Create(open):GetRank()
+        assert.equal(count - 1, rank)                       -- just above the default set
     end)
     it("a taken name gets a number and the old set is untouched", function()
         local r = byKey("swimming")

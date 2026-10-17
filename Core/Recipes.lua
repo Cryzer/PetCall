@@ -110,9 +110,8 @@ local function copy(v)
     return c
 end
 
--- a recipe without conditions must not take over: it gets the lowest priority
+-- a recipe without conditions must not take over: R.Create puts its set at the bottom (r.lowest)
 local function finish(r)
-    r.priority = r.lowest and ns.Weights.LEVELS[2].value or nil
     r.category = r.category or "places"
     return r
 end

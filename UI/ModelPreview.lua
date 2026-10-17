@@ -2,9 +2,6 @@ local _, ns = ...
 
 local C_Timer, CreateFrame, UIParent = C_Timer, CreateFrame, UIParent
 
--- Creature IDs whose skeleton root is far from their visual centre: turning them
--- makes them orbit instead of spin, so they get a static pose.
--- Find a creature ID: /run print(select(11, C_PetJournal.GetPetInfoByPetID(petGUID)))
 ns.UI = ns.UI or {}
 ns.UI.previews = ns.UI.previews or {}
 
