@@ -3,7 +3,7 @@
 <p align="center"><img width="400" height="400" alt="PetCall icon" src="https://github.com/user-attachments/assets/e6027670-7bed-42e8-b4ca-a5007c40461e" /></p>
 
 <p align="center">
-The right companion pet at your side, without thinking about it.
+<b>The right companion pet at your side, without thinking about it.</b>
 </p>
 
 <p align="center">
@@ -14,66 +14,80 @@ The right companion pet at your side, without thinking about it.
 
 ---
 
-## Overview
+## What PetCall does
 
-PetCall keeps a companion pet out for you. You make **sets** of pets and tell each set **when** to be used: in a city, while swimming, in a raid, at your house, at night, on one character. PetCall picks a pet from the set that fits right now, summons it, and steps aside whenever a pet would get in the way, for example in combat, in stealth or on a mount.
+You collected hundreds of pets. PetCall makes sure you see them.
 
-PetCall 2.0 is a rewrite with a new window, conditions that read like sentences, ready-made templates and a built-in help. Everything from PetCall 1.x and PetLeash carries over. See [CHANGES.md](CHANGES.md) for the full list of changes.
+It keeps a companion pet at your side and picks one that fits the moment: a water pet while you swim, a rare one in the city, your favorites at home, a spooky one at midnight. It steps aside on its own whenever a pet would be in the way, in combat, in stealth or in the air, and comes back when it can.
 
----
+You decide what fits by making **sets** of pets and telling each set **when** to be used. Or you pick one of the ready-made templates and you are done in one click.
 
-## Features
-
-- **One window for everything** (`/pcall`): your sets on the left, the selected set on the right with **Pets**, **When** and **Set settings** tabs, and a status bar that says what PetCall is doing.
-- **Sets with conditions**: place, place type (city, dungeon, raid, delve, battleground…), your house, activity (swimming, mounted, indoors, AFK…), the mount you ride, group, class and specialization, character, time of day, holiday, macro conditionals and Lua code. A live dot shows which conditions are met right now.
-- **"Or" groups**: a set can be used when *any one* of several groups of conditions is met.
-- **Templates**: 20 ready-made sets ("Water pets while swimming", "Night owls", "Dungeons and raids", "Visiting friends"…) that you create with one click and change like any other set.
-- **Pet grid** with search, filters and sorting; copies of one pet share a tile.
-- **How often**: give each pet a weight from *Never* to *Very often*, or give whole groups of pets more chances with rules (favorites, pet type, level, rare quality, source, native to where you are). Pets you collect later follow the rules too.
-- **3D preview** of the pet with its chance to come out next.
-- **Says why** no pet is out ("Paused by: In combat").
-- **Built-in help**: the **i** next to the logo puts a description over every part of the window.
-- **Share sets** as text; strings from PetCall 1.x still import.
-- **Minimap button, data broker block and Addon Compartment** entry with a pet menu.
-- **Looks**: Blizzard's frames, a PetCall dark look, or your EllesmereUI skin when EllesmereUI is installed.
-- **Lightweight**: no Ace3, events only for your own character, nearly no cost while the window is closed.
-- Available in multiple languages.
+> **New in 2.0:** a complete rebuild with a new window, conditions that read like sentences, 20 templates, a mount condition and built-in help. Your PetCall 1.x and PetLeash sets carry over as they are. See [CHANGES.md](CHANGES.md).
 
 ---
 
-## Download
+## Highlights
+
+**Sets that know when to show up**
+- Conditions for where you are (a zone, a city, a continent, a dungeon, a raid, a delve, your house), what you are doing (swimming, AFK, in a form, riding a chosen mount), who you play with, your character, the time of day and holidays.
+- Conditions read like sentences: *Activity is Swimming*, *Place type is not City*. A live dot shows what is true right now.
+- "Or" groups for a set that should also be used somewhere else.
+- 20 ready-made templates, plus one for your class and one for each holiday.
+
+**Pets the way you like them**
+- Tick the pets a set picks from, or let rules do it: favorites, a pet type, a level, rare quality, where a pet comes from, or pets native to where you are. Pets you collect later follow the rules too.
+- Decide how often each pet comes out, from *Never* to *Very often*.
+- A 3D preview with the exact chance the pet comes out next.
+
+**Always clear**
+- A status bar that says what PetCall is doing, and why no pet is out ("Paused by: In combat").
+- Built-in help: click the **i** and every part of the window explains itself.
+
+**Fits your game**
+- Blizzard's look, a dark PetCall look, or your EllesmereUI skin.
+- Minimap button with a pet menu, a data broker block and an Addon Compartment entry.
+- Settings in the game's own Options panel, with profiles.
+- Light: no Ace3, events only for your own character, almost no cost while the window is closed.
+- Available in several languages.
+
+---
+
+## Install
 
 | Platform | Link |
 |---|---|
 | **CurseForge** | [curseforge.com/wow/addons/petcall](https://www.curseforge.com/wow/addons/petcall) |
 | **Wago.io** | [addons.wago.io/addons/petcall](https://addons.wago.io/addons/petcall) |
 
-Install via the CurseForge or Wago client for automatic updates, or download manually from either site and extract into:
-
-```
-World of Warcraft/_retail_/Interface/AddOns/
-```
-
-Ensure the folder is named `PetCall`.
+Use the CurseForge or Wago app for automatic updates, or download the addon from either site and extract it into `World of Warcraft/_retail_/Interface/AddOns/`. The folder must be named `PetCall`.
 
 ---
 
 ## Getting started
 
-1. Type `/pcall` (or **Ctrl+Click** the minimap button).
-2. The **Default** set already uses all your pets, and auto-summon is on: PetCall summons one of them as soon as nothing is in the way.
-3. Want something more? Click **+ New → From a template…** and pick a set, or start an **Empty set** and add your own conditions.
-4. Not sure what a part of the window does? Click the **i** next to the logo.
+1. **Nothing to set up.** Right after you install PetCall, the **Default** set uses all your pets and auto-summon is on. A pet comes out as soon as nothing is in the way.
+2. **Open the window** with `/pcall` or **Ctrl+Click** on the minimap button.
+3. **Add a set.** Click **+ New → From a template…** and pick one, such as *Water pets while swimming*. Or start an **Empty set** and add your own conditions on the **When** tab.
+4. **Lost?** Click the **i** next to the logo.
+
+### Example: a pet that matches your mount
+
+1. **+ New → Empty set**, name it *Riders*.
+2. On the **When** tab, **+ Add condition → What I am doing → Mount**, then **+ choose** and tick your drakes.
+3. On the **Pets** tab, add a rule for *Dragonkin*.
+4. In the PetCall settings, turn off *Don't summon while mounted*. The mount window offers to do it for you.
+
+Now a dragonkin pet runs next to you whenever you ride one of those drakes.
 
 ---
 
 ## How PetCall picks a pet
 
-1. **Which set.** The sets list is in order: PetCall uses the **highest set whose conditions are met** right now. Drag sets to change the order. The **Default** set is always last and is used when no other set fits.
-2. **Which pets.** Only the ticked pets of that set take part. Rules can tick whole groups of pets for you ("via a rule").
-3. **Which one.** Each pet's **How often** sets its odds: *Never*, *Very rarely*, *Rarely*, *Normal*, *Often*, *Very often*. Each step makes a pet about eight times as likely as the one before. The preview shows the exact chance.
+1. **Which set.** PetCall uses the **highest set in the list whose conditions are met** right now. Drag sets to change the order. The **Default** set is always last and is used when nothing else fits.
+2. **Which pets.** Only the pets ticked in that set take part. Rules tick whole groups of pets for you.
+3. **Which one.** Each pet's **How often** sets its odds: *Never*, *Very rarely*, *Rarely*, *Normal*, *Often* or *Very often*. Each step makes a pet about eight times as likely as the one before. The preview shows the exact chance.
 
-PetCall also waits when a pet would be in the way: in combat, while flying, in stealth or invisible, in a vehicle, while dead, looting or at the barber, and in the other cases you choose in the settings. The status bar tells you what it is waiting for.
+**When PetCall waits:** in combat, while flying, in stealth or invisible, in a vehicle, while dead, looting or at the barber, and in the cases you choose in the settings. The status bar says what it is waiting for.
 
 ---
 
@@ -81,74 +95,98 @@ PetCall also waits when a pet would be in the way: in combat, while flying, in s
 
 ### Sets (left)
 
-- Click a set to edit it, drag it to change the order.
-- **Right-click** a set to pause, rename, duplicate, export or delete it.
-- **+ New** creates an empty set or one from a template; **Import** adds a set someone shared with you.
-- At the bottom: the pet that is out now and the set it came from.
+- Click a set to edit it. Drag it to change the order.
+- Each card says whether the set is in use, what it is waiting for, or that it is paused.
+- **Right-click** a set to pause it (for an hour or until logout), rename, duplicate, export or delete it.
+- **+ New** starts an empty set or one from a template. **Import** adds a set someone shared with you.
+- **Out now** at the bottom: the pet at your side and the set it came from.
+- The arrow at the top folds the list away for more room.
 
 ### Pets tab
 
-- **Search**, show **All** pets, only those **In this set** or **Left out**, or only favorites. The **Filter** button sorts the pets and can give one weight to every pet shown.
-- **More chance for**: rules that give whole groups of pets extra chances. Click a rule to change it, **+ Add** for a new one.
-- **Tick** a pet to put it in the set. **Right-click** to set its weight, summon it or make it a favorite.
-- **Preview** on the right: the pet you point at or picked, its source, **How often**, its **chance in this set** and a **Summon** button.
+- **Search** by name. Show **All** pets, only those **In this set** or only those **Left out**. The star shows only your favorites.
+- **Filter**: pet types, sorting by name, level, rarity or chance, and one weight for every pet shown.
+- **More chance for**: rules that put whole groups of pets in the set. Click a rule to change how often its pets come out or to narrow it down. **+ Add** makes a new rule.
+- **Tick** a pet to put it in the set. **Right-click** to set how often it comes out, summon it, make it a favorite or open it in the Pet Journal.
+- **Preview** on the right: the pet you point at or click, its source, level and copies, **How often**, its **chance in this set**, a **Summon** button and a favorite star.
 
 ### When tab
 
-Conditions read like sentences: *Activity is Swimming*, *Place type is not City*. Click **is** to turn a condition into **is not**. All conditions in a group must be met; with **+ Or another set of conditions**, any one group is enough. **+ current** adds the place you stand in or the mount you ride.
+All conditions in a group must be met. **+ Or another set of conditions** adds a second group: then any one group is enough. Click **is** to turn a condition into **is not**, and **×** to remove it.
 
-| Condition | Examples |
+| Condition | What it checks |
 |---|---|
-| Place | a zone, a city or a whole continent |
+| Place | a zone, a city or a whole continent; **+ current** adds where you stand |
 | Place type | city or rest area, dungeon, raid, scenario, delve, battleground or arena, open world |
 | Home | your house or plot, someone else's, inside a house |
 | Activity | mounted, swimming, indoors, outdoors, AFK, in a shapeshift form |
-| Mount | one or more mounts: **+ current** adds the one you ride, **+ choose** opens your collection with search, filters and a 3D preview (needs "Don't summon while mounted" turned off) |
+| Mount | the mounts you choose: **+ current** adds the one you ride, **+ choose** opens your collection with search, filters and a 3D preview |
 | Group | solo, party, raid |
 | Character | class, specialization, one character by name |
 | Time of day | hours on the server clock |
-| Holiday | any holiday or a specific one |
-| Macro conditional | e.g. `[outdoors,nomounted]` |
+| Holiday | any holiday, or one in particular |
+| Macro conditional | any macro condition, e.g. `[outdoors,nomounted]` |
 | Lua code | your own function that returns true or false |
+
+Mounted and Mount need *Don't summon while mounted* turned off in the settings, or PetCall waits until you dismount.
 
 ### Set settings tab
 
-Pause the set, move it up or down, choose what happens when it starts (keep the pet that is out or summon a new one), how often to switch pets, a chat message on summon, or **no pet at all** while the set is used (for raids or arenas). Under **Pets**: the weight for pets you haven't set by hand, new pets included, plus reset and export.
+- **Name and state:** rename the set, pause it or let it run.
+- **Order:** move it up or down.
+- **Behaviour:** what happens when the set starts (keep the pet that is out, or summon a new one), how often to switch pets, a chat message on summon, or **no pet at all** while the set is used, for raids or arenas.
+- **Pets:** how often pets come out that you have not set by hand, new pets included. Reset all weights or edit the rules.
+- **Export, duplicate or delete** the set.
+
+---
+
+## Templates
+
+Click **+ New → From a template…**. Each template creates an ordinary set you can change afterwards. Grey cards need pets you do not have yet.
+
+| Group | Templates |
+|---|---|
+| Places | Where people can see you · Flyers in the open world · Pets from this zone · At my house · Visiting friends · Dungeons and raids · Delve crew |
+| Moments | Water pets while swimming · Morning critters · Night owls · Witching hour · Indoor company · Pack of the wild · Favorites while AFK |
+| Company | Lone wanderer · Party mascots |
+| Collections | Favorites first · Walk the little ones · Trading Post finds · Festive mood |
+| Your class | pets that suit your class |
+| Holidays | the event pets of each holiday you have pets for |
 
 ---
 
 ## Settings
 
-**Options → AddOns → PetCall** (or the gear in the window, or `/pcall settings`):
+**Options → AddOns → PetCall**, the gear in the window, or `/pcall settings`:
 
-- Auto-summon, wait time when idle, only after zoning, only in cities.
-- Timed and per-map auto switch.
-- Dismiss in stealth or invisibility; don't summon while mounted.
-- What to do in dungeons and raids, and in battlegrounds and arenas.
+- Auto-summon, the wait when idle, only after zoning, only in cities.
+- Timed and per-map pet switching.
+- Dismiss in stealth or invisibility. Don't summon while mounted.
+- What PetCall does in dungeons and raids, and in battlegrounds and arenas.
 - Special items: pause PetCall while an item that acts like a pet is in use.
-- Override the Pet Battle loadout's pet, chat messages, minimap button.
-- Window look and window scale.
+- The Pet Battle loadout's pet, chat messages, the minimap button.
+- Window look and scale.
 - **Profiles** (switch, copy, reset, delete) and an **About** page with what's new.
 
 ---
 
 ## Minimap button and data broker
 
-- **Left-click**: toggle your pet (and auto-summon).
-- **Right-click**: pet menu with summon another, recently summoned pets and all pets in alphabetical pages, with a 3D preview.
-- **Ctrl+Click**: open the PetCall window.
+- **Left-click**: your pet out or away, with auto-summon.
+- **Right-click**: a pet menu with *Summon another*, your recently summoned pets and every pet in alphabetical pages, with a 3D preview.
+- **Ctrl+Click**: the PetCall window.
 
-The same block works in data bars that support LibDataBroker, and in the Addon Compartment.
+The same block works in data bars that support LibDataBroker and in the Addon Compartment.
 
 ---
 
 ## Sharing sets
 
-Right-click a set and choose **Export**, then send the text to a friend. They click **Import**, paste it and pick a name. Pets match by species, so the friend's own copies are ticked. Lua code in an imported set stays off until you review it in the When tab.
+Right-click a set, choose **Export** and send the text to a friend. They click **Import**, paste it and pick a name. Pets match by species, so the friend's own copies are ticked. Lua code in an imported set stays off until it is reviewed on the When tab. Sets exported from PetCall 1.x still import.
 
 ---
 
-## Slash commands
+## Slash commands and key bindings
 
 | Command | Action |
 |---|---|
@@ -156,13 +194,29 @@ Right-click a set and choose **Export**, then send the text to a friend. They cl
 | `/pcall settings` | Open the settings |
 | `/pcall resummon` | Summon another pet; turns auto-summon on |
 | `/pcall dismiss` | Dismiss your pet; turns auto-summon off |
-| `/pcall togglePet` | Toggle your pet and auto-summon |
-| `/pcall enable` | Toggle auto-summon |
-| `/pcall dismissWhenStealthed` | Toggle dismissing in stealth |
-| `/pcall migrate` | Re-run the PetLeash import dialog |
-| `/pcall help` | List commands |
+| `/pcall togglePet` | Pet out or away, with auto-summon |
+| `/pcall enable` | Auto-summon on or off |
+| `/pcall dismissWhenStealthed` | Dismissing in stealth on or off |
+| `/pcall migrate` | Show the PetLeash import again |
+| `/pcall help` | List the commands |
 
-Key bindings (**Options → Keybindings → AddOns → PetCall**): summon another pet, dismiss pet, toggle pet, open PetCall.
+**Options → Keybindings → AddOns → PetCall**: summon another pet, dismiss pet, toggle pet, open PetCall.
+
+---
+
+## FAQ
+
+**Why is no pet out?**
+The status bar says why: combat, flying, stealth, a set with *no pet* and so on. Point at it for details.
+
+**My Mount condition does nothing.**
+Turn off *Don't summon while mounted* in the settings. While it is on, PetCall waits until you dismount. It is on by default because a summon on a mount uses the global cooldown and can get in the way of Skyriding.
+
+**Will PetCall slow my game down?**
+No. It listens only to events about your own character, checks a condition when the game says something it depends on changed (or on a slow timer for the few things the game sends no event for, such as swimming), and does almost nothing while its window is closed.
+
+**Can I keep pets away in raids or arenas?**
+Yes: in the settings for dungeons, raids, battlegrounds and arenas, or with a set that has *No pet while this set is used*.
 
 ---
 
@@ -170,41 +224,33 @@ Key bindings (**Options → Keybindings → AddOns → PetCall**): summon anothe
 
 ### From PetCall 1.x
 
-Nothing to do: PetCall 2.0 reads your 1.x profiles, sets, weights and conditions as they are, and puts your sets in the order of their old priority.
+Nothing to do. PetCall 2.0 reads your 1.x profiles, sets, weights and conditions as they are, and orders your sets by their old priority.
 
 ### From PetLeash
 
-PetCall is the continuation of PetLeash. Your existing profiles, pet sets and triggers are fully compatible.
-
-**Automatic migration**
+PetCall continues PetLeash. Your profiles, pet sets and triggers carry over.
 
 1. Install PetCall while PetLeash is still installed.
 2. Log in: a dialog asks whether to import your PetLeash data.
-3. Click **Yes**: the UI reloads once and all your sets are available in PetCall.
-4. You can now uninstall PetLeash.
+3. Click **Yes**. The UI reloads once and your sets are in PetCall.
+4. Uninstall PetLeash.
 
-If PetLeash data is present but you skipped the prompt, run `/pcall migrate` at any time.
+Skipped the dialog? Run `/pcall migrate`.
 
-**Manual migration (PetLeash already removed)**
+**PetLeash already removed, but its SavedVariables file is still there:**
 
-If you have already removed PetLeash but still have its SavedVariables file:
+> Close World of Warcraft completely before editing SavedVariables files.
 
-> **World of Warcraft must be closed** before editing SavedVariables files.
-
-1. Close World of Warcraft completely.
-2. Locate `WTF\Account\<AccountName>\SavedVariables\PetLeash.lua`.
-3. Open it in a text editor and change the first line from `PetLeash3DB` to `PetCall3DB`.
-4. Save the file as `PetCall.lua` in the same folder.
-5. Log in: PetCall loads your data.
+1. Find `WTF\Account\<AccountName>\SavedVariables\PetLeash.lua`.
+2. Open it in a text editor and change the first line from `PetLeash3DB` to `PetCall3DB`.
+3. Save it as `PetCall.lua` in the same folder.
+4. Log in: PetCall loads your data.
 
 ---
 
 ## Contributing
 
-Contributions, ideas, and feedback are welcome.
-
-- [Open an issue](https://github.com/Cryzer/PetCall/issues)
-- Submit a pull request
+Ideas, bug reports and pull requests are welcome: [open an issue](https://github.com/Cryzer/PetCall/issues).
 
 ---
 

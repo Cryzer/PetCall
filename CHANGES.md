@@ -3,27 +3,28 @@
 
 ## v2.0.0 (unreleased)
 
-PetCall 2.0 is a complete rebuild. One new window, sets that know when to show up, and pets that fit the moment, all without you lifting a finger. Your PetCall 1.x and PetLeash sets come along as they are.
+PetCall 2.0 is a complete rebuild. You collected hundreds of pets; now you get to see them. Sets that know when to show up, a pet that fits the moment, and a window that explains itself. Your PetCall 1.x and PetLeash sets come along as they are.
 
 ### Highlights
 
-- A brand-new PetCall window (/pcall): your sets on the left, everything about the selected set on the right, and a status bar that tells you what PetCall is doing.
-- Pets for every moment: water pets while you swim, flyers in the open world, your rarest pets in cities, your favorites at home. Each set knows when it should be used.
-- Conditions that read like sentences, with a live dot that shows what is true right now. New: several places at once, place types (city, dungeon, raid, delve, battleground, open world), your house, activities like swimming or AFK, the mount you ride (picked from your collection with search, filters and a 3D preview), solo/party/raid, one character by name, time of day and holidays.
-- Not just "this and that": add "or another set of conditions" when a set should also be used somewhere else.
-- 20 ready-made templates, from "Water pets while swimming" to "Night owls" and "Visiting friends". One click and the set is yours to change.
-- A fast pet grid for even the biggest collections: search, filters, sorting, copies of one pet on one tile.
+- A brand-new window (/pcall): your sets on the left, the chosen set on the right, and a status bar that always says what PetCall is doing.
+- Sets that know when to show up: water pets while you swim, flyers in the open world, rare pets in cities, your favorites at home.
+- Conditions that read like sentences, with a live dot that shows what is true right now.
+- Many new conditions: several places at once, place types (city, dungeon, raid, delve, battleground, open world), your house, swimming or AFK, solo, party or raid, one character by name, time of day and holidays.
+- Match your pet to your mount: pick mounts from your collection in a window with search, filters and a 3D preview.
+- Or-groups: "+ Or another set of conditions" for a set that should also be used somewhere else.
+- 20 ready-made templates, plus one for your class and one for each holiday. One click and the set is yours to change.
 - Decide how often each pet comes out, from Never to Very often, or let rules do it for whole groups: favorites, a pet type, a level, rare quality, where a pet comes from, or pets native to where you are. Pets you collect later follow the rules too.
-- A 3D preview of every pet with its exact chance to come out next.
-- No more guessing: PetCall tells you why no pet is out ("Paused by: In combat").
-- Built-in help: click the "i" next to the logo and every part of the window explains itself.
+- A fast pet grid for even the biggest collections, and a 3D preview with the exact chance a pet comes out next.
+- No more guessing: the status bar says why no pet is out, for example "Paused by: In combat".
+- Built-in help: click the "i" and every part of the window explains itself.
 
 ### Also new
 
 - A pet menu on the minimap button: summon another, your recently summoned pets, or any pet from alphabetical pages with a 3D preview. Also in the Addon Compartment.
 - Settings in the game's own Options panel, with profiles, a What's new page and a window scale slider.
-- Choose the window look: Blizzard's frames, PetCall dark, or your EllesmereUI skin. The PetCall block also works in EllesmereUI data bars.
-- Share sets as shorter text; sets exported from PetCall 1.x still import. Lua code in an imported set stays off until you check it.
+- Choose the look: Blizzard's frames, PetCall dark, or your EllesmereUI skin. The PetCall block also works in EllesmereUI data bars.
+- Shorter text for sharing sets; sets exported from PetCall 1.x still import. Lua code in an imported set stays off until you check it.
 - Lighter than ever: no Ace3, events only for your own character, fewer updates in raids and almost no cost while the window is closed.
 
 ### Fixed
