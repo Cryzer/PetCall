@@ -25,7 +25,7 @@ PetCall 2.0 is a rewrite with a new window, conditions that read like sentences,
 ## Features
 
 - **One window for everything** (`/pcall`): your sets on the left, the selected set on the right with **Pets**, **When** and **Set settings** tabs, and a status bar that says what PetCall is doing.
-- **Sets with conditions**: place, place type (city, dungeon, raid, delve, battleground…), your house, activity (swimming, mounted, indoors, AFK…), group, class and specialization, character, time of day, holiday, macro conditionals and Lua code. A live dot shows which conditions are met right now.
+- **Sets with conditions**: place, place type (city, dungeon, raid, delve, battleground…), your house, activity (swimming, mounted, indoors, AFK…), the mount you ride, group, class and specialization, character, time of day, holiday, macro conditionals and Lua code. A live dot shows which conditions are met right now.
 - **"Or" groups**: a set can be used when *any one* of several groups of conditions is met.
 - **Templates**: 20 ready-made sets ("Water pets while swimming", "Night owls", "Dungeons and raids", "Visiting friends"…) that you create with one click and change like any other set.
 - **Pet grid** with search, filters and sorting; copies of one pet share a tile.
@@ -95,7 +95,7 @@ PetCall also waits when a pet would be in the way: in combat, while flying, in s
 
 ### When tab
 
-Conditions read like sentences: *Activity is Swimming*, *Place type is not City*. Click **is** to turn a condition into **is not**. All conditions in a group must be met; with **+ Or another set of conditions**, any one group is enough.
+Conditions read like sentences: *Activity is Swimming*, *Place type is not City*. Click **is** to turn a condition into **is not**. All conditions in a group must be met; with **+ Or another set of conditions**, any one group is enough. **+ current** adds the place you stand in or the mount you ride.
 
 | Condition | Examples |
 |---|---|
@@ -103,7 +103,7 @@ Conditions read like sentences: *Activity is Swimming*, *Place type is not City*
 | Place type | city or rest area, dungeon, raid, scenario, delve, battleground or arena, open world |
 | Home | your house or plot, someone else's, inside a house |
 | Activity | mounted, swimming, indoors, outdoors, AFK, in a shapeshift form |
-| Mount | one or more mounts from your collection (turn off "Don't summon while mounted") |
+| Mount | one or more mounts: **+ current** adds the one you ride, **+ choose** opens your collection with search, filters and a 3D preview (needs "Don't summon while mounted" turned off) |
 | Group | solo, party, raid |
 | Character | class, specialization, one character by name |
 | Time of day | hours on the server clock |

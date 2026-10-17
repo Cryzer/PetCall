@@ -9,7 +9,7 @@ PetCall 2.0 is a complete rebuild. One new window, sets that know when to show u
 
 - A brand-new PetCall window (/pcall): your sets on the left, everything about the selected set on the right, and a status bar that tells you what PetCall is doing.
 - Pets for every moment: water pets while you swim, flyers in the open world, your rarest pets in cities, your favorites at home. Each set knows when it should be used.
-- Conditions that read like sentences, with a live dot that shows what is true right now. New: several places at once, place types (city, dungeon, raid, delve, battleground, open world), your house, activities like swimming or AFK, the mount you ride, solo/party/raid, one character by name, time of day and holidays.
+- Conditions that read like sentences, with a live dot that shows what is true right now. New: several places at once, place types (city, dungeon, raid, delve, battleground, open world), your house, activities like swimming or AFK, the mount you ride (picked from your collection with search, filters and a 3D preview), solo/party/raid, one character by name, time of day and holidays.
 - Not just "this and that": add "or another set of conditions" when a set should also be used somewhere else.
 - 20 ready-made templates, from "Water pets while swimming" to "Night owls" and "Visiting friends". One click and the set is yours to change.
 - A fast pet grid for even the biggest collections: search, filters, sorting, copies of one pet on one tile.
