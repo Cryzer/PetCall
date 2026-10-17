@@ -83,18 +83,15 @@ local function showMount(m)
     end
 end
 
--- the preview stays on the mount pointed at last; its row is marked
+-- the preview stays on the mount pointed at last
 local function previewMount(m)
     current = m
     showMount(m)
-    scrollBox:ForEachFrame(function(row) row.pick:SetShown(current ~= nil and row.mount.id == current.id) end)
 end
 
 local function initRow(row, m)
     if not row.check then
         row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
-        row.pick = row:CreateTexture(nil, "BACKGROUND")
-        row.pick:SetAllPoints()
         row.check = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
         row.check:SetSize(22, 22)
         row.check:SetPoint("LEFT", 2, 0)
@@ -118,9 +115,6 @@ local function initRow(row, m)
     row.icon:SetTexture(m.icon)
     row.text:SetText(m.name)
     row.check:SetChecked(chosen(m.id))
-    local r, g, b = ns.Skin:Accent()
-    row.pick:SetColorTexture(r, g, b, 0.18)
-    row.pick:SetShown(current ~= nil and current.id == m.id)
 end
 
 local function filterMenu(_, root)
