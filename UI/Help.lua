@@ -59,9 +59,9 @@ function Help.Areas()
     local f = Main.GetFrameRaw()
     if not f then return {} end
     local out = {}
-    local function add(key, rect, dir)
+    local function add(key, rect, dir, outside)
         if rect and rect.r - rect.l > 4 and rect.t - rect.b > 4 then
-            out[#out + 1] = { key = key, rect = rect, dir = dir, text = TEXT[key] }
+            out[#out + 1] = { key = key, rect = rect, dir = dir, text = TEXT[key], outside = outside }
         end
     end
     add("sets", box(f.left), "RIGHT")
@@ -70,7 +70,7 @@ function Help.Areas()
         add("gallery", box(gallery:GetFrame()), "LEFT")
     else
         add("header", box(f.header), "DOWN")
-        add("tabs", union(Main:GetTabButtons()), "DOWN")
+        add("tabs", union(Main:GetTabButtons()), "DOWN", true)    -- its "i" past the names, not over one
         local tab = Main:GetSelectedTab()
         local content = box(f.content)
         if tab == "pets" and content then
@@ -103,7 +103,7 @@ local function fill()
         local x, y = (a.rect.l - ox) / scale, (a.rect.t - oy) / scale
         local w, h = (a.rect.r - a.rect.l) / scale, (a.rect.t - a.rect.b) / scale
         plate[#plate + 1] = {
-            ButtonPos = { x = x + w / 2 - 23, y = y - h / 2 + 23 },
+            ButtonPos = { x = a.outside and x + w + 2 or x + w / 2 - 23, y = y - h / 2 + 23 },
             HighLightBox = { x = x, y = y, width = w, height = h },
             ToolTipDir = a.dir,
             ToolTipText = a.text,
