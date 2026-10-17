@@ -131,6 +131,12 @@ describe("UI smoke", function()
         assert.same({ 9, 7 }, e.mountIDs)
         P:Toggle(9)
         assert.same({ 7 }, e.mountIDs)
+        -- tick and untick what the list shows; mounts outside it stay as they are
+        P:TickShown(true)
+        assert.same({ 9, 5, 4, 7 }, e.mountIDs)
+        P:TickShown(false)
+        assert.same({}, e.mountIDs)
+        P:Toggle(7)
         -- the filter: search, kinds, favorites, chosen
         local all = ns.Conditions.CollectedMounts()
         local function names(st)

@@ -55,6 +55,20 @@ local function toggle(id)
 end
 Picker.Toggle = function(_, id) toggle(id) end
 
+-- ticks (or unticks) every mount the list shows now, as one change
+function Picker:TickShown(on)
+    entry.mountIDs = entry.mountIDs or {}
+    local keep = {}
+    for _, m in ipairs(visible) do keep[m.id] = on end
+    local out = {}
+    for _, id in ipairs(entry.mountIDs) do if keep[id] == nil then out[#out + 1] = id end end
+    if on then for _, m in ipairs(visible) do out[#out + 1] = m.id end end
+    wipe(entry.mountIDs)
+    for i, id in ipairs(out) do entry.mountIDs[i] = id end
+    if onChange then onChange() end
+    self:Redraw()
+end
+
 local function showMount(m)
     if not m then
         preview.empty:Show()
@@ -135,6 +149,9 @@ local function filterMenu(_, root)
                 function() state.hiddenSources[i] = not state.hiddenSources[i] or nil Picker:Redraw() end)
         end
     end
+    root:CreateDivider()
+    root:CreateButton(L["Tick all shown"], function() Picker:TickShown(true) end)
+    root:CreateButton(L["Untick all shown"], function() Picker:TickShown(false) end)
     root:CreateDivider()
     root:CreateButton(L["Reset filters"], function()
         state.chosenOnly, state.favoritesOnly, state.usableOnly = nil, nil, nil
