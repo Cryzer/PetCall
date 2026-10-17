@@ -138,14 +138,25 @@ describe("UI smoke", function()
         end
         assert.is_true(after)
     end)
-    it("the flat look drops the round portrait for a small icon beside the title", function()
-        local f = CreateFrame("Frame", nil, UIParent, "ButtonFrameTemplate")
-        f.TitleContainer = { TitleText = CreateFrame("Frame") }
-        f.PortraitContainer = CreateFrame("Frame")
-        f.PortraitContainer:Show()
-        ns.Skin.Flat.Shell(f, { icon = "x" })
-        assert.is_false(f.PortraitContainer:IsShown())
-        assert.equal(f.TitleContainer.TitleText, f.pcIcon._points.RIGHT.rel)
+    it("the window shows its logo whole in a framed corner tile, gold on Blizzard's look, accent on the dark ones", function()
+        ns.UI.Main:Show()
+        local badge = ns.UI.Main:GetFrame().badge
+        assert.is_not_nil(badge)
+        assert.equal("Interface\\AddOns\\PetCall\\Media\\icon", badge.logo._texture)
+        assert.is_nil(badge.logo._texCoord, "the logo is never cropped")
+        local function ringColour(look)
+            ns.db.global.look = look
+            ns.Skin._Forget()
+            ns.Skin:PaintBadge(badge)
+            return badge.ring.pcFlat.top._color
+        end
+        local gold = ringColour("blizzard")
+        assert.same({ 1, 0.82, 0 }, { gold[1], gold[2], gold[3] })
+        local accent = ringColour("flat")
+        local r, g, b = ns.Skin.Flat.Accent()
+        assert.same({ r, g, b }, { accent[1], accent[2], accent[3] })
+        ns.db.global.look = "auto"
+        ns.Skin._Forget()
     end)
     it("share dialog shows export and import", function()
         assert.has_no_error(function()

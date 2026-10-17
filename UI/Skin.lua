@@ -78,6 +78,18 @@ end
 
 function Skin:OnLooksChanged(fn) accentListeners[#accentListeners + 1] = fn end
 
+-- The logo tile in the window's corner, framed to suit the look: a gold ring with a
+-- darker bevel next to Blizzard's gold frames, the accent colour on the dark looks.
+-- Layers from the outside in: a dark edge, the coloured ring, an inner line.
+function Skin:PaintBadge(badge)
+    local gold = self:Look() == "blizzard"
+    local r, g, b = 1, 0.82, 0
+    if not gold then r, g, b = self:Accent() end
+    Flat.Fill(badge, 0, 0, 0, 0.9, { 0, 0, 0, 0.9 })
+    Flat.Fill(badge.ring, 0.04, 0.04, 0.05, 1, { r, g, b, 1 })
+    Flat.Fill(badge.inner, 0, 0, 0, 0, gold and { 0.55, 0.4, 0.05, 1 } or { 0, 0, 0, 0.7 })
+end
+
 if hasEUI() then
     EllesmereUI.RegisterSkin("PetCall", function(api)
         S = api
@@ -170,23 +182,13 @@ local function dropNineSlice(frame)
     if frame.SetBackdrop and frame.backdropInfo then frame:SetBackdrop(nil) end
 end
 
--- a framed window (ButtonFrameTemplate): flat body, a title strip, an optional bottom bar.
--- The round portrait would hang over the corner of a flat window: with opts.icon the
--- window shows a small icon beside its title instead.
+-- a framed window (ButtonFrameTemplate): flat body, a title strip, an optional bottom bar
 function Flat.Shell(frame, opts)
     dropNineSlice(frame)
     hide(frame.Bg)
     hide(frame.TopTileStreaks)
     if frame.PortraitContainer then frame.PortraitContainer:Hide() end
     hide(frame.PortraitFrame)
-    local title = frame.TitleContainer and frame.TitleContainer.TitleText
-    if opts and opts.icon and title then
-        frame.pcIcon = frame.pcIcon or frame:CreateTexture(nil, "ARTWORK")
-        frame.pcIcon:SetTexture(opts.icon)
-        frame.pcIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        frame.pcIcon:SetSize(16, 16)
-        frame.pcIcon:SetPoint("RIGHT", title, "LEFT", -5, 0)
-    end
     local r, g, b, a = Flat.Background()
     fill(frame, r, g, b, a)
     frame.pcTitle = frame.pcTitle or frame:CreateTexture(nil, "BACKGROUND", nil, -6)

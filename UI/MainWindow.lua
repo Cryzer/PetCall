@@ -24,6 +24,31 @@ end
 
 local ICON = "Interface\\AddOns\\PetCall\\Media\\icon"
 
+-- The logo in a framed square tile in the window's corner instead of the round
+-- portrait: the logo carries its own lettering, so it is shown whole, never cropped.
+local BADGE, LOGO = 60, 52
+function Main.BuildBadge(f)
+    ButtonFrameTemplate_HidePortrait(f)
+    local badge = CreateFrame("Frame", nil, f)
+    badge:SetSize(BADGE, BADGE)
+    badge:SetPoint("TOPLEFT", 3, -3)
+    badge:SetFrameLevel((tonumber(f:GetFrameLevel()) or 0) + 20)
+    badge.ring = CreateFrame("Frame", nil, badge)
+    badge.ring:SetPoint("TOPLEFT", 1, -1)
+    badge.ring:SetPoint("BOTTOMRIGHT", -1, 1)
+    badge.inner = CreateFrame("Frame", nil, badge.ring)
+    badge.inner:SetPoint("TOPLEFT", 1, -1)
+    badge.inner:SetPoint("BOTTOMRIGHT", -1, 1)
+    badge.logo = badge.inner:CreateTexture(nil, "ARTWORK")
+    badge.logo:SetTexture(ICON)
+    badge.logo:SetSize(LOGO, LOGO)
+    badge.logo:SetPoint("CENTER")
+    ns.Skin:PaintBadge(badge)
+    ns.Skin:OnLooksChanged(function() ns.Skin:PaintBadge(badge) end)
+    f.badge = badge
+    return badge
+end
+
 function Main:Build()
     if frame then return end
     local g = ns.db.global.window
@@ -48,9 +73,10 @@ function Main:Build()
     -- the status bar lives below the inset
     frame.Inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 32)
     applyScale()
-    ns.Skin:Apply("Shell", frame, { bottomBar = 28, icon = ICON })
+    ns.Skin:Apply("Shell", frame, { bottomBar = 28 })
     ns.Skin:Apply("CloseButton", frame.CloseButton)
     ns.Skin:Apply("Inset", frame.Inset)
+    Main.BuildBadge(frame)
 
     local resize = CreateFrame("Button", nil, frame, "PanelResizeButtonTemplate")
     resize:SetPoint("BOTTOMRIGHT", -4, 4)
