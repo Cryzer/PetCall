@@ -1,6 +1,15 @@
 
 # Changelog
 
+## v2.0.1 (2026-10-18)
+
+### Fixed
+
+- Many pet rules no longer run out of the window: the rule chips wrap onto more lines and the pet grid moves down under them.
+- The pet count ("409 in this set · 130 left out") moved to the toolbar line, so the rule chips no longer cover it.
+- A "where a pet comes from" rule with no text yet says so instead of showing "Source: :".
+- The About page in the Options panel scrolls, so nothing below the commands is cut off.
+
 ## v2.0.0 (2026-10-17)
 
 PetCall 2.0 is a complete rebuild. You collected hundreds of pets; now you get to see them. Sets that know when to show up, a pet that fits the moment, and a window that explains itself. Your PetCall 1.x and PetLeash sets come along as they are.
