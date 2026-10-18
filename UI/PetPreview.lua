@@ -15,7 +15,34 @@ local hovering         -- true while SetHover draws: the model waits for the cur
 -- When room runs short the parts go in this order: the source lines (still in the
 -- tooltip), the chance bar, then the model. Name, How often and Summon always stay.
 -- (each budget keeps an 8 px gap above the Summon button)
-local FULL, NO_SOURCE, NO_CHANCE = 242, 202, 148
+local FULL, NO_SOURCE, NO_CHANCE = 248, 202, 148
+-- The controls stand on the Summon button, counted up from the panel's bottom edge, so
+-- no text above them can push them out of the frame. The source lines get the room
+-- between the name and "How often" and are cut there (the whole text is in the tooltip).
+local SUMMON_TOP, CHANCE_BOTTOM, LEVELS_BOTTOM, LEVELS_LOW = 30, 38, 92, 38
+local LEVEL_H, LEVEL_GAP = 20, 2
+
+-- Blizzard's source text: "|n" line breaks, sometimes blank lines and trailing breaks
+function Preview.CleanSource(text)
+    text = (text or ""):gsub("|n", "\n")
+    text = text:gsub("\n%s*\n", "\n")
+    text = text:gsub("^%s+", ""):gsub("%s+$", "")
+    return text
+end
+
+-- How often and the chance bar, counted up from the bottom edge
+local function placeControls(withChance)
+    local bottom = withChance and LEVELS_BOTTOM or LEVELS_LOW
+    for i, btn in ipairs(panel.levels) do
+        local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
+        btn:ClearAllPoints()
+        btn:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8 + col * 76, bottom + (1 - row) * (LEVEL_H + LEVEL_GAP))
+    end
+    local levelsTop = bottom + 2 * LEVEL_H + LEVEL_GAP
+    panel.weight:ClearAllPoints()
+    panel.weight:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, levelsTop + 4)
+    panel.source:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -6, levelsTop + 4 + 12 + 8)
+end
 
 -- -> model height (0 = no model), show source, show chance
 function Preview.Layout(h)
@@ -54,8 +81,7 @@ function Preview:Attach(parent)
         panel.name:SetPoint("RIGHT", -6, 0)
         panel.source:SetShown(withSource)
         panel.sourceHit:SetShown(withSource)
-        panel.weight:ClearAllPoints()
-        panel.weight:SetPoint("TOPLEFT", withSource and panel.source or panel.sub, "BOTTOMLEFT", 0, -12)
+        placeControls(withChance)
         for _, part in ipairs({ panel.chanceLabel, panel.chanceBar, panel.chance, panel.reason }) do
             part:SetShown(withChance)
         end
@@ -69,9 +95,9 @@ function Preview:Attach(parent)
     panel.sub:SetPoint("RIGHT", -6, 0)
     panel.source = ns.Widgets.Label(panel, "", "GameFontDisableSmall")
     panel.source:SetPoint("TOPLEFT", panel.sub, "BOTTOMLEFT", 0, -4)
-    panel.source:SetPoint("RIGHT", -6, 0)
+    panel.source:SetJustifyV("TOP")
     panel.source:SetWordWrap(true)
-    -- long lists of zones would push the controls into the Summon button: three lines, the rest on hover
+    -- long lists of zones: three lines at most, cut to the room left, the rest on hover
     panel.source:SetMaxLines(3)
     local sourceHit = CreateFrame("Frame", nil, panel)
     panel.sourceHit = sourceHit
@@ -82,7 +108,6 @@ function Preview:Attach(parent)
 
     -- how often: six named steps in two rows instead of an unlabelled slider
     panel.weight = ns.Widgets.Label(panel, L["How often"], "GameFontNormalSmall")
-    panel.weight:SetPoint("TOPLEFT", panel.source, "BOTTOMLEFT", 0, -12)
     panel.levels = {}
     for i, lvl in ipairs(ns.Weights.LEVELS) do
         local btn = ns.Widgets.Button(panel, lvl.label, function()
@@ -90,24 +115,22 @@ function Preview:Attach(parent)
         end)
         btn:SetNormalFontObject("GameFontNormalSmall")
         btn:SetHighlightFontObject("GameFontHighlightSmall")
-        btn:SetHeight(20)
+        btn:SetHeight(LEVEL_H)
         btn.value = lvl.value
-        local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
-        btn:SetPoint("TOPLEFT", panel.weight, "BOTTOMLEFT", col * 76, -4 - row * 22)
         btn:SetWidth(76)
         panel.levels[i] = btn
     end
 
     -- chance: a bar measured against the most likely pet of the set, and the percentage
     panel.chanceLabel = ns.Widgets.Label(panel, L["Chance in this set"], "GameFontNormalSmall")
-    panel.chanceLabel:SetPoint("TOPLEFT", panel.levels[4], "BOTTOMLEFT", 0, -12)
     panel.chanceBar = CreateFrame("StatusBar", nil, panel)
     panel.chanceBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
     panel.chanceBar:SetStatusBarColor(1, 0.82, 0)
     panel.chanceBar:SetMinMaxValues(0, 1)
     panel.chanceBar:SetHeight(10)
-    panel.chanceBar:SetPoint("TOPLEFT", panel.chanceLabel, "BOTTOMLEFT", 0, -4)
+    panel.chanceBar:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, CHANCE_BOTTOM + 16)
     panel.chanceBar:SetPoint("RIGHT", -52, 0)
+    panel.chanceLabel:SetPoint("BOTTOMLEFT", panel.chanceBar, "TOPLEFT", 0, 4)
     panel.chanceBar.bg = panel.chanceBar:CreateTexture(nil, "BACKGROUND")
     panel.chanceBar.bg:SetAllPoints()
     panel.chanceBar.bg:SetColorTexture(1, 1, 1, 0.08)
@@ -116,6 +139,7 @@ function Preview:Attach(parent)
     panel.reason = ns.Widgets.Label(panel, "", "GameFontNormalSmall")
     panel.reason:SetPoint("TOPLEFT", panel.chanceBar, "BOTTOMLEFT", 0, -4)
     panel.reason:SetPoint("RIGHT", -6, 0)
+    panel.reason:SetWordWrap(false)
     panel.reason:SetTextColor(1, 0.5, 0.25)
     ns.Widgets.Tooltip(panel.chanceBar, L["Chance in this set"], L["The bar compares this pet with the most likely pet of the set."])
 
@@ -123,6 +147,7 @@ function Preview:Attach(parent)
         if shownID then ns:SummonPet(shownID) end
     end)
     panel.summon:SetPoint("BOTTOMLEFT", 6, 8)
+    placeControls(true)
     panel.fav = CreateFrame("Button", nil, panel)
     panel.fav:SetSize(22, 22)
     panel.fav:SetPoint("LEFT", panel.summon, "RIGHT", 6, 0)
@@ -192,7 +217,7 @@ function Preview:ShowPet(petID, forSet)
     local copies = ns.PetCache:GetCopies(petID)
     if #copies > 1 then panel.sub:SetText(panel.sub:GetText() .. " · " .. format(L["%d copies"], #copies)) end
     local _, _, _, _, source = C_PetJournal.GetPetInfoBySpeciesID(info.speciesID)
-    panel.source:SetText(source or "")
+    panel.source:SetText(Preview.CleanSource(source))
     if set then
         local current = ns.Weights.Nearest(set:GetPetWeight(petID))
         for _, btn in ipairs(panel.levels) do

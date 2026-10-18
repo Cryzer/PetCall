@@ -1294,6 +1294,24 @@ describe("UI smoke", function()
         assert.is_true(panel.source:IsShown())
         assert.is_true(panel.model:IsShown())
         assert.is_true(panel.chanceBar:IsShown())
+        -- the controls stand on the bottom edge: no text above can push them into Summon
+        for _, btn in ipairs(panel.levels) do
+            assert.is_true(btn._points.BOTTOMLEFT.rel == panel)
+            assert.is_true(btn._points.BOTTOMLEFT.y >= 30 + 8)
+        end
+        assert.is_true(panel.weight._points.BOTTOMLEFT.rel == panel)
+        -- the source lines end above "How often"
+        assert.is_true(panel.source._points.BOTTOMRIGHT.y > panel.weight._points.BOTTOMLEFT.y)
+        -- without the chance bar the buttons move down to the Summon button
+        local high = panel.levels[4]._points.BOTTOMLEFT.y
+        panel._scripts.OnSizeChanged(panel, 240, 220)
+        assert.is_true(panel.levels[4]._points.BOTTOMLEFT.y < high)
+    end)
+    it("the preview's source text loses Blizzard's blank lines and trailing breaks", function()
+        local clean = ns.UI.Preview.CleanSource
+        assert.equal("Covenant Feature: The Ember Court\nCovenant: Venthyr",
+            clean("|n|nCovenant Feature: The Ember Court|n|n|nCovenant: Venthyr|n|n "))
+        assert.equal("", clean(nil))
     end)
     it("the preview leads with the pet's own name, as its tile does", function()
         W.world.pets.n = { species = 3, name = "Ageless Bronze Drake", custom = "Hedly" }
