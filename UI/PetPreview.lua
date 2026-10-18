@@ -53,6 +53,18 @@ function Preview.Layout(h)
     return 0, false, false
 end
 
+-- The model frame is about as tall as it is wide at most. A taller, narrow frame makes
+-- the camera back off to keep the pet whole in width, so the pet looked small and
+-- jumped back after each load. The spare room goes above and below the model.
+local MODEL_MAX_H = 260
+Preview.MODEL_MAX_H = MODEL_MAX_H
+
+-- -> model height, gap above it
+function Preview.ModelBox(slot)
+    local mh = math.min(slot, MODEL_MAX_H)
+    return mh, math.floor((slot - mh) / 2)
+end
+
 -- the pet under the cursor wins; off the tiles the panel shows the selected pet, else
 -- the last one hovered, else the summoned one
 local function petToShow()
@@ -72,11 +84,15 @@ function Preview:Attach(parent)
     model:SetHeight(260)
     panel:SetScript("OnSizeChanged", function(_, _, h)
         if not panel.weight then return end         -- still being built
-        local mh, withSource, withChance = Preview.Layout(h)
+        local slot, withSource, withChance = Preview.Layout(h)
+        local mh, gap = Preview.ModelBox(slot)
         model:SetShown(mh > 0)
+        model:ClearAllPoints()
+        model:SetPoint("TOPLEFT", 4, -4 - gap)
+        model:SetPoint("TOPRIGHT", -4, -4 - gap)
         model:SetHeight(math.max(1, mh))
         panel.name:ClearAllPoints()
-        if mh > 0 then panel.name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 4, -10)
+        if mh > 0 then panel.name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 4, -10 - gap)
         else panel.name:SetPoint("TOPLEFT", 8, -10) end
         panel.name:SetPoint("RIGHT", -6, 0)
         panel.source:SetShown(withSource)

@@ -1294,6 +1294,12 @@ describe("UI smoke", function()
         assert.is_true(m3 >= 60 and not s3 and not c3)
         assert.equal(0, (Lay(150)))                         -- then the model
         assert.is_true(Lay(700) > Lay(600))
+        -- a tall slot keeps the model's shape (no zoom-out jump), centred in the room
+        local Box = ns.UI.Preview.ModelBox
+        local mh, top = Box(600)
+        assert.equal(ns.UI.Preview.MODEL_MAX_H, mh)
+        assert.equal(math.floor((600 - mh) / 2), top)
+        assert.same({ 200, 0 }, { Box(200) })
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
         local panel = ns.UI.Preview:GetPanel()
