@@ -172,6 +172,7 @@ end
 function Ready:_Changed() ns:Fire("ReadyChanged") end
 
 function Ready:SetReady(name, value)
+    if isSecret(value) then return end
     if value then
         if self.is_false[name] then
             self.is_false[name], self.is_true[name] = nil, true
@@ -347,7 +348,8 @@ end
 function Ready:PLAYER_FLAGS_CHANGED(_, unit)
     if unit and unit ~= "player" then return end
     self:SetReady("resting", IsResting())
-    if UnitIsAFK("player") and self.afk_message == nil then self:SetReady("sitting", false) end
+    local afk = UnitIsAFK("player")
+    if not isSecret(afk) and afk and self.afk_message == nil then self:SetReady("sitting", false) end
     self.afk_message = nil
 end
 

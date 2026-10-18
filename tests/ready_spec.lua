@@ -75,6 +75,24 @@ describe("Ready", function()
         issecretvalue = nil
     end)
 
+    it("leaves hidden (secret) AFK and resting flags alone", function()
+        local SECRET = {}
+        issecretvalue = function(v) return v == SECRET end
+        ns.db.profile.disableOutsideCities = true
+        ns.Ready:UpdateChecks()
+        W.world.resting = false
+        W.fire("PLAYER_FLAGS_CHANGED", "player")
+        assert.is_true(ns.Ready.is_false.resting)
+        W.world.afk, W.world.resting = SECRET, SECRET
+        W.fire("PLAYER_FLAGS_CHANGED", "player")
+        assert.is_nil(ns.Ready.is_false.sitting)
+        assert.is_true(ns.Ready.is_false.resting)
+        local ctx = ns.Conditions.Context()
+        assert.is_false(ctx.afk)
+        assert.is_false(ctx.resting)
+        issecretvalue = nil
+    end)
+
     it("detects sitting on a bench from the standing error text", function()
         ns.Ready._last_summon_time = W.world.time
         W.fire("UI_ERROR_MESSAGE", 999, ERR_MUST_BE_STANDING)

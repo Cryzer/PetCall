@@ -17,6 +17,13 @@ end
 function C.Types() return order end
 function C.GetType(key) return types[key] end
 
+-- 12.x hides some values from addons ("secret" values): any test on one is an
+-- error, so a hidden flag reads as false
+local function flag(v)
+    if issecretvalue and issecretvalue(v) then return false end
+    return v and true or false
+end
+
 local function isNode(e) return e[1] == "AND" or e[1] == "OR" end
 function C.IsLegacyNode(e) return isNode(e) end
 
@@ -44,7 +51,7 @@ fills({ "inInstance", "instanceType" }, function(ctx) ctx.inInstance, ctx.instan
 fills({ "delve" }, function(ctx)
     ctx.delve = C_PartyInfo and C_PartyInfo.IsDelveInProgress and C_PartyInfo.IsDelveInProgress() or false
 end)
-fills({ "resting" }, function(ctx) ctx.resting = IsResting() end)
+fills({ "resting" }, function(ctx) ctx.resting = flag(IsResting()) end)
 fills({ "inRaid", "inGroup" }, function(ctx) ctx.inRaid, ctx.inGroup = IsInRaid(), IsInGroup() end)
 fills({ "class", "name" }, function(ctx)
     local _, class = UnitClass("player")
@@ -56,7 +63,7 @@ fills({ "minutes" }, function(ctx)
     ctx.minutes = h * 60 + m
 end)
 fills({ "mounted", "afk", "swimming", "indoors", "outdoors", "form" }, function(ctx)
-    ctx.mounted, ctx.afk = IsMounted() and true or false, UnitIsAFK("player") and true or false
+    ctx.mounted, ctx.afk = IsMounted() and true or false, flag(UnitIsAFK("player"))
     ctx.swimming = (IsSwimming() or IsSubmerged()) and true or false
     ctx.indoors, ctx.outdoors = IsIndoors() and true or false, IsOutdoors() and true or false
     ctx.form = GetShapeshiftFormID() ~= nil

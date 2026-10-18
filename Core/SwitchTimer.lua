@@ -39,7 +39,11 @@ end
 
 function SwitchTimer:Fire()
     self.timer = nil
-    if ns.db.profile.autoSwitch.citiesOnly and not IsResting() then return self:Start() end
+    if ns.db.profile.autoSwitch.citiesOnly then
+        -- a hidden (secret) value cannot be tested: wait for the next round
+        local resting = IsResting()
+        if (issecretvalue and issecretvalue(resting)) or not resting then return self:Start() end
+    end
     ns:ResummonPet()
 end
 
