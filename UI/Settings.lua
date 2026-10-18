@@ -156,36 +156,53 @@ end
 function S:RegisterAbout(parent)
     local f = CreateFrame("Frame")
     f:Hide()
+    S.aboutPage = f
     f:SetScript("OnShow", function(self)
         if self.built then return end
         self.built = true
-        local y = -16
-        local function line(text, font, indent)
-            local fs = ns.Widgets.Label(self, text, font)
-            fs:SetPoint("TOPLEFT", 16 + (indent or 0), y)
+        -- the page is longer than the panel: it scrolls
+        local scroll = CreateFrame("ScrollFrame", nil, self, "ScrollFrameTemplate")
+        scroll:SetPoint("TOPLEFT", 0, -4)
+        scroll:SetPoint("BOTTOMRIGHT", -24, 4)
+        local body = CreateFrame("Frame", nil, scroll)
+        body:SetSize(10, 10)
+        scroll:SetScrollChild(body)
+        self.scroll, self.body = scroll, body
+        local lines = {}
+        local function line(text, font, indent, gap)
+            local fs = ns.Widgets.Label(body, text, font)
             fs:SetPoint("RIGHT", -16, 0)
             fs:SetWordWrap(true)
-            y = y - fs:GetStringHeight() - 6
+            lines[#lines + 1] = { fs = fs, indent = indent or 0, gap = gap or 0 }
+        end
+        -- wrapped lines get taller when the panel gets narrower, so they are placed again
+        local function layout()
+            local y = -12
+            for _, l in ipairs(lines) do
+                y = y - l.gap
+                l.fs:SetPoint("TOPLEFT", 16 + l.indent, y)
+                y = y - (tonumber(l.fs:GetStringHeight()) or 0) - 6
+            end
+            body:SetHeight(-y + 12)
         end
         local version, _, _, toc = GetBuildInfo()
         line("PetCall " .. ns.version, "GameFontNormalLarge")
         line(format(L["WoW %s · Interface %d"], version, toc), "GameFontDisableSmall")
-        y = y - 8
-        line(L["What's new"], "GameFontNormal")
+        line(L["What's new"], "GameFontNormal", 0, 8)
         for _, note in ipairs(ns.releaseNotes or {}) do line("- " .. note, "GameFontHighlightSmall", 8) end
-        y = y - 8
-        line(L["Commands"], "GameFontNormal")
+        line(L["Commands"], "GameFontNormal", 0, 8)
         for _, c in ipairs(ns.Commands:HelpLines()) do line(c, "GameFontHighlightSmall", 8) end
-        y = y - 8
-        line(L["Key bindings"], "GameFontNormal")
+        line(L["Key bindings"], "GameFontNormal", 0, 8)
         for _, b in ipairs({ "PETCALL_SUMMON", "PETCALL_DESUMMON", "PETCALL_TOGGLE", "PETCALL_CONFIG" }) do
             line(format("%s: %s", _G["BINDING_NAME_" .. b], GetBindingKey(b) or L["not bound"]), "GameFontHighlightSmall", 8)
         end
-        y = y - 8
-        line(L["Credits"], "GameFontNormal")
+        line(L["Credits"], "GameFontNormal", 0, 8)
         line("Cryzer – PetCall 2.0", "GameFontHighlightSmall", 8)
         line("End – PetLeash", "GameFontHighlightSmall", 8)
         line(L["Translations by the WoW community."], "GameFontHighlightSmall", 8)
+        scroll:SetScript("OnSizeChanged", function(_, w) body:SetWidth(w) layout() end)
+        body:SetWidth(math.max(10, (tonumber(scroll:GetWidth()) or 0)))
+        layout()
     end)
     Settings.RegisterCanvasLayoutSubcategory(parent, f, L["About"])
 end

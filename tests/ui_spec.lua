@@ -735,13 +735,26 @@ describe("UI smoke", function()
         ns.UI.Preview:SetSelected("b")
         assert.is_true(panel.chanceBar._value < 1)
     end)
-    it("the preview panel sits at the right edge and the count line above the grid", function()
+    it("the preview panel sits at the right edge and the count on the toolbar line, clear of the rule chips", function()
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
         local page = ns.UI.PetsTabPage
         local panel = ns.UI.Preview:GetPanel()
         assert.is_true(panel._points.TOPRIGHT.rel == page, "preview anchored to the page edge")
-        assert.is_true(page.count._points.BOTTOMRIGHT.rel == page.emptyBanner, "count sits above the grid area")
+        assert.is_nil(page.count._points.BOTTOMRIGHT)
+        assert.is_true(page.count._points.RIGHT.rel == page, "count ends at the page edge")
+        assert.is_true(page.count._points.LEFT.rel ~= page.rulesBar, "count is not on the rules lines")
+    end)
+    it("the About page scrolls and every line is on its scrolled body", function()
+        ns.UI.Settings:RegisterAbout({})
+        local about = ns.UI.Settings.aboutPage
+        about:GetScript("OnShow")(about)
+        assert.is_true(about.scroll:GetParent() == about, "the scroll fills the About page")
+        assert.is_true(about.body:GetParent() == about.scroll, "the lines live on the scrolled body")
+        -- shown again: built once
+        local scroll = about.scroll
+        about:GetScript("OnShow")(about)
+        assert.is_true(about.scroll == scroll)
     end)
 
     it("dragging the window size follows every step cheaply: tiles stretch, rows regroup only on a new column count", function()

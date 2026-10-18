@@ -456,8 +456,11 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     page.emptyBanner.text:SetPoint("RIGHT", page.emptyBanner.all, "LEFT", -8, 0)
     page.emptyBanner.text:SetWordWrap(false)
     page.emptyBanner:Hide()
-    -- the count stays on the line above the grid area even when the banner pushes the grid down
-    page.count:SetPoint("BOTTOMRIGHT", page.emptyBanner, "TOPRIGHT", 0, 8)
+    -- the count sits on the toolbar line, right of the filter: the rule chips below can take
+    -- every line they need without covering it
+    page.count:SetPoint("LEFT", filterBtn, "RIGHT", 10, 0)
+    page.count:SetPoint("RIGHT", page, "RIGHT", -6, 0)
+    page.count:SetWordWrap(false)
 
     emptyText = ns.Widgets.Label(grid, "", "GameFontDisableLarge")
     page.emptyText = emptyText
