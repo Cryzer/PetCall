@@ -1,6 +1,14 @@
 
 # Changelog
 
+## v2.0.3 (2026-10-18)
+
+### Fixed
+
+- The window can no longer grow past the screen, at any window scale, so its resize corner stays where you can grab it. A window that was already too big or off the screen comes back to the middle.
+- The minimap button is shown by default, so resetting a profile no longer hides it. If you reset a profile on 2.0.2, turn it back on in Options: "Show Minimap Button".
+- The pet preview keeps its shape in a tall window, so the pet no longer looks small or jumps back after it loads.
+
 ## v2.0.2 (2026-10-18)
 
 ### Fixed
