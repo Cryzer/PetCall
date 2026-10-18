@@ -1,6 +1,12 @@
 
 # Changelog
 
+## v2.1.1 (2026-10-18)
+
+### Fixed
+
+- No more Lua error in Ready.lua when the game hides your AFK or resting state from addons (for example in combat or in an instance). PetCall now waits until it can read them again.
+
 ## v2.1.0 (2026-10-18)
 
 ### New
