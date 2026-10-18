@@ -62,6 +62,38 @@ describe("UI smoke", function()
             assert.equal(1, #set.settings.filter)
         end)
     end)
+    it("rule chips wrap onto more lines inside the window and the grid moves under them", function()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local set = ns.Sets:Get("$Default")
+        set.settings.filter = {}
+        for _ = 1, 6 do set.settings.filter[#set.settings.filter + 1] = { "source", 64, text = "" } end
+        local bar = ns.UI.PetsTabRulesBar
+        bar.GetWidth = function() return 400 end
+        ns.UI.AutoRulesBar:Refresh(set)                     -- makes the chips
+        local text = { GetStringWidth = function() return 150 end }
+        for _, b in ipairs(ns.UI.AutoRulesBar._chips) do b.GetFontString = function() return text end end
+        ns.UI.AutoRulesBar:Refresh(set)
+        local chips = ns.UI.AutoRulesBar._chips
+        assert.equal("Source: no text yet · Very often", chips[1].tooltip)
+        local lines = ns.UI.AutoRulesBar:GetLines()
+        assert.is_true(lines >= 3, "lines: " .. lines)
+        for _, b in ipairs(chips) do
+            if b:IsShown() then
+                local x = b._points.TOPLEFT.x
+                assert.is_true(x + 186 <= 400, "chip runs out of the bar")     -- 150 text + 36
+            end
+        end
+        local add = bar.add._points.TOPLEFT
+        assert.is_true(add.x + 110 <= 400, "+ Add runs out of the bar")
+        assert.is_true(-add.y < lines * 24, "+ Add on the last line")
+        assert.equal(-(60 + (lines - 1) * 24), ns.UI.PetsTabPage.grid._points.TOPLEFT.y)
+        set.settings.filter = { { "favorites", 64 } }
+        ns.UI.AutoRulesBar:Refresh(set)
+        assert.equal(1, ns.UI.AutoRulesBar:GetLines())
+        assert.equal(-60, ns.UI.PetsTabPage.grid._points.TOPLEFT.y)
+        bar.GetWidth = nil
+    end)
     it("sets panel, status bar and set settings tab", function()
         assert.has_no_error(function()
             ns.UI.Main:Show()

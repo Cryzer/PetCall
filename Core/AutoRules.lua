@@ -72,7 +72,10 @@ types.source = {
         local t = strlower(e.text or "")
         return t ~= "" and strfind(ns.PetCache:GetSourceText(info.petID), t, 1, true) ~= nil
     end,
-    describe = function(e) return L["Source"] .. ": " .. (e.text or "") end,
+    describe = function(e)
+        local t = e.text or ""
+        return L["Source"] .. ": " .. (t ~= "" and t or L["no text yet"])
+    end,
     new = function() return { "source", text = "" } end,
 }
 types.nativeZone = {

@@ -245,11 +245,20 @@ function Tab:Rebuild()
         or L["No pets in this set yet. Tick the ones you want, or include them all."])
     page.emptyBanner.all:SetShown(not noPet)
     page.emptyBanner:SetShown(empty)
-    grid:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -GRID_TOP - (empty and BANNER_H + 6 or 0))
+    Tab:PlaceBelowRules()
     page.show:Refresh()
     -- the same pet stays in the preview: its weight and chance change, its model does not reload
     ns.UI.Preview:SetSet(set)
     ns.UI.Preview:Refresh()
+end
+
+-- the rules bar takes one line or more; the banner, the grid and the preview start under it
+function Tab:PlaceBelowRules()
+    if not page then return end
+    local top = GRID_TOP + (ns.UI.AutoRulesBar:GetLines() - 1) * 24
+    ns.UI.Preview:GetPanel():SetPoint("TOPRIGHT", page, "TOPRIGHT", 0, -top)
+    page.emptyBanner:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -top)
+    grid:SetPoint("TOPLEFT", page, "TOPLEFT", 2, -top - (page.emptyBanner:IsShown() and BANNER_H + 6 or 0))
 end
 
 function ns.UI.PetsTabState() return state end

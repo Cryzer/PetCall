@@ -6,7 +6,9 @@ ns.UI = ns.UI or {}
 local Bar = {}
 ns.UI.AutoRulesBar = Bar
 
+local ROW_H, GAP, CHIP_MAX_W, ADD_W = 24, 6, 260, 110
 local bar, set, chips, editor = nil, nil, {}, nil
+local lines = 1
 local frames = ns.Widgets.NewPool()   -- the editor's controls, taken back each time it opens
 Bar._chips = chips      -- for tests
 
@@ -15,7 +17,7 @@ local function commit() set:FiltersChanged() Bar:Refresh(set) end
 
 local function chipText(chip)
     local text = chip.legacy and L["Complex rule (previous version)"] or ns.AutoRules.Describe(chip.entry)
-    return format("%s: %s", text, ns.Weights.Label(ns.AutoRules.Weight(chip.entry)))
+    return format("%s · %s", text, ns.Weights.Label(ns.AutoRules.Weight(chip.entry)))
 end
 
 local function closeEditor() if editor then editor:Hide() end end
@@ -197,6 +199,41 @@ local function chipButton(i)
     return b
 end
 
+-- The label, then the chips and "+ Add" left to right; whatever does not fit goes on
+-- the next line, lined up under the first chip. The bar grows by a line each time and
+-- the pet grid moves down under it, so nothing runs out of the window.
+function Bar:Layout()
+    if not bar or not bar.label then return end
+    local width = tonumber(bar:GetWidth()) or 0
+    if width <= 0 then width = ns.UI.Main:GetContentWidth() - 10 end
+    local label = bar.label
+    label:ClearAllPoints()
+    label:SetPoint("TOPLEFT", 0, -(ROW_H - 12) / 2)
+    local indent = math.ceil(tonumber(label:GetStringWidth()) or 0) + 8
+    local x, line = indent, 0
+    local function place(frame, w)
+        if x > indent and x + w > width then x, line = indent, line + 1 end
+        frame:ClearAllPoints()
+        frame:SetPoint("TOPLEFT", bar, "TOPLEFT", x, -(line * ROW_H + 2))
+        x = x + w + GAP
+    end
+    for _, b in ipairs(chips) do
+        if b:IsShown() then
+            local w = math.max(60, math.min(CHIP_MAX_W, width - indent, b.textWidth + 36))
+            b:SetWidth(w)
+            place(b, w)
+        end
+    end
+    bar.add:SetWidth(ADD_W)
+    place(bar.add, ADD_W)
+    lines = line + 1
+    bar:SetHeight(lines * ROW_H)
+    if ns.UI.PetsTab and ns.UI.PetsTab.PlaceBelowRules then ns.UI.PetsTab:PlaceBelowRules() end
+end
+
+-- how many lines the chips take now
+function Bar:GetLines() return lines end
+
 function Bar:Refresh(newSet)
     set = newSet
     bar = bar or ns.UI.PetsTabRulesBar
@@ -207,27 +244,25 @@ function Bar:Refresh(newSet)
     bar.label = label
     -- rules either add chances on top of the ticked pets, or are where the pets come from
     label:SetText(ns.UI.SetHeader.RulesOnly(set) and L["Pets from rules:"] or L["More chance for:"])
-    label:SetPoint("LEFT")
-    local prev = label
     for i, chip in ipairs(data) do
         local b = chipButton(i)
         b:SetText(chipText(chip))
-        b:SetWidth(math.min(260, b:GetFontString():GetStringWidth() + 36))
-        b:ClearAllPoints()
-        b:SetPoint("LEFT", prev, "RIGHT", 6, 0)
+        b.textWidth = tonumber(b:GetFontString():GetStringWidth()) or 0
         b:SetScript("OnClick", function(self) openEditor(self, chip) end)
         b.remove:SetScript("OnClick", function() ns.AutoRules.RemoveChip(list(), chip.index) commit() end)
         b.tooltip = chipText(chip)
         b:Show()
-        prev = b
     end
     for i = #data + 1, #chips do chips[i]:Hide() end
-    bar.add = bar.add or ns.Widgets.Dropdown(bar, 110, function(owner, root)
+    bar.add = bar.add or ns.Widgets.Dropdown(bar, ADD_W, function(owner, root)
         for _, def in ipairs(ns.AutoRules.Types()) do
             root:CreateButton(def.label, function() ns.AutoRules.AddChip(list(), def.key, ns.Weights.NORMAL) commit() end)
         end
     end)
     bar.add:SetDefaultText(L["+ Add"])
-    bar.add:ClearAllPoints()
-    bar.add:SetPoint("LEFT", prev, "RIGHT", 8, 0)
+    self:Layout()
 end
+
+-- the window got wider or narrower: the chips find their lines again
+local relayout = ns.Debounce(0.12, function() if bar and bar:IsVisible() then Bar:Layout() end end)
+ns:RegisterCallback(Bar, "WindowResized", relayout)

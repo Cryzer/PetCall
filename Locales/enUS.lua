@@ -360,6 +360,7 @@ L["\"Don't summon while mounted\" is on, so PetCall waits until you dismount and
 L["Rare or better"] = true
 L["Source mentions"] = true
 L["Source"] = true
+L["no text yet"] = true
 L["Native to where I am"] = true
 L["Water pets while swimming"] = true
 L["When you swim. Aquatic pets."] = true
