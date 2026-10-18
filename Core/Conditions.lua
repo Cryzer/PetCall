@@ -86,6 +86,16 @@ fills({ "mountID" }, function(ctx)
     end
     unknownAt = GetTime()
 end)
+-- the transmog outfit worn, by name; false while the equipped gear shows instead
+fills({ "outfit" }, function(ctx)
+    ctx.outfit = false
+    local T = C_TransmogOutfitInfo
+    if not (T and T.GetActiveOutfitID and T.GetOutfitInfo) then return end
+    if T.IsEquippedGearOutfitDisplayed and T.IsEquippedGearOutfitDisplayed() then return end
+    local id = T.GetActiveOutfitID()
+    local info = id and id ~= 0 and T.GetOutfitInfo(id)
+    if info and info.name and info.name ~= "" then ctx.outfit = info.name end
+end)
 fills({ "holidays" }, function(ctx) ctx.holidays = C.ActiveHolidays and C.ActiveHolidays() or {} end)
 
 local Lazy = { __index = function(ctx, key)

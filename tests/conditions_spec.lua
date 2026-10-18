@@ -234,6 +234,33 @@ describe("Conditions", function()
         for _, m in ipairs(C.CollectedMounts()) do names[#names + 1] = m.name end
         assert.same({ "Black Drake", "Swift Spectral Tiger" }, names)
     end)
+    it("outfit: the chosen transmog outfits, by name, while one of them is worn", function()
+        W.world.outfits = { { outfitID = 1, name = "Necromancer" }, { outfitID = 2, name = "Fishing" } }
+        local e = { "outfit", outfitNames = { "Necromancer" } }
+        assert.is_false(eval(e))                                  -- no outfit on
+        assert.equal("No outfit on.", select(2, C.Eval(e, C.Context())))
+        W.world.activeOutfit = 2
+        assert.is_false(eval(e))
+        W.world.activeOutfit = 1
+        assert.is_true(eval(e))
+        assert.equal("Wearing: Necromancer", select(2, C.Eval(e, C.Context())))
+        -- the equipped gear shown instead of an outfit counts as no outfit
+        W.world.gearDisplayed = true
+        assert.is_false(eval(e))
+        W.world.gearDisplayed = false
+        assert.equal("Outfit: Necromancer, Fishing", C.Describe({ "outfit", outfitNames = { "Necromancer", "Fishing" } }))
+        assert.equal("Outfit: none chosen yet", C.Describe({ "outfit", outfitNames = {} }))
+        -- a new condition starts with the outfit you wear
+        assert.same({ "outfit", outfitNames = { "Necromancer" } }, C.GetType("outfit").new())
+        -- the menu lists your outfits, and a chosen name you no longer have so it can be unticked
+        local values = {}
+        for _, v in ipairs(C.GetType("outfit").fields[1].values({ "outfit", outfitNames = { "Old" } })) do values[#values + 1] = v.value end
+        assert.same({ "Necromancer", "Fishing", "Old" }, values)
+        -- without the outfit API (an older client) nothing is worn and nothing breaks
+        _G.C_TransmogOutfitInfo = nil
+        assert.is_false(eval(e))
+        assert.same({ "outfit", outfitNames = {} }, C.GetType("outfit").new())
+    end)
     it("mount kinds come from the journal's type filter; the player's filters and search are put back", function()
         W.world.mounts = {
             { id = 7, name = "Tiger", collected = true, types = { 1 } },

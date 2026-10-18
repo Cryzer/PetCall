@@ -414,6 +414,44 @@ C.RegisterType({
     merge = function(a, b) return { "mount", mountIDs = union(a.mountIDs, b.mountIDs) } end,
 })
 
+-- the transmog outfit worn: one or several picked by name, so a set works on every
+-- character with an outfit of that name and survives export
+local function outfitList()
+    local T = C_TransmogOutfitInfo
+    return T and T.GetOutfitsInfo and T.GetOutfitsInfo() or {}
+end
+
+C.RegisterType({
+    key = "outfit", label = L["Outfit"], group = "who",
+    hint = L["Wearing one of the chosen transmog outfits."],
+    fields = { { key = "outfitNames", kind = "multiChoice", values = function(e)
+        local list, seen = {}, {}
+        for _, o in ipairs(outfitList()) do
+            if o.name and o.name ~= "" and not seen[o.name] then
+                seen[o.name] = true
+                list[#list + 1] = { value = o.name, label = o.name, icon = o.icon }
+            end
+        end
+        -- a chosen outfit this character does not have stays listed, to untick it
+        for _, n in ipairs(e and e.outfitNames or {}) do
+            if not seen[n] then seen[n] = true list[#list + 1] = { value = n, label = n } end
+        end
+        return list
+    end } },
+    events = { "TRANSMOG_DISPLAYED_OUTFIT_CHANGED", "TRANSMOG_OUTFITS_CHANGED", "PLAYER_ENTERING_WORLD" },
+    new = function()
+        local name = C.Context().outfit
+        return { "outfit", outfitNames = { name or nil } }
+    end,
+    check = function(e, ctx) return ctx.outfit and contains(e.outfitNames, ctx.outfit) or false end,
+    reason = function(_, ctx) return ctx.outfit and format(L["Wearing: %s"], ctx.outfit) or L["No outfit on."] end,
+    describe = function(e)
+        local names = e.outfitNames or {}
+        return L["Outfit"] .. ": " .. (#names > 0 and table.concat(names, ", ") or L["none chosen yet"])
+    end,
+    merge = function(a, b) return { "outfit", outfitNames = union(a.outfitNames, b.outfitNames) } end,
+})
+
 --
 -- Holidays, read from the in-game calendar
 --

@@ -72,7 +72,7 @@ local function buildField(row, e, field, prev)
         end))
         ns.Widgets.Tooltip(pick, L["+ choose"], L["Pick mounts from your collection."])
     elseif field.kind == "multiChoice" then
-        local values = field.values()
+        local values = field.values(e)
         local dd = frames:Dropdown(row, 200, function(owner, root)
             for _, v in ipairs(values) do
                 root:CreateCheckbox(v.label, function()

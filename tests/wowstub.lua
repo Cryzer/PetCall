@@ -59,6 +59,7 @@ local function defaultWorld()
         macroResult = nil, locale = "enUS",
         swimming = false, indoors = false, formID = nil,
         home = { own = false, any = false, inside = false },
+        outfits = {}, activeOutfit = 0, gearDisplayed = false,   -- transmog outfits: { outfitID, name, icon }
         mounts = {},          -- { id, name, active, collected, types = { journal type filter indices } }
         -- the journal's filters as the player left them: types/sources by index, collected 1-3, search
         mountFilters = { types = { true, true, true, true, true }, sources = { true, true, true }, collected = { true, true, true }, search = "" },
@@ -249,6 +250,12 @@ function W.reset()
         IsInsideOwnedHouseOrPlot = function() return w.home.own end,
         IsInsideHouseOrPlot = function() return w.home.any or w.home.own end,
         IsInsideHouse = function() return w.home.inside end,
+    }
+    C_TransmogOutfitInfo = {
+        GetOutfitsInfo = function() return w.outfits end,
+        GetActiveOutfitID = function() return w.activeOutfit end,
+        IsEquippedGearOutfitDisplayed = function() return w.gearDisplayed end,
+        GetOutfitInfo = function(id) for _, o in ipairs(w.outfits) do if o.outfitID == id then return o end end end,
     }
     C_MountJournal = {
         GetMountIDs = function()

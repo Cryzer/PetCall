@@ -47,7 +47,7 @@ local FIELDS = {
     zoneName = "string", loc = "string", class = "string", name = "string", macro = "string", code = "string",
     operator = "string", petType = "scalar", level = "scalar", spec = "number", from = "number", to = "number",
     zoneNames = "strings", locs = "strings", mapIDs = "numbers", petTypes = "numbers",
-    text = "string", ownHome = "boolean", otherHome = "boolean", inHouse = "boolean", holidayIDs = "numbers", mountIDs = "numbers",
+    text = "string", ownHome = "boolean", otherHome = "boolean", inHouse = "boolean", holidayIDs = "numbers", mountIDs = "numbers", outfitNames = "strings",
     mounted = "boolean", swimming = "boolean", indoors = "boolean", outdoors = "boolean", afk = "boolean", form = "boolean",
 }
 
