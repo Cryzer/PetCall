@@ -74,6 +74,7 @@ describe("DB", function()
         assert.equal(5, ns.db.profile.waitTimer)
         ns.DB:Reset()
         assert.equal(3, ns.db.profile.waitTimer)
+        assert.is_false(ns.db.profile.minimap.hide)   -- a reset brings the minimap button back
         local ok = ns.DB:Delete("Alt")
         assert.is_false(ok)                       -- cannot delete the current profile
         ns.DB:Set("Default")

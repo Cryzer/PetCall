@@ -21,7 +21,7 @@ DB.defaults = {
     waitTimer = 3,
     verbose = true,
     autoSwitch = { timer = false, timerValue = 30 * 60, citiesOnly = false, onZone = false },
-    minimap = { hide = true },
+    minimap = { hide = false },
     sets = {
         ["$Default"] = { name = DEFAULT, enabled = true, defaultValue = 1, priority = -1, pets = {}, filter = {} },
         ["*"] = { enabled = true, defaultValue = 0, priority = 1, pets = {}, filter = {}, trigger = {} },

@@ -18,8 +18,37 @@ local function saveGeometry()
     g.point, g.relPoint, g.x, g.y = point, relPoint, x, y
 end
 
+-- The largest window the screen holds at this scale, and the size cut to it. The
+-- badge hangs over the top edge, so the window leaves it room up there.
+function Main.FitSize(w, h, scale, screenW, screenH)
+    scale = (scale and scale > 0) and scale or 1
+    local maxW = math.max(MIN_W, math.floor(screenW / scale))
+    local maxH = math.max(MIN_H, math.floor(screenH / scale) - 12)
+    return math.min(w, maxW), math.min(h, maxH), maxW, maxH
+end
+
+-- a window taller than the screen hides its resize corner below the edge for good
+local function fitToScreen()
+    local scale = ns.db.global.window.scale or 1
+    local sw, sh = UIParent:GetWidth(), UIParent:GetHeight()
+    if not (sw and sw > 0 and sh and sh > 0) then return end
+    local w, h = frame:GetWidth(), frame:GetHeight()
+    local fw, fh, maxW, maxH = Main.FitSize(w, h, scale, sw, sh)
+    frame:SetResizeBounds(MIN_W, MIN_H, maxW, maxH)
+    if frame.resizeButton then frame.resizeButton:Init(frame, MIN_W, MIN_H, maxW, maxH) end
+    local top, bottom = frame:GetTop(), frame:GetBottom()
+    local off = top and bottom and (bottom < 0 or top > sh / scale)
+    if fw ~= w or fh ~= h or off then
+        frame:SetSize(fw, fh)
+        frame:ClearAllPoints()
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        saveGeometry()
+    end
+end
+
 local function applyScale()
     frame:SetScale(ns.db.global.window.scale or 1)
+    fitToScreen()
 end
 
 
@@ -83,7 +112,6 @@ function Main:Build()
     ButtonFrameTemplate_HideButtonBar(frame)
     -- the status bar lives below the inset
     frame.Inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 32)
-    applyScale()
     ns.Skin:Apply("Shell", frame, { bottomBar = 28 })
     ns.Skin:Apply("CloseButton", frame.CloseButton)
     ns.Skin:Apply("Inset", frame.Inset)
@@ -93,6 +121,8 @@ function Main:Build()
     resize:SetPoint("BOTTOMRIGHT", -4, 4)
     resize:Init(frame, MIN_W, MIN_H, GetScreenWidth(), GetScreenHeight())
     resize:SetOnResizeStoppedCallback(saveGeometry)
+    frame.resizeButton = resize
+    applyScale()
 
     local gear = CreateFrame("Button", nil, frame)
     gear:SetSize(20, 20)
@@ -130,6 +160,7 @@ function Main:Build()
         if built then ns:Fire("WindowResized", w, h) end
     end)
     frame:SetScript("OnShow", function()
+        fitToScreen()
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
         if not selectedSet or selectedSet.deleted then Main:SelectSet(ns.Sets.DEFAULT) end
         if not selectedTab then Main:SelectTab("pets") end

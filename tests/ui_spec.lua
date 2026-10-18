@@ -325,10 +325,10 @@ describe("UI smoke", function()
             ns.UI.Broker:OnClick(U.universal(), "RightButton")
             ns.UI.Menu:Build(nil, U.universal())
             assert.is_not_nil(U.ldb.objects.PetCall)
-            assert.is_false(U.icon.shown.PetCall)          -- hidden by default
-            ns.UI.Broker:SetMinimapShown(true)
-            assert.is_true(U.icon.shown.PetCall)
+            assert.is_true(U.icon.shown.PetCall)           -- shown by default
             ns.UI.Broker:SetMinimapShown(false)
+            assert.is_false(U.icon.shown.PetCall)
+            ns.UI.Broker:SetMinimapShown(true)
             PetCall_OnAddonCompartmentEnter(nil, U.universal())
             PetCall_OnAddonCompartmentLeave()
             ns.DB:Set("Other")
@@ -441,6 +441,18 @@ describe("UI smoke", function()
         tiles = gridTiles()
         tiles.c._scripts.OnEnter(tiles.c)
         assert.equal("c", ns.UI.Preview:GetShown())
+    end)
+
+    it("the window never grows past the screen, at any scale", function()
+        local fit = ns.UI.Main.FitSize
+        local w, h, maxW, maxH = fit(940, 640, 1, 1920, 1080)
+        assert.same({ 940, 640, 1920, 1068 }, { w, h, maxW, maxH })
+        w, h = fit(1900, 1200, 1, 1920, 1080)          -- dragged below the bottom edge
+        assert.same({ 1900, 1068 }, { w, h })
+        w, h, maxW, maxH = fit(940, 640, 2, 1920, 1080) -- doubled: half the room
+        assert.same({ 940, 528, 960, 528 }, { w, h, maxW, maxH })
+        w, h = fit(940, 640, 4, 1920, 1080)             -- never below the smallest window
+        assert.same({ 640, 440 }, { w, h })
     end)
 
     it("the minimap menu is not owned by the minimap button", function()
