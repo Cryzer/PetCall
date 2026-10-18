@@ -1,6 +1,13 @@
 
 # Changelog
 
+## v2.0.2 (2026-10-18)
+
+### Fixed
+
+- The text under the pet preview no longer runs into the How often buttons and the Summon button: the controls keep their place at the bottom and the "where it comes from" lines are cut to the room left (all of it shows when you point at them).
+- Blank lines in Blizzard's "where it comes from" text are gone, so there is no big gap under the pet's name.
+
 ## v2.0.1 (2026-10-18)
 
 ### Fixed
