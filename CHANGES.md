@@ -1,6 +1,12 @@
 
 # Changelog
 
+## v2.1.0 (2026-10-18)
+
+### New
+
+- An Outfit condition under "Who I play as": a set can follow the transmog outfit you wear, for example undead pets while you wear your "Necromancer" outfit. Outfits are chosen by name, so the set works on every character with an outfit of that name and keeps its outfits when you share it.
+
 ## v2.0.3 (2026-10-18)
 
 ### Fixed
