@@ -65,7 +65,8 @@ describe("Share", function()
         local data = {
             enabled = true, priority = -1, defaultValue = "x",
             pets = { [39] = "big", [40] = 8 },
-            filter = { { "favorites", "x" }, { "petType", petTypes = 5, 8 }, { "level", operator = ">=", level = 25, -3 } },
+            filter = { { "favorites", "x" }, { "petType", petTypes = 5, 8 }, { "level", operator = ">=", level = 25, -3 },
+                { "expansion", 8, expansions = "6" } },
             trigger = { { "zone", mapIDs = "a", zoneNames = { "Dornogal", 7 } }, { "specialLocation", locs = { "city", false } } },
         }
         local str = "PetCall:2:" .. C_EncodingUtil.EncodeBase64(C_EncodingUtil.CompressString(C_EncodingUtil.SerializeCBOR(data)))
@@ -83,6 +84,7 @@ describe("Share", function()
         end)
         for _, e in ipairs(s.settings.filter) do assert.is_true(type(e[2]) == "number" and e[2] > 0) end
         assert.is_nil(s.settings.filter[2] and s.settings.filter[2].petTypes ~= nil and type(s.settings.filter[2].petTypes) ~= "table" or nil)
+        assert.is_nil(s.settings.filter[4].expansions)
         assert.same({ "Dornogal" }, s.settings.trigger[1].zoneNames)
         assert.is_nil(s.settings.trigger[1].mapIDs)
     end)
@@ -110,11 +112,12 @@ describe("Share", function()
     it("keeps the rules' pet types and sources through export and import", function()
         local set = ns.Sets:Create("Src3")
         set.settings.filter = { { "AND", ns.Weights.NORMAL, items = {
-            { "petType", petTypes = { 2, 5 } }, { "source", sources = { 3, 7 } } } } }
+            { "petType", petTypes = { 2, 5 } }, { "source", sources = { 3, 7 } }, { "expansion", expansions = { 6 } } } } }
         assert.is_true((ns.Share:Import(ns.Share:Export("Src3"), "Copy3")))
         local items = ns.Sets:Get("Copy3").settings.filter[1].items
         assert.same({ 2, 5 }, items[1].petTypes)
         assert.same({ 3, 7 }, items[2].sources)
+        assert.same({ 6 }, items[3].expansions)
     end)
     it("keeps the per-set choices through export and import", function()
         local set = ns.Sets:Create("Src2")

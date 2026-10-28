@@ -98,6 +98,20 @@ local types = {
             return L["Source"] .. ": " .. (t ~= "" and t or L["no text yet"])
         end,
     },
+    -- the expansion the pet was added in (expansions = { 6, 9 }), whatever its source
+    expansion = {
+        key = "expansion",
+        match = function(e, info)
+            local mine = ns.Expansions.Of(info.speciesID)
+            for _, i in ipairs(e.expansions or {}) do if i == mine then return true end end
+            return false
+        end,
+        describe = function(e)
+            local names = {}
+            for _, i in ipairs(e.expansions or {}) do names[#names + 1] = ns.Expansions.Name(i) end
+            return concat(names, ", ")
+        end,
+    },
     nativeZone = {
         key = "nativeZone",
         match = function(e, info)
@@ -107,7 +121,7 @@ local types = {
         describe = function() return L["From this zone"] end,
     },
 }
-local order = { "favorites", "petType", "level", "rare", "source", "nativeZone" }
+local order = { "favorites", "petType", "level", "rare", "source", "expansion", "nativeZone" }
 
 function AutoRules.Types()
     local out = {}
@@ -162,7 +176,7 @@ end
 -- Rules and the pet list's filters are one thing: a rule is the filters it was made from.
 -- Filters: { favorites = true, types = { [petType] = true }, sources = { [journal source] = true },
 -- sourceText = "older rules' text", level = { operator =, level = }, rare = true,
--- nativeZone = true }, every group optional. Any choice inside a group will do; every
+-- expansions = { [expansion] = true }, nativeZone = true }, every group optional. Any choice inside a group will do; every
 -- group must match.
 
 local function sortedKeys(set)
@@ -183,6 +197,8 @@ function AutoRules.FromFilters(f)
     list = sortedKeys(f.sources)
     if #list > 0 then items[#items + 1] = { "source", sources = list } end
     if f.sourceText then items[#items + 1] = { "source", text = f.sourceText } end
+    list = sortedKeys(f.expansions)
+    if #list > 0 then items[#items + 1] = { "expansion", expansions = list } end
     if f.nativeZone then items[#items + 1] = { "nativeZone" } end
     if #items == 0 then return nil end
     if #items == 1 then return items[1] end
@@ -207,6 +223,9 @@ local function addLeaf(f, e)
         for _, i in ipairs(e.sources) do f.sources[i] = true end
     elseif k == "source" and not e.sources and not f.sourceText then
         f.sourceText = e.text or ""
+    elseif k == "expansion" and not f.expansions then
+        f.expansions = {}
+        for _, i in ipairs(e.expansions or {}) do f.expansions[i] = true end
     elseif k == "nativeZone" and not f.nativeZone then
         f.nativeZone = true
     else
@@ -229,7 +248,7 @@ function AutoRules.ToFilters(e)
 end
 
 -- what the filters say, one entry per choice in the order the menu has them:
--- { label =, group =, value = } (value is the pet type or source number)
+-- { label =, group =, value = } (value is the pet type, source or expansion number)
 function AutoRules.Tokens(f)
     local out = {}
     local function add(group, label, value) out[#out + 1] = { group = group, label = label, value = value } end
@@ -239,6 +258,7 @@ function AutoRules.Tokens(f)
     if f.rare then add("rare", L["Rare or better"]) end
     for _, i in ipairs(sortedKeys(f.sources)) do add("sources", AutoRules.SourceLabel(i) or tostring(i), i) end
     if f.sourceText then add("sourceText", L["Source"] .. ": " .. (f.sourceText ~= "" and f.sourceText or L["no text yet"])) end
+    for _, i in ipairs(sortedKeys(f.expansions)) do add("expansions", ns.Expansions.Name(i), i) end
     if f.nativeZone then add("nativeZone", L["From this zone"]) end
     return out
 end
