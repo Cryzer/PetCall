@@ -180,6 +180,7 @@ function Menu:Build(owner, root)
     root:CreateButton(L["Open PetCall"], function() ns:OpenWindow() end)
     root:CreateButton(L["Settings"], function() ns:OpenSettings() end)
 end
+Menu.Build = ns.Profile.Wrap("pet menu", Menu.Build)   -- /pcall profile: opened by a click
 
 -- Opens at the cursor. The owner is UIParent, not the clicked button: a menu closes
 -- when its owner hides, and minimap button collectors (EllesmereUI's flyout) hide

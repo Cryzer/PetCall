@@ -281,6 +281,10 @@ function Main:SetScale(scale)
 end
 
 function Main:Show() self:Build() frame:Show() end
+-- /pcall profile: clicks reach these without an event or a timer
+Main.Show = ns.Profile.Wrap("open window", Main.Show)
+Main.SelectTab = ns.Profile.Wrap("select tab", Main.SelectTab)
+Main.SelectSet = ns.Profile.Wrap("select set", Main.SelectSet)
 function Main:Hide() if frame then frame:Hide() end end
 function Main:Toggle()
     self:Build()

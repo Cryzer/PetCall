@@ -8,6 +8,47 @@ ns.version = (tocVersion and not tocVersion:find("@")) and tocVersion or "dev"
 local pairs, ipairs, type, tostring = pairs, ipairs, type, tostring
 
 --
+-- Profile (/pcall profile, takes a reload): from the next load on, every event handler,
+-- callback and timer PetCall sets up is timed, and one that takes 5 ms or more is named
+-- in chat with where it comes from. Off, nothing is wrapped and nothing is timed.
+--
+
+local Profile = {}
+ns.Profile = Profile
+Profile.on = type(PetCall3DB) == "table" and type(PetCall3DB.global) == "table" and PetCall3DB.global.profile == true
+local SLOW_MS = 5
+
+-- the file and line that asked for it: the first caller outside this file
+local function where()
+    local stack = (debugstack(2, 8, 0) or ""):gsub("\\", "/")
+    for file, line in stack:gmatch('PetCall/([^"%]:\n]+)"?%]?:(%d+)') do
+        if file ~= "Core/Addon.lua" then return file .. ":" .. line end
+    end
+end
+
+local function finish(label, start, ...)
+    local ms = debugprofilestop() - start
+    if ms >= SLOW_MS then ns:Printf("|cffffd100%.0f ms|r %s", ms, label) end
+    return ...
+end
+
+function Profile.Wrap(label, fn)
+    if not Profile.on then return fn end
+    local site = where()
+    if site then label = label .. " @ " .. site end
+    return function(...) return finish(label, debugprofilestop(), fn(...)) end
+end
+
+-- an event handler as a function, timed
+local function timedHandler(obj, event, handler)
+    if type(handler) == "string" then
+        local method = handler
+        handler = function(o, ...) return o[method](o, ...) end
+    end
+    return Profile.Wrap(event .. (obj.name and (" " .. obj.name) or ""), handler)
+end
+
+--
 -- Events
 --
 
@@ -37,14 +78,18 @@ unitFrame:SetScript("OnEvent", function(_, event, ...) dispatch(unitHandlers, ev
 function Events.Register(obj, event, handler)
     handlers[event] = handlers[event] or {}
     if not next(handlers[event]) then frame:RegisterEvent(event) end
-    handlers[event][obj] = handler or event
+    handler = handler or event
+    if Profile.on then handler = timedHandler(obj, event, handler) end
+    handlers[event][obj] = handler
 end
 
 function Events.RegisterUnit(obj, event, unit, handler)
     assert(unit == "player", "only player unit events are supported")
     unitHandlers[event] = unitHandlers[event] or {}
     if not next(unitHandlers[event]) then unitFrame:RegisterUnitEvent(event, "player") end
-    unitHandlers[event][obj] = handler or event
+    handler = handler or event
+    if Profile.on then handler = timedHandler(obj, event, handler) end
+    unitHandlers[event][obj] = handler
 end
 
 function Events.Unregister(obj, event)
@@ -83,7 +128,7 @@ local function withOwner(name, owner, fn)
     callbacks[name] = list
 end
 
-function ns:RegisterCallback(owner, name, fn) withOwner(name, owner, fn) end
+function ns:RegisterCallback(owner, name, fn) withOwner(name, owner, Profile.Wrap(name, fn)) end
 
 function ns:UnregisterCallback(owner, name)
     if callbacks[name] and callbacks[name][owner] then withOwner(name, owner, nil) end
@@ -109,14 +154,15 @@ end
 --
 
 function ns:After(sec, fn)
-    return C_Timer.NewTimer(sec, fn)
+    return C_Timer.NewTimer(sec, Profile.Wrap("timer", fn))
 end
 
 function ns:NewTicker(sec, fn)
-    return C_Timer.NewTicker(sec, fn)
+    return C_Timer.NewTicker(sec, Profile.Wrap("ticker", fn))
 end
 
 function ns.Debounce(delay, fn)
+    fn = Profile.Wrap("timer", fn)
     local pending
     return function()
         if pending then return end
@@ -168,7 +214,7 @@ end
 local function callAll(method)
     for _, m in ipairs(ns.moduleOrder) do
         if m[method] then
-            local ok, err = pcall(m[method], m)
+            local ok, err = pcall(Profile.Wrap(method .. " " .. m.name, m[method]), m)
             if not ok then geterrorhandler()(err) end
         end
     end
@@ -184,4 +230,5 @@ end)
 Events.Register(lifecycle, "PLAYER_LOGIN", function()
     Events.Unregister(lifecycle, "PLAYER_LOGIN")
     callAll("OnEnable")
+    if Profile.on then ns:Print("profile on: parts that take 5 ms or more are named here. /pcall profile turns it off.") end
 end)

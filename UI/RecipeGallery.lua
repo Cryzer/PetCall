@@ -335,6 +335,7 @@ function G:Show()
     layoutChips()
     scrollBox:SetDataProvider(CreateDataProvider(elements()))
 end
+G.Show = ns.Profile.Wrap("templates", G.Show)       -- /pcall profile: opened by a click
 
 function G:Hide()
     if not gallery or not gallery:IsShown() then return end

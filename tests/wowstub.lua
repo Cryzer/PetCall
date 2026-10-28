@@ -104,6 +104,17 @@ function W.reset()
         return xp(function() return f(unpack(a, 1, n)) end, h)
     end
     geterrorhandler = function() return function(e) error(e, 0) end end
+    -- a clock in milliseconds tests move by hand, and the call stack as the game writes it
+    debugprofilestop = function() return w.ms or 0 end
+    debugstack = function(start, count)
+        local lines = {}
+        for level = (start or 2) + 1, (start or 2) + (count or 12) do
+            local info = debug.getinfo(level, "Sl")
+            if not info then break end
+            lines[#lines + 1] = "[Interface/AddOns/PetCall/" .. info.short_src .. "]:" .. (info.currentline or 0) .. ": in function"
+        end
+        return table.concat(lines, "\n")
+    end
     hooksecurefunc = function(t, k, f)
         if type(t) == "string" then t, k, f = _G, t, k end
         assert(type(t[k]) == "function", "hooksecurefunc: " .. tostring(k) .. " is not a function")

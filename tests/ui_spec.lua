@@ -2,6 +2,36 @@
 local U = dofile("tests/uistub.lua")
 local W = U.W
 
+describe("UI profile", function()
+    it("with /pcall profile on, opening the window, a tab, the gallery and the pet menu are timed", function()
+        local ns = U.load({ prepare = function() PetCall3DB = { global = { profile = true } } end })
+        W.world.pets = { a = { species = 1, name = "A" } }
+        W.login()
+        W.advance(1)
+        local function slowly(t, key)
+            local f = t[key]
+            t[key] = function(...) W.world.ms = (W.world.ms or 0) + 50 return f(...) end
+        end
+        local function named(label)
+            for _, m in ipairs(W.world.printed) do if m:find(label, 1, true) then return true end end
+            return false
+        end
+        -- the work inside each entry point, made slow
+        slowly(ns.UI.Main, "Build")
+        ns:OpenWindow()
+        assert.is_true(named("open window"))
+        slowly(ns.UI.Main, "BuildTab")
+        ns.UI.Main:SelectTab("when")
+        assert.is_true(named("select tab"))
+        slowly(ns.Recipes, "List")
+        ns.UI.RecipeGallery:Show()
+        assert.is_true(named("templates"))
+        slowly(ns.UI.Menu, "UniquePets")
+        ns.UI.Menu:Build(UIParent, U.newMenu())
+        assert.is_true(named("pet menu"))
+    end)
+end)
+
 describe("UI smoke", function()
     local ns
     before_each(function()

@@ -79,7 +79,7 @@ read_globals = {
     "UnitIsDeadOrGhost", "UnitIsAFK", "SendChatMessage",
     "SecureCmdOptionParse", "PlaySound", "PlaySoundFile", "HelpPlate", "HelpPlateTooltip", "MAIN_HELP_BUTTON_TOOLTIP",
     "ReloadUI",
-    "hooksecurefunc", "CopyTable",
+    "hooksecurefunc", "CopyTable", "debugstack", "debugprofilestop",
 
     -- WoW stdlib aliases (globals in WoW environment)
     "format", "max",

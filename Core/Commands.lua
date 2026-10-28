@@ -22,6 +22,11 @@ local list = {
         ns:Printf("%s: %s", L["Auto-summon"], ns:IsAutoSummon() and L["On"] or L["Off"])
         ns.Ready:DumpDebugState()
     end },
+    -- names the parts of PetCall that take long, in chat; takes a reload
+    { "profile", nil, function()
+        ns.db.global.profile = not ns.db.global.profile or nil
+        ReloadUI()
+    end },
     { "holidays", nil, function() ns.Conditions.DumpHolidays() end },
     { "model", nil, function() if ns.UI.DumpModel then ns.UI.DumpModel() end end },
     -- longer test texts in the whole window, for checking the layout; takes a reload
