@@ -1718,8 +1718,9 @@ describe("UI smoke", function()
         ns.UI.RecipeGallery:Show()
         local reopened = builds - opened - refreshed
         ns.Weights.Build = build
-        -- every candidate: the cards, the hidden holidays, families and sources
+        -- every candidate: the cards, the hidden holidays, families, sources and expansions
         local recipes = #ns.Recipes.List() + #ns.Conditions.KnownHolidays() + 10 + C_PetJournal.GetNumPetSources()
+            + #ns.Expansions.All()
         assert.is_true(opened <= recipes, opened .. " counts for " .. recipes .. " recipes")
         assert.equal(0, refreshed, "a resize reuses the counts")
         assert.equal(0, reopened, "opening again reuses the counts")

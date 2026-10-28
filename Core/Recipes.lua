@@ -174,6 +174,21 @@ local function sourceRecipe(i)
         conditions = {}, rules = { { "source", NORMAL, sources = { i } } }, lowest = true })
 end
 
+-- the game's own expansion emblems; boost tokens carry the newer ones' logos
+local EXPANSION_ICONS = {
+    [0] = "ExpansionIcon_Classic", [1] = "ExpansionIcon_BurningCrusade", [2] = "ExpansionIcon_WrathoftheLichKing",
+    [3] = "ExpansionIcon_Cataclysm", [4] = "ExpansionIcon_MistsofPandaria", [5] = "ExpansionIcon_Draenor",
+    [7] = "INV_Misc_Token_Boost_BfA", [8] = "INV_Misc_Token_Boost_Shadowlands", [9] = "INV_Misc_Token_Boost_Dragonflight",
+}
+
+-- one set per expansion, used everywhere just above the Default set
+local function expansionRecipe(i)
+    local name = ns.Expansions.Name(i)
+    return finish({ key = "expansion:" .. i, category = "expansions", icon = I .. (EXPANSION_ICONS[i] or "INV_Misc_Token_Boost_Generic"),
+        title = format(L["%s pets"], name), hint = format(L["Everywhere, before the Default set. Expansion: %s."], name),
+        conditions = {}, rules = { { "expansion", NORMAL, expansions = { i } } }, lowest = true })
+end
+
 local function holidayRecipe(h)
     -- calendar art has a frame around it; the event picture is the top-left part
     return finish({ key = "holiday:" .. h.value, category = "holiday", icon = h.icon, iconCoords = { 0, 0.7109375, 0, 0.7109375 },
@@ -240,6 +255,10 @@ function R.List()
     for i = 1, sources do
         local r = sourceRecipe(i)
         if r and R.Count(r) > 0 then out[#out + 1] = r end
+    end
+    for _, i in ipairs(ns.Expansions.All()) do
+        local r = expansionRecipe(i)
+        if R.Count(r) > 0 then out[#out + 1] = r end
     end
     local class = classRecipe()
     if class then out[#out + 1] = class end

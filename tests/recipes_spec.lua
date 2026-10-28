@@ -106,7 +106,7 @@ describe("Recipes", function()
         for _, s in ipairs(ns.UI and ns.UI.RecipeGallery and ns.UI.RecipeGallery.SECTIONS or {}) do known[s.key] = true end
         if not next(known) then
             known = { everyday = true, town = true, world = true, moving = true, time = true, company = true,
-                families = true, sources = true, class = true, holiday = true }
+                families = true, sources = true, expansions = true, class = true, holiday = true }
         end
         for _, r in ipairs(R.List()) do assert.is_true(known[r.category], r.key) end
     end)
@@ -126,6 +126,20 @@ describe("Recipes", function()
         assert.is_true(set:Contains("fish"))
         assert.is_false(set:Contains("bird"))
         _G.BATTLE_PET_SOURCE_1 = nil
+    end)
+    it("one recipe per expansion you have pets from", function()
+        W.world.pets.rock = { species = 115, name = "Rock" }   -- Warlords of Draenor; the others are Classic
+        ns.PetCache:Rescan()
+        R.ForgetCounts()
+        local classic, wod = byKey("expansion:0"), byKey("expansion:5")
+        assert.is_not_nil(classic)
+        assert.is_not_nil(wod)
+        assert.is_true(wod.lowest)
+        assert.equal("Warlords of Draenor pets", wod.title)
+        assert.is_nil(byKey("expansion:6"))                 -- no Legion pets
+        local set = R.Create(wod)
+        assert.is_true(set:Contains("rock"))
+        assert.is_false(set:Contains("fish"))
     end)
     it("a no-pet recipe is usable without pets and makes a set that summons none", function()
         local r = byKey("quietpvp")

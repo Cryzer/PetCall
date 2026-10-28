@@ -26,6 +26,7 @@ local SECTIONS = {
     { key = "company", label = L["Company"], group = "company" },
     { key = "families", label = L["Pet families"], group = "collections" },
     { key = "sources", label = L["Where pets come from"], group = "collections" },
+    { key = "expansions", label = L["Expansions"], group = "collections" },
     { key = "class", label = L["Your class"], group = "seasons" },
     { key = "holiday", label = L["Holidays"], group = "seasons" },
 }

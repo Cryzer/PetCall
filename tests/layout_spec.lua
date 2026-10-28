@@ -154,6 +154,26 @@ describe("Layout", function()
         assert.same({}, Layout.Check(U, ns.UI.RecipeGallery:GetFrame()))
     end)
 
+    it("the longest expansion template fits its card at every width", function()
+        local ns, U = Layout.load({ pseudo = true })
+        local d, wrath = ns.ExpansionData, nil
+        for i, e in ipairs(d.expansions) do if e == 2 then wrath = d.starts[i] break end end
+        U.W.world.pets = { w = { species = wrath, name = "W" } }
+        U.W.login()
+        ns.UI.Main:Show()
+        for _, size in ipairs({ { 640, 440 }, { 1100, 700 } }) do
+            Layout.SetWindowSize(ns, U, size[1], size[2])
+            ns.UI.RecipeGallery:Show()
+            Layout.Settle(U)
+            local card
+            for _, c in ipairs(ns.UI.RecipeGallery._cards) do
+                if c.recipe and c.recipe.key == "expansion:2" and c:IsVisible() then card = c end
+            end
+            assert.is_not_nil(card, "a Wrath of the Lich King card")
+            assert.same({}, Layout.Check(U, ns.UI.RecipeGallery:GetFrame()))
+        end
+    end)
+
     it("set settings rows stack by what they hold, and labels and controls share a column", function()
         local ns, U = Layout.load({ pseudo = true })
         U.W.login()
