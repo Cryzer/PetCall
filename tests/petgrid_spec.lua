@@ -43,6 +43,17 @@ describe("PetGridModel", function()
         assert.equal(2, counts[2])
         _G.BATTLE_PET_SOURCE_1, _G.BATTLE_PET_SOURCE_2 = nil, nil
     end)
+    it("filters and counts by the expansion a pet was added in", function()
+        W.world.pets.c.species = 115                     -- Warlords of Draenor; a and b are Classic
+        ns.PetCache:Rescan()
+        assert.same({ "c" }, ns.PetGridModel.Filter(set, { filters = { expansions = { [5] = true } } }))
+        local counts = ns.PetGridModel.ExpansionCounts()
+        assert.equal(2, counts[0])
+        assert.equal(1, counts[5])
+        assert.equal(0, counts[6])
+        assert.equal(11, #ns.Expansions.All() - 1, "every expansion is counted")
+        assert.is_not_nil(counts[11])
+    end)
     it("names the filters, counts the menu ones, says when the list is narrowed and clears it", function()
         _G.BATTLE_PET_SOURCE_2, _G.BATTLE_PET_NAME_8 = "Pet Battle", "Beast"
         local state = { search = "", show = "all", sort = "level", filters = {} }

@@ -680,6 +680,16 @@ local function conditionItems(root, withFavorites)
                 function() return f.sources and f.sources[i] end, function() toggle("sources", i) end)
         end
     end
+    -- the same for expansions, the newest first
+    local expansions = root:CreateButton(L["Expansion"])
+    local perExpansion, all = ns.PetGridModel.ExpansionCounts(), ns.Expansions.All()
+    for n = #all, 1, -1 do
+        local i = all[n]
+        if perExpansion[i] > 0 or (f.expansions and f.expansions[i]) then
+            expansions:CreateCheckbox(format("%s (%d)", ns.Expansions.Name(i), perExpansion[i]),
+                function() return f.expansions and f.expansions[i] end, function() toggle("expansions", i) end)
+        end
+    end
     -- a level from an older rule that is neither of these shows as a third choice
     local level = root:CreateButton(L["Level"])
     local function levelRadio(text, operator, n)

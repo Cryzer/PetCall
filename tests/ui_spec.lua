@@ -781,6 +781,31 @@ describe("UI smoke", function()
         assert.is_false(bar:IsShown())
     end)
 
+    it("the Filter menu narrows the list by expansion, newest first, and keeps a ticked one to untick", function()
+        W.world.pets.b = { species = 115, name = "B" }  -- Warlords of Draenor; a is Classic
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local page = ns.UI.PetsTabPage
+        local bar = page.filterBar
+        local root = U.newMenu()
+        page.filterBtn._setupMenu(page.filterBtn, root)
+        local menu = root:Find("Expansion")
+        assert.same({ "Warlords of Draenor (1)", "Classic (1)" }, { menu.items[1].text, menu.items[2].text })
+        assert.equal(2, #menu.items, "only expansions you have pets from")
+        menu.items[1]:Click()
+        assert.equal("Showing 1 of 2", bar.shown:GetText())
+        assert.is_true(bar.chips[1]:GetText():find("^Warlords of Draenor ") ~= nil, bar.chips[1]:GetText())
+        W.world.pets.b = nil
+        ns.PetCache:Rescan()
+        root = U.newMenu()
+        page.filterBtn._setupMenu(page.filterBtn, root)
+        assert.equal("Warlords of Draenor (0)", root:Find("Expansion").items[1].text, "still there to untick")
+        bar.clear:Click()
+        assert.is_false(bar:IsShown())
+    end)
+
     it("set settings hold the default weight and the reset that left the main view", function()
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("settings")

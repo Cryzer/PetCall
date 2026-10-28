@@ -86,6 +86,13 @@ function M.SourceCounts()
     return counts
 end
 
+-- pets (one per tile) from each expansion, whatever the other filters say
+function M.ExpansionCounts()
+    local counts = {}
+    for _, i in ipairs(ns.Expansions.All()) do counts[i] = M.CountMatching({ "expansion", expansions = { i } }) end
+    return counts
+end
+
 -- each filter choice, as AutoRules.Tokens names it, with clear() that turns it off
 function M.Tokens(state)
     local f = state.filters or {}
