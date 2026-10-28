@@ -3,6 +3,8 @@ local _, ns = ...
 local L = ns.L
 local CreateFrame = CreateFrame
 local MIN_TILE_W, TILE_H, PREVIEW_MIN_WIDTH = 190, 48, 760
+-- a tile's text starts after its icon; the name leaves the tick room, the line under it does not
+local TILE_PAD, NAME_X, CHECK_ROOM = 8, 46, 26
 local BANNER_H = 30
 local LINE_GAP = 8       -- between the toolbar, the filter line and the rules bar
 
@@ -16,6 +18,10 @@ local set, page, grid, scrollBox, scrollBar, dataProvider, emptyText, columns = 
 local floatingPreview, gridPreview    -- gridPreview is created once and reused
 local tileW = MIN_TILE_W
 local shownIDs = {}      -- the filtered pets of the last rebuild, regrouped when the columns change
+local gridRows = {}      -- those pets in rows of `columns`, as the list shows them
+-- A row is as tall as its tallest tile: a long name wraps onto a second line rather than
+-- being cut short. Heights are measured once per pet for the current tile width.
+local heights, measure = {}, nil
 
 local function displayName(info) return info.customName or info.name end
 
@@ -133,17 +139,10 @@ local function createTile(parent)
     t.border:SetTexture(QUALITY_BORDER)
     t.border:SetAllPoints(t.icon)
     t.name = t:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    t.name:SetPoint("TOPLEFT", t.icon, "TOPRIGHT", 6, -2)
-    t.name:SetPoint("RIGHT", -26, 0)
     t.name:SetJustifyH("LEFT")
-    t.name:SetWordWrap(false)
     t.sub = t:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    t.sub:SetPoint("BOTTOMLEFT", t.icon, "BOTTOMRIGHT", 6, 2)
-    t.sub:SetPoint("RIGHT", -44, 0)
+    t.sub:SetPoint("TOPLEFT", t.name, "BOTTOMLEFT", 0, -2)
     t.sub:SetJustifyH("LEFT")
-    t.sub:SetWordWrap(false)
-    t.badge = t:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    t.badge:SetPoint("BOTTOMRIGHT", -6, 6)
     -- a small tick: bright when the pet is in the set, a faint ghost when it is left out
     t.check = CreateFrame("Button", nil, t)
     t.check:SetSize(18, 18)
@@ -174,18 +173,8 @@ local BADGE_COLORS = { never = { 0.6, 0.6, 0.6 }, manual = { 0.4, 1, 0.4 }, auto
 local function refreshAccent() if ns.Skin:IsActive() then BADGE_COLORS.manual = { ns.Skin:Accent() } end end
 ns.Skin:OnLooksChanged(function() refreshAccent() Tab:Rebuild() end)
 
-local function setupTile(t, petID)
-    t.petID = petID
-    t:SetShown(petID ~= nil)
-    if not petID then return end
-    local info = ns.PetCache:GetInfo(petID)
-    if not info then t:Hide() t.petID = nil return end    -- released while the grid was rebuilding
-    t.icon:SetTexture(info.icon)
-    local r, g, b = ns.Widgets.QualityColor(info.quality)
-    t.border:SetVertexColor(r, g, b)
-    t.name:SetText(displayName(info))
-    t.name:SetTextColor(r, g, b)
-    -- second line: what kind of pet, and how often it is drawn when that is not "Normal"
+-- second line: what kind of pet, and how often it is drawn when that is not "Normal"
+local function subText(petID, info)
     local _, kind = ns.PetGridModel.Badge(set, petID)
     local w = set:GetPetWeight(petID)
     local parts = { _G["BATTLE_PET_NAME_" .. (info.petType or 0)] or "" }
@@ -202,9 +191,57 @@ local function setupTile(t, petID)
     end
     local copies = #ns.PetCache:GetCopies(petID)
     if copies > 1 then parts[#parts + 1] = format("|cffaaaaaax%d|r", copies) end
-    t.sub:SetText(table.concat(parts, " · "))
-    t.badge:SetText("")
-    local included = w > 0 or kind == "auto"
+    return table.concat(parts, " · ")
+end
+
+local function nameWidth() return tileW - 4 - NAME_X - CHECK_ROOM end
+local function subWidth() return tileW - 4 - NAME_X - 6 end
+local function textHeight(fs) return math.ceil(tonumber(fs:GetStringHeight()) or 0) end
+
+-- how tall a pet's tile needs to be for its name and the line under it
+local function tileHeight(petID)
+    if heights[petID] then return heights[petID] end
+    local h = TILE_H - 4
+    local info = ns.PetCache:GetInfo(petID)
+    if info then
+        measure.name:SetWidth(nameWidth())
+        measure.name:SetText(displayName(info))
+        measure.sub:SetWidth(subWidth())
+        measure.sub:SetText(subText(petID, info))
+        h = math.max(h, 2 * TILE_PAD + textHeight(measure.name) + 2 + textHeight(measure.sub))
+    end
+    heights[petID] = h
+    return h
+end
+
+-- a row's height in the list, the gap under it included
+local function rowExtent(data)
+    local h = TILE_H - 4
+    for i = 1, columns do if data[i] then h = math.max(h, tileHeight(data[i])) end end
+    return h + 4
+end
+
+local function setupTile(t, petID, height)
+    t.petID = petID
+    t:SetShown(petID ~= nil)
+    if not petID then return end
+    local info = ns.PetCache:GetInfo(petID)
+    if not info then t:Hide() t.petID = nil return end    -- released while the grid was rebuilding
+    t:SetHeight(height)
+    t.icon:SetTexture(info.icon)
+    local r, g, b = ns.Widgets.QualityColor(info.quality)
+    t.border:SetVertexColor(r, g, b)
+    t.name:SetWidth(nameWidth())
+    t.name:SetText(displayName(info))
+    t.name:SetTextColor(r, g, b)
+    t.sub:SetWidth(subWidth())
+    t.sub:SetText(subText(petID, info))
+    -- the text sits in the middle of a tile its row made taller
+    local text = textHeight(t.name) + 2 + textHeight(t.sub)
+    t.name:ClearAllPoints()
+    t.name:SetPoint("TOPLEFT", NAME_X, -math.max(TILE_PAD, math.floor((height - text) / 2)))
+    local _, kind = ns.PetGridModel.Badge(set, petID)
+    local included = set:GetPetWeight(petID) > 0 or kind == "auto"
     -- hundreds of identical bright ticks are noise: quiet until the tile is hovered;
     -- pets that are in through a rule get the rule colour
     t.check.tex:SetDesaturated(not included)
@@ -218,6 +255,7 @@ end
 
 local function initRow(row, data)
     row.tiles = row.tiles or {}
+    local height = rowExtent(data) - 4
     for i = 1, columns do
         local t = row.tiles[i]
         if not t then
@@ -228,7 +266,7 @@ local function initRow(row, data)
         t:ClearAllPoints()
         t:SetPoint("LEFT", (i - 1) * tileW, 0)
         t:SetWidth(tileW - 4)
-        setupTile(t, data[i])
+        setupTile(t, data[i], height)
     end
     for i = columns + 1, #row.tiles do row.tiles[i]:Hide() end
 end
@@ -238,7 +276,9 @@ function Tab:Rebuild()
     refreshAccent()
     local ids = ns.PetGridModel.Filter(set, state)
     shownIDs = ids
-    dataProvider = CreateDataProvider(ns.PetGridModel.Rows(ids, columns))
+    heights = {}         -- names, weights and the open rule may all have changed
+    gridRows = ns.PetGridModel.Rows(ids, columns)
+    dataProvider = CreateDataProvider(gridRows)
     scrollBox:SetDataProvider(dataProvider, ScrollBoxConstants.RetainScrollPosition)
     if ns.PetCache:NumPets() == 0 then
         emptyText:SetText(L["You have no pets yet."])
@@ -320,12 +360,21 @@ function Tab.Columns(width)
     return n, math.floor(width / n)
 end
 
--- regroup into rows, keeping the pet at the top of the view at the top
-local function regroup(oldColumns)
-    if not dataProvider then return end
+-- the first pet of the row at the top of the view, with the rows as they are now
+local function firstShownPet()
     local offset = tonumber(scrollBox.GetDerivedScrollOffset and scrollBox:GetDerivedScrollOffset()) or 0
-    local firstPet = math.floor(offset / TILE_H) * oldColumns + 1
-    dataProvider = CreateDataProvider(ns.PetGridModel.Rows(shownIDs, columns))
+    local y = 0
+    for i, data in ipairs(gridRows) do
+        y = y + rowExtent(data)
+        if y > offset then return (i - 1) * columns + 1 end
+    end
+    return 1
+end
+
+-- regroup into rows, keeping the pet at the top of the view at the top
+local function regroup(firstPet)
+    gridRows = ns.PetGridModel.Rows(shownIDs, columns)
+    dataProvider = CreateDataProvider(gridRows)
     scrollBox:SetDataProvider(dataProvider, ScrollBoxConstants.DiscardScrollPosition)
     local row = math.floor((firstPet - 1) / columns) + 1
     if row > 1 and scrollBox.ScrollToElementDataIndex then
@@ -333,20 +382,38 @@ local function regroup(oldColumns)
     end
 end
 
--- fit the tiles to the grid's width; true when the columns changed
+-- Fit the tiles to the grid's width; true when the columns changed. Tiles only stretch
+-- while the count stays; the rows are laid out again only when a name's lines change.
 local function fitColumns(width)
     width = tonumber(width) or 0
     if width <= 0 then return false end
-    local oldColumns = columns
+    local oldColumns, oldW = columns, tileW
+    local firstPet = dataProvider and firstShownPet() or 1
     columns, tileW = Tab.Columns(width)
     if columns ~= oldColumns then
-        regroup(oldColumns)
+        heights = {}
+        if dataProvider then regroup(firstPet) end
         return true
+    end
+    if tileW == oldW then return false end
+    local old = heights
+    heights = {}
+    local changed = false
+    for id, h in pairs(old) do
+        if tileHeight(id) ~= h then changed = true break end
+    end
+    if changed and dataProvider then
+        scrollBox:SetDataProvider(dataProvider, ScrollBoxConstants.RetainScrollPosition)
+        return false
     end
     for _, t in ipairs(allTiles) do
         if t.col then
             t:SetPoint("LEFT", (t.col - 1) * tileW, 0)
             t:SetWidth(tileW - 4)
+            if t.petID then
+                t.name:SetWidth(nameWidth())
+                t.sub:SetWidth(subWidth())
+            end
         end
     end
     return false
@@ -795,8 +862,13 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     scrollBar = CreateFrame("EventFrame", nil, page, "MinimalScrollBar")
     scrollBar:SetPoint("TOPLEFT", grid, "TOPRIGHT", 4, 0)
     scrollBar:SetPoint("BOTTOMLEFT", grid, "BOTTOMRIGHT", 4, 0)
+    -- hidden text the tiles' heights are measured with
+    measure = CreateFrame("Frame", nil, page)
+    measure:Hide()
+    measure.name = measure:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    measure.sub = measure:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     local view = CreateScrollBoxListLinearView()
-    view:SetElementExtent(TILE_H)
+    view:SetElementExtentCalculator(function(_, data) return rowExtent(data) end)
     view:SetElementInitializer("Frame", initRow)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
     ns.Skin:Apply("ScrollBar", scrollBar)

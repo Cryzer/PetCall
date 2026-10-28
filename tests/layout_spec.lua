@@ -102,4 +102,34 @@ describe("Layout", function()
         assert.same({}, Layout.Check(U, ns.UI.Main:GetFrame().header))
         for _, b in ipairs(ns.UI.Main:GetTabButtons()) do assert.same({}, Layout.Check(U, b)) end
     end)
+
+    it("a pet tile with a long name makes its row taller; the other rows stay as they were", function()
+        local ns, U = Layout.load()
+        U.W.world.pets = {
+            a = { species = 1, name = "Mechanical Pandaren Dragonling of the Endless Western Plains", level = 25, type = 7 },
+            b = { species = 2, name = "Ant", type = 8 }, c = { species = 3, name = "Bee", type = 8 },
+            d = { species = 4, name = "Cat", type = 8 }, e = { species = 5, name = "Dog", type = 8 },
+            f = { species = 6, name = "Eel", type = 8 }, g = { species = 7, name = "Fox", type = 8 },
+        }
+        U.W.login()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        Layout.SetWindowSize(ns, U, 940, 640)
+        local rows
+        for _, f in ipairs(U.created) do
+            if f._template == "WowScrollBoxList" and f:IsVisible() then rows = f._rowFrames end
+        end
+        local tall, short
+        for _, row in ipairs(rows) do
+            for _, t in ipairs(row.tiles or {}) do
+                if t:IsShown() and t.petID == "a" then tall = row end
+            end
+            if row ~= tall and row.tiles and row.tiles[1]:IsShown() then short = row end
+        end
+        local h = tall.tiles[1]:GetHeight()
+        assert.is_true(h > 44, "two lines of name: " .. h)
+        for _, t in ipairs(tall.tiles) do if t:IsShown() then assert.equal(h, t:GetHeight(), "one height per row") end end
+        assert.equal(44, short.tiles[1]:GetHeight())
+        assert.same({}, Layout.Check(U, ns.UI.PetsTabPage.grid))
+    end)
 end)
