@@ -439,12 +439,13 @@ local function buildNowCard()
     c.from:SetPoint("TOPLEFT", c.name, "BOTTOMLEFT", 0, -3)
     c.state = ns.Widgets.Label(c, "", "GameFontNormalSmall")
     c.state:SetPoint("TOPLEFT", c.from, "BOTTOMLEFT", 0, -3)
-    -- open the set it came from with the pet selected
+    -- open the set it came from with the pet selected and in view
     c:SetScript("OnClick", function(self)
         if not self.petID then return end
         if self.setName then ns.UI.Main:SelectSet(self.setName) end
         ns.UI.Main:SelectTab("pets")
         ns.UI.Preview:SetSelected(self.petID)
+        ns.UI.PetsTab:ShowPet(self.petID)
     end)
     ns.Widgets.Tooltip(c, function(self) return self.name:GetText() end, function(self)
         local lines = { self.from:GetText(), self.state:GetText() }

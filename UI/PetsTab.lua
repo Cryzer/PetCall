@@ -370,6 +370,22 @@ local function layoutToolbar()
     end
 end
 
+-- scroll the grid to a pet (its tile, when it is a copy); a search or filters that hide
+-- it are cleared first, unless a rule is open
+function Tab:ShowPet(petID)
+    if not page or not page:IsVisible() then return end
+    local tile = ns.PetCache:GetCopies(petID)[1]
+    local function rowOf()
+        for i, id in ipairs(shownIDs) do if id == tile then return math.floor((i - 1) / columns) + 1 end end
+    end
+    self:Rebuild()
+    if not rowOf() and not editing and ns.PetGridModel.IsNarrowed(state) then page.clearFilters() end
+    local row = rowOf()
+    if row and scrollBox.ScrollToElementDataIndex then
+        scrollBox:ScrollToElementDataIndex(row, ScrollBoxConstants.AlignCenter, nil, ScrollBoxConstants.NoScrollInterpolation)
+    end
+end
+
 function Tab:PlaceBelowFilters()
     if not page then return end
     local top = contentTop()
@@ -863,12 +879,13 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
         btn:SetHeight(20)
         return btn
     end
-    bar.clear = small(L["Clear filters"], function()
+    function page.clearFilters()
         ns.PetGridModel.ClearFilters(state)
         search:SetText("")
         page.show:Refresh()
         Tab:Rebuild()
-    end)
+    end
+    bar.clear = small(L["Clear filters"], page.clearFilters)
     bar.bulk = small("", function(self) MenuUtil.CreateContextMenu(self, function(_, root) weightLevelsMenu(root) end) end)
     bar.makeRule = small(L["Make a rule"], function() startEditing(nil, state.filters, newRuleWeight()) end)
     ns.Widgets.Tooltip(bar.makeRule, L["Make a rule"], L["These pets come out as often as you pick, from now on, including pets you collect later that match."])

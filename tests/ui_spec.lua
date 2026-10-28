@@ -1041,6 +1041,26 @@ describe("UI smoke", function()
         ns.UI.SetList:SetCollapsed(true, true)
         assert.is_true(bar.left:GetText():find("^Now: A") ~= nil, bar.left:GetText())
     end)
+    it("clicking the pet out now scrolls the grid to it, past a search that hid it", function()
+        for i = 1, 60 do W.world.pets["p" .. i] = { species = 100 + i, name = format("P%02d", i) } end
+        ns.PetCache:Rescan()
+        W.world.summoned = "p50"
+        ns.UI.Main:Show()
+        ns.UI.SetList:SetCollapsed(false, true)
+        ns:Fire("SummonedPetChanged")
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        ns.UI.PetsTabState().search = "p0"
+        ns.UI.PetsTab:Rebuild()
+        local scrolled
+        for _, f in ipairs(U.created) do
+            if f._template == "WowScrollBoxList" then f.ScrollToElementDataIndex = function(_, row) scrolled = row end end
+        end
+        ns.UI.SetList._nowCard:Click()
+        assert.equal("p50", ns.UI.Preview:GetSelected())
+        assert.equal("", ns.UI.PetsTabState().search)
+        assert.is_true(scrolled ~= nil and scrolled > 1, tostring(scrolled))
+    end)
     it("a set without pets says what to do and can take them all in one click", function()
         local set = ns.Sets:Create("Empty")
         set:SetDefaultWeight(0)
