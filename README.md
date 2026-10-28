@@ -98,17 +98,17 @@ Now a dragonkin pet runs next to you whenever you ride one of those drakes.
 - Click a set to edit it. Drag it to change the order.
 - Each card says whether the set is in use, what it is waiting for, or that it is paused.
 - **Right-click** a set to pause it (for an hour or until logout), rename, duplicate, export or delete it.
-- **+ New** starts an empty set or one from a template. **Import** adds a set someone shared with you.
-- **Out now** at the bottom: the pet at your side and the set it came from.
+- **+ New** under the list starts an empty set or one from a template. **Import** adds a set someone shared with you.
+- **Out now** at the bottom: the pet at your side and the set it came from. Click it to find it in that set.
 - The arrow at the top folds the list away for more room.
 
 ### Pets tab
 
 - **Search** by name. Show **All** pets, only those **In this set** or only those **Left out**. The star shows only your favorites.
-- **Filter**: pet types, sorting by name, level, rarity or chance, and one weight for every pet shown.
-- **More chance for**: rules that put whole groups of pets in the set. Click a rule to change how often its pets come out or to narrow it down. **+ Add** makes a new rule.
-- **Tick** a pet to put it in the set. **Right-click** to set how often it comes out, summon it, make it a favorite or open it in the Pet Journal.
-- **Preview** on the right: the pet you point at or click, its source, level and copies, **How often**, its **chance in this set**, a **Summon** button and a favorite star.
+- **Filter**: pet type, source, level, rarity or the zone you are in, and sorting by name, level, rarity or chance. The line under the toolbar names each filter (click one to remove it). **How often for N shown** gives every pet shown a setting of its own.
+- **Make a rule** keeps the filters as a rule: those pets, and pets you collect later that match, come out as often as you pick. The **Rules** button opens a rule on the list, where it reads as a sentence; change its filters or how often, then **Save rule**. A pet two rules pick comes out as often as the stronger one says.
+- **Tick** a pet to put it in the set. Untick a pet a rule picks to leave it out anyway; tick it again to give it back to the rule. A pet's own setting always wins over its rules. **Right-click** to set how often it comes out, summon it, make it a favorite or open it in the Pet Journal.
+- **Preview** on the right: the pet you point at or click, its source, level and copies, **How often** (blue steps come from a rule; **Use the rule** gives a pet set by hand back to it), its **chance in this set**, a **Summon** button and a favorite star.
 
 ### When tab
 
@@ -141,7 +141,7 @@ Mounted and Mount need *Don't summon while mounted* turned off in the settings, 
 - **Name and state:** rename the set, pause it or let it run.
 - **Order:** move it up or down.
 - **Behaviour:** what happens when the set starts (keep the pet that is out, or summon a new one), how often to switch pets, a chat message on summon, or **no pet at all** while the set is used, for raids or arenas.
-- **Pets:** how often pets come out that you have not set by hand, new pets included. Reset all weights or edit the rules.
+- **Pets:** how often the other pets come out, the ones no rule picks and you have not set by hand, new pets included. **Undo all by hand** gives every pet back to the rules, or edit the rules.
 - **Export, duplicate or delete** the set.
 
 ---

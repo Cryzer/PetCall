@@ -1,6 +1,31 @@
 
 # Changelog
 
+## v2.2.0 (unreleased)
+
+### New
+
+- Rules from filters: filter the pet list by type, source, level, rarity or the zone you are in, then click Make a rule. The rule says how often those pets come out, and pets you collect later that match follow it too. A rule reads as a sentence ("pets Beast or Aquatic and Rare or better come out Very often") and opens on the list from the Rules button or a pet's right-click menu; change it by changing its filters.
+- Leave out one pet a rule picks: untick it. Tick it again, or click Use the rule in the preview or the pet's menu, and the rule decides again. The tile says "by hand" and an open rule counts the pets you set by hand.
+- How often is a row of rising steps in the preview, from a no sign for Never to Very often. The step under the cursor names itself, and blue steps come from a rule.
+
+### Changed
+
+- A pet's own setting now wins over its rules, and a pet two rules pick comes out as often as the stronger rule says. Before, a pet's own weight and its rules' weights were added up. Sets without rules draw exactly as before; in sets with rules, pets that have both a setting of their own and a rule can come out more or less often than they used to.
+- Ticking a pet used to store "Normal" for it, which would now shut its rules out. Those stored settings that only repeat the set's level for other pets are removed once per set; settings you really chose, such as Often, stay.
+- The chance bar in the preview fills as far as the percentage next to it, instead of comparing the pet with the most likely one.
+- Wording follows How often everywhere: "How often for 12 shown", "Other pets" and "Undo all by hand" in the set settings.
+
+### Fixed
+
+- No text is cut short any more, in any language: tabs fit their labels, and the set header, set cards, pet tiles, template cards, the Out now card and the status bar wrap long text and grow to hold it.
+- + New and Import sit right under the set list, with Out now below them. + New opens one box for a name or a template.
+- The + New box, import and export stand out from the window on the dark looks.
+
+### For translators
+
+- /pcall pseudo makes every text longer and accented, as translations do, and reloads the UI, to check that the window holds a longer language. Type it again to go back.
+
 ## v2.1.1 (2026-10-18)
 
 ### Fixed
