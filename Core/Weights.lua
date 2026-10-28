@@ -66,13 +66,14 @@ function Weights.Build(settings, out)
     out.total, out.auto = 0, auto
     local filters = settings.filter
     local hasFilters = filters and #filters > 0
+    local pass = ns.AutoRules.Pass()
     for _, petID in ns.PetCache:IteratePetIDs() do
         -- a pet the game will not summon gets no tickets from anywhere: drawing it would
         -- summon nothing (1.x let rules give it tickets)
         local summonable = ns.PetCache:GetInfo(petID).summonable
         if hasFilters then
             for _, entry in ipairs(filters) do
-                if ns.AutoRules.Match(entry, petID) then
+                if ns.AutoRules.Match(entry, petID, pass) then
                     auto[petID] = math.max(auto[petID] or 0, ns.AutoRules.Weight(entry))
                 end
             end

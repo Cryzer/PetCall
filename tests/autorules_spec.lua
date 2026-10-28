@@ -20,6 +20,19 @@ describe("AutoRules", function()
         assert.is_true(AR.Match({ "level", operator = ">=", level = "25" }, "a"))
         assert.is_false(AR.Match({ "level", operator = ">=", level = "25" }, "b"))
     end)
+    it("rules about where you are look at the world once per pass over the pets, not once per pet", function()
+        for i = 1, 20 do W.world.pets["p" .. i] = { species = i, name = "P" .. i } end
+        ns.PetCache:Rescan()
+        local maps, zones = 0, 0
+        local best, zoneText = C_Map.GetBestMapForUnit, GetZoneText
+        C_Map.GetBestMapForUnit = function(...) maps = maps + 1 return best(...) end
+        GetZoneText = function() zones = zones + 1 return zoneText() end
+        local rules = { { "expansionHere", 1 }, { "nativeZone", 1 }, { "source", 1, sources = { 1, 2 } } }
+        ns.Weights.Build({ pets = {}, defaultValue = 0, filter = rules })
+        C_Map.GetBestMapForUnit, GetZoneText = best, zoneText
+        assert.equal(1, maps)
+        assert.equal(1, zones)
+    end)
     it("matches new multi petTypes and nodes", function()
         assert.is_true(AR.Match({ "petType", petTypes = { 9, 10 } }, "b"))
         assert.is_true(AR.Match({ "OR", items = { { "favorites" }, { "petType", petType = "8" } } }, "a"))

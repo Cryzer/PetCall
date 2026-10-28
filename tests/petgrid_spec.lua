@@ -15,6 +15,19 @@ describe("PetGridModel", function()
         set = ns.Sets:Get("$Default")
         set:SetPetWeight("b", 0)
     end)
+    it("counts and filters by where you are with one look at the world per pass", function()
+        for i = 1, 20 do W.world.pets["p" .. i] = { species = i, name = "P" .. i } end
+        ns.PetCache:Rescan()
+        local maps, zones = 0, 0
+        local best, zoneText = C_Map.GetBestMapForUnit, GetZoneText
+        C_Map.GetBestMapForUnit = function(...) maps = maps + 1 return best(...) end
+        GetZoneText = function() zones = zones + 1 return zoneText() end
+        ns.PetGridModel.CountMatching({ "OR", items = { { "expansionHere" }, { "nativeZone" } } })
+        ns.PetGridModel.Filter(set, { filters = { nativeZone = true, expansionHere = true } })
+        C_Map.GetBestMapForUnit, GetZoneText = best, zoneText
+        assert.is_true(maps <= 2, maps)
+        assert.is_true(zones <= 2, zones)
+    end)
     it("searches name and custom name", function()
         assert.same({ "b" }, ns.PetGridModel.Filter(set, { search = "kit" }))
         assert.same({ "a" }, ns.PetGridModel.Filter(set, { search = "ALP" }))

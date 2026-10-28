@@ -23,9 +23,27 @@ function AutoRules.SourceLabel(i)
     if type(s) == "string" and s ~= "" and s ~= "BATTLE_PET_SOURCE_" .. i then return s end
 end
 
+-- A pass: one look at the world for a run over many pets. Where you are and the
+-- words rules search for are read the first time a pet needs them, then kept.
+function AutoRules.Pass() return { lower = {} } end
+
+local function lowerIn(pass, text)
+    local l = pass.lower[text]
+    if not l then l = strlower(text) pass.lower[text] = l end
+    return l
+end
+local function zoneIn(pass)
+    if pass.zone == nil then pass.zone = GetZoneText() or "" end
+    return pass.zone
+end
+local function hereIn(pass)
+    if pass.here == nil then pass.here = ns.Expansions.Here() or false end
+    return pass.here or nil
+end
+
 -- a pet comes from a source when its "where from" text mentions it
-local function mentions(petID, text)
-    return text ~= "" and strfind(ns.PetCache:GetSourceText(petID), strlower(text), 1, true) ~= nil
+local function mentions(petID, text, pass)
+    return text ~= "" and strfind(ns.PetCache:GetSourceText(petID), lowerIn(pass, text), 1, true) ~= nil
 end
 
 -- "Level 25", "Level 1–24", "Level 20+"...
@@ -78,15 +96,15 @@ local types = {
     -- journal sources by number (sources = { 2, 7 }), or older rules: any text the source mentions
     source = {
         key = "source",
-        match = function(e, info)
+        match = function(e, info, pass)
             if e.sources then
                 for _, i in ipairs(e.sources) do
                     local label = AutoRules.SourceLabel(i)
-                    if label and mentions(info.petID, label) then return true end
+                    if label and mentions(info.petID, label, pass) then return true end
                 end
                 return false
             end
-            return mentions(info.petID, e.text or "")
+            return mentions(info.petID, e.text or "", pass)
         end,
         describe = function(e)
             if e.sources then
@@ -114,17 +132,16 @@ local types = {
     },
     nativeZone = {
         key = "nativeZone",
-        match = function(e, info)
-            local zone = GetZoneText() or ""
-            return mentions(info.petID, zone)
+        match = function(e, info, pass)
+            return mentions(info.petID, zoneIn(pass), pass)
         end,
         describe = function() return L["From this zone"] end,
     },
     -- the pet came with the expansion of the land the player is in
     expansionHere = {
         key = "expansionHere",
-        match = function(e, info)
-            local here = ns.Expansions.Here()
+        match = function(e, info, pass)
+            local here = hereIn(pass)
             return here ~= nil and ns.Expansions.Of(info.speciesID) == here
         end,
         describe = function() return L["From this expansion"] end,
@@ -138,18 +155,18 @@ function AutoRules.Types()
     return out
 end
 
-local function matchEntry(e, info)
+local function matchEntry(e, info, pass)
     local kind = e[1]
     local result
     if kind == "AND" or kind == "OR" then
         result = kind == "AND"
         for _, sub in ipairs(e.items or {}) do
-            local m = matchEntry(sub, info)
+            local m = matchEntry(sub, info, pass)
             if kind == "AND" and not m then result = false break end
             if kind == "OR" and m then result = true break end
         end
     elseif types[kind] then
-        result = types[kind].match(e, info) and true or false
+        result = types[kind].match(e, info, pass) and true or false
     else
         result = false
     end
@@ -157,10 +174,11 @@ local function matchEntry(e, info)
     return result
 end
 
-function AutoRules.Match(entry, petID)
+-- pass (AutoRules.Pass) when going over many pets; one pet alone needs none
+function AutoRules.Match(entry, petID, pass)
     local info = ns.PetCache:GetInfo(petID)
     if not info then return false end
-    return matchEntry(entry, info)
+    return matchEntry(entry, info, pass or AutoRules.Pass())
 end
 
 function AutoRules.Weight(entry) return entry[2] or 1 end

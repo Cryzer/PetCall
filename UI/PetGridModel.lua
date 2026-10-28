@@ -22,14 +22,14 @@ function M.Filter(set, state)
     local search = editing and "" or strlower(state.search or "")
     local show = editing and "all" or state.show
     local rule = state.filters and ns.AutoRules.FromFilters(state.filters)
-    local out = {}
+    local out, pass = {}, ns.AutoRules.Pass()
     for _, id in ns.PetCache:IteratePetIDs() do
         local info = ns.PetCache:GetInfo(id)
         local ok = ns.PetCache:IsPrimary(id)
         if search ~= "" and not strfind(info.sortKey, search, 1, true) then ok = false end
         if ok and show == "selected" and not isSelected(set, id) then ok = false end
         if ok and show == "unselected" and isSelected(set, id) then ok = false end
-        if ok and rule and not ns.AutoRules.Match(rule, id) then ok = false end
+        if ok and rule and not ns.AutoRules.Match(rule, id, pass) then ok = false end
         if ok then out[#out + 1] = id end
     end
     local key = state.sort or "name"
@@ -70,9 +70,9 @@ end
 
 -- how many tiles (copies grouped) a rule picks
 function M.CountMatching(entry)
-    local n = 0
+    local n, pass = 0, ns.AutoRules.Pass()
     for _, id in ns.PetCache:IteratePetIDs() do
-        if ns.PetCache:IsPrimary(id) and ns.AutoRules.Match(entry, id) then n = n + 1 end
+        if ns.PetCache:IsPrimary(id) and ns.AutoRules.Match(entry, id, pass) then n = n + 1 end
     end
     return n
 end
