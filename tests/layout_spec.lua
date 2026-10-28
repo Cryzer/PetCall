@@ -198,6 +198,28 @@ describe("Layout", function()
         assert.same({}, Layout.Check(U, panel))
     end)
 
+    it("the preview shows a long source whole and gives the model less room for it", function()
+        local ns, U = Layout.load({ pseudo = true })
+        U.W.world.pets = { a = { species = 1, name = "A" }, b = { species = 2, name = "B" } }
+        U.W.world.sources[1] = "Vendor: Quackenbush|nZone: Deeprun Tram|nCost: 500|TInterface\\MoneyFrame\\UI-GoldIcon:0|t"
+        U.W.world.sources[2] = U.W.world.sources[1] .. "|nZone: Elwynn Forest, Westfall, Duskwood, Redridge Mountains, Stranglethorn Vale"
+        U.W.login()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        Layout.SetWindowSize(ns, U, 940, 640)
+        local panel = ns.UI.Preview:GetPanel()
+        local heights = {}
+        for _, id in ipairs({ "a", "b" }) do
+            ns.UI.Preview:SetSelected(id)
+            Layout.Settle(U)
+            assert.is_true(panel.source:IsShown(), id)
+            assert.is_true(Layout.Rect(panel.source).b >= Layout.Rect(panel.weightRow).t, "the source ends above How often")
+            assert.same({}, Layout.Check(U, panel))
+            heights[id] = panel.model:GetHeight()
+        end
+        assert.is_true(heights.b < heights.a, "more lines, a smaller model")
+    end)
+
     it("wrapped text keeps its lines even instead of leaving one word on the last", function()
         local ns, U = Layout.load()
         local box = CreateFrame("Frame", nil, UIParent)

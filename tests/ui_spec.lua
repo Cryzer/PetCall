@@ -1398,7 +1398,9 @@ describe("UI smoke", function()
         assert.equal(0, n)
     end)
     it("the preview model takes the room the controls leave; a short panel drops the source lines", function()
-        local Lay = ns.UI.Preview.Layout
+        local function Lay(h, source)
+            return ns.UI.Preview.Layout(h, 26, source or 36, function(chance) return chance and 128 or 74 end)
+        end
         local big, src, chance = Lay(800)
         assert.is_true(big > 500 and src and chance)
         local m2, s2, c2 = Lay(300)                         -- source goes first
@@ -1407,6 +1409,7 @@ describe("UI smoke", function()
         assert.is_true(m3 >= 60 and not s3 and not c3)
         assert.equal(0, (Lay(150)))                         -- then the model
         assert.is_true(Lay(700) > Lay(600))
+        assert.equal(Lay(600) - 14, Lay(600, 50), "more source lines come out of the model")
         -- a tall slot keeps the model's shape (no zoom-out jump), centred in the room
         local Box = ns.UI.Preview.ModelBox
         local mh, top = Box(600)
@@ -1416,6 +1419,12 @@ describe("UI smoke", function()
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
         local panel = ns.UI.Preview:GetPanel()
+        panel.source:SetText("Vendor: Someone\nZone: Somewhere\nCost: 500")
+        panel.name.GetStringHeight = function() return 14 end
+        panel.sub.GetStringHeight = function() return 12 end
+        panel.source.GetStringHeight = function() return 36 end
+        panel.scale.GetHeight = function() return 20 end
+        panel.weightRow.GetHeight = function() return 12 end
         panel._scripts.OnSizeChanged(panel, 240, 300)
         assert.is_false(panel.source:IsShown())
         panel._scripts.OnSizeChanged(panel, 240, 150)
@@ -1429,8 +1438,6 @@ describe("UI smoke", function()
         assert.is_true(panel.scale._points.BOTTOMLEFT.rel == panel)
         assert.is_true(panel.scale._points.BOTTOMLEFT.y >= 30 + 8)
         assert.is_true(panel.weightRow._points.BOTTOMLEFT.rel == panel)
-        -- the source lines end above "How often"
-        assert.is_true(panel.source._points.BOTTOMRIGHT.rel == panel.weightRow)
         -- without the chance bar the scale moves down to the Summon button
         local high = panel.scale._points.BOTTOMLEFT.y
         panel._scripts.OnSizeChanged(panel, 240, 220)

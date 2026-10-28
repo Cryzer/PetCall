@@ -10,19 +10,19 @@ local panel, viewer, set, hoverID, selectedID, lastHoverID
 local shownID
 local loadModel        -- assigned above Preview:ShowPet
 local hovering         -- true while SetHover draws: the model waits for the cursor to rest
--- The text and the controls under the model need this much; the model takes the rest,
--- so a tall window gets a big model and a short one never pushes the controls out.
--- When room runs short the parts go in this order: the source lines (still in the
--- tooltip), the chance bar, then the model. Name, How often and Summon always stay.
--- (each budget keeps an 8 px gap above the Summon button)
-local FULL, NO_SOURCE, NO_CHANCE = 222, 176, 122
+-- The text under the model and the controls are measured; the model takes the rest, so
+-- a tall window gets a big model and a short one never pushes the controls out. No text
+-- is cut: when room runs short the parts go whole, in this order: the source lines, the
+-- chance bar, then the model. Name, How often and Summon always stay.
 -- The controls stand on the Summon button, counted up from the panel's bottom edge, so
--- no text above them can push them out of the frame. The source lines get the room
--- between the name and "How often" and are cut there (the whole text is in the tooltip).
-local SUMMON_TOP, CHANCE_BOTTOM, SCALE_BOTTOM, SCALE_LOW = 30, 38, 92, 38
+-- no text above them can push them out of the frame.
+local CHANCE_BOTTOM, SCALE_BOTTOM, SCALE_LOW = 38, 92, 38
+local MODEL_MIN, MODEL_MIN_NO_SOURCE, MODEL_MIN_NO_CHANCE = 110, 80, 60
+local TEXT_GAP = 4 + 10 + 2 + 8   -- above the model, model to name, name to sub, last text to How often
+local SOURCE_GAP = 4
 local PANEL_W = 240
 local SCALE_W = PANEL_W - 14      -- the How often scale and its name
-local NAME_LINE_H = 12            -- the budgets count one line for that name
+local NAME_LINE_H = 12
 
 -- "How often: Often" for the picked step and where it comes from: "· from a rule", or
 -- "· by hand" when the pet's own setting stands in for a rule, with the button that gives
@@ -40,8 +40,8 @@ function Preview.NameWeight()
         end
     end
     panel.weight:SetText(text)
-    -- more lines than the budgets count (a long name, Use the rule under it) come out of
-    -- the model's room, so the panel is laid out again when they change
+    -- more lines (a long name, Use the rule under it) come out of the model's room, so the
+    -- panel is laid out again when they change
     local before = tonumber(panel.weightRow:GetHeight()) or 0
     ns.Widgets.Flow(panel.weightRow, { panel.weight, { frame = panel.useRule, right = true } },
         { width = SCALE_W, gap = 6, rowHeight = NAME_LINE_H })
@@ -63,17 +63,22 @@ local function placeControls(withChance)
     panel.scale:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, bottom)
     panel.weightRow:ClearAllPoints()
     panel.weightRow:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, bottom + panel.scale:GetHeight() + 4)
-    -- the source lines end above the scale's name, however many lines that name takes
-    panel.source:SetPoint("BOTTOMRIGHT", panel.weightRow, "TOPRIGHT", 0, 8)
 end
 
--- -> model height (0 = no model), show source, show chance; extra: room the controls
--- take beyond the budgets
-function Preview.Layout(h, extra)
-    h = (h or 0) - (extra or 0)
-    if h - FULL >= 110 then return h - FULL, true, true end
-    if h - NO_SOURCE >= 80 then return h - NO_SOURCE, false, true end
-    if h - NO_CHANCE >= 60 then return h - NO_CHANCE, false, false end
+-- the controls' height up from the bottom edge: How often, its name, the chance bar
+local function controlsHeight(withChance)
+    return (withChance and SCALE_BOTTOM or SCALE_LOW) + (tonumber(panel.scale:GetHeight()) or 0) + 4
+        + (tonumber(panel.weightRow:GetHeight()) or 0)
+end
+
+-- -> model height (0 = no model), show source, show chance. text: the name and the line
+-- under it; source: the source lines; controls(withChance): what stands on the bottom edge
+function Preview.Layout(h, text, source, controls)
+    local room = (h or 0) - TEXT_GAP - text
+    local full, noSource = room - SOURCE_GAP - source - controls(true), room - controls(true)
+    if full >= MODEL_MIN then return full, true, true end
+    if noSource >= MODEL_MIN_NO_SOURCE then return noSource, false, true end
+    if room - controls(false) >= MODEL_MIN_NO_CHANCE then return room - controls(false), false, false end
     return 0, false, false
 end
 
@@ -108,8 +113,9 @@ function Preview:Attach(parent)
     model:SetHeight(260)
     function panel.relayout(h)
         h = tonumber(h or panel:GetHeight()) or 0
-        local extra = math.max(0, (tonumber(panel.weightRow:GetHeight()) or 0) - NAME_LINE_H)
-        local slot, withSource, withChance = Preview.Layout(h, extra)
+        local text = (tonumber(panel.name:GetStringHeight()) or 0) + (tonumber(panel.sub:GetStringHeight()) or 0)
+        local source = panel.source:GetText() ~= "" and tonumber(panel.source:GetStringHeight()) or 0
+        local slot, withSource, withChance = Preview.Layout(h, text, source, controlsHeight)
         local mh, gap = Preview.ModelBox(slot)
         model:SetShown(mh > 0)
         model:ClearAllPoints()
@@ -121,7 +127,6 @@ function Preview:Attach(parent)
         else panel.name:SetPoint("TOPLEFT", 8, -10) end
         panel.name:SetPoint("RIGHT", -6, 0)
         panel.source:SetShown(withSource)
-        panel.sourceHit:SetShown(withSource)
         placeControls(withChance)
         for _, part in ipairs({ panel.chanceLabel, panel.chanceBar, panel.chance, panel.reason }) do
             part:SetShown(withChance)
@@ -138,17 +143,10 @@ function Preview:Attach(parent)
     panel.sub:SetPoint("TOPLEFT", panel.name, "BOTTOMLEFT", 0, -2)
     panel.sub:SetPoint("RIGHT", -6, 0)
     panel.source = ns.Widgets.Label(panel, "", "GameFontDisableSmall")
-    panel.source:SetPoint("TOPLEFT", panel.sub, "BOTTOMLEFT", 0, -4)
+    panel.source:SetPoint("TOPLEFT", panel.sub, "BOTTOMLEFT", 0, -SOURCE_GAP)
+    panel.source:SetPoint("RIGHT", -6, 0)
     panel.source:SetJustifyV("TOP")
     panel.source:SetWordWrap(true)
-    -- long lists of zones: three lines at most, cut to the room left, the rest on hover
-    panel.source:SetMaxLines(3)
-    local sourceHit = CreateFrame("Frame", nil, panel)
-    panel.sourceHit = sourceHit
-    sourceHit:SetAllPoints(panel.source)
-    sourceHit:EnableMouse(true)
-    ns.Widgets.Tooltip(sourceHit, function() return panel.name:GetText() end,
-        function() return panel.source:GetText() end)
 
     -- how often: a slider with a notch for every step, named above it
     panel.weightRow = CreateFrame("Frame", nil, panel)
@@ -253,6 +251,7 @@ function Preview:ShowPet(petID, forSet)
         Preview.NameWeight()
         viewer:Clear()
         viewer.creatureID = nil      -- forget it, or the same pet would not be loaded again
+        panel.relayout()
         return
     end
     -- (re)load when the pet changed or the client dropped the previous load
@@ -296,6 +295,7 @@ function Preview:ShowPet(petID, forSet)
     end
     panel.fav:GetNormalTexture():SetDesaturated(not info.isFavorite)
     panel.fav:GetNormalTexture():SetAlpha(info.isFavorite and 1 or 0.4)
+    panel.relayout()      -- the name and the source take as many lines as they have
 end
 
 -- the set whose weights and chances the panel shows; the next ShowPet or Refresh draws them
