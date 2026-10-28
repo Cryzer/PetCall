@@ -154,10 +154,11 @@ describe("Recipes", function()
             local r = byKey("expansion:" .. e)
             assert.is_not_nil(r, e)
             assert.is_nil(r.icon:find("Token_Boost"), e .. ": " .. r.icon)
+            assert.is_nil(r.icon:find("Teleport") or r.icon:find("Portal"), e .. ": a square scene, not a round portal")
             assert.is_nil(seen[r.icon], e .. " shares " .. r.icon)
             seen[r.icon] = true
         end
-        assert.is_true(byKey("expansion:7").icon:find("KulTiras") ~= nil, "Alliance: Boralus")
+        assert.is_true(byKey("expansion:7").icon:find("TiragardeSound") ~= nil, "Alliance: Tiragarde Sound")
     end)
     it("a no-pet recipe is usable without pets and makes a set that summons none", function()
         local r = byKey("quietpvp")
