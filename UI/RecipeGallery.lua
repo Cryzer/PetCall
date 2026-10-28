@@ -45,7 +45,6 @@ G._view = view
 local gallery, scrollBox, chips, cards = nil, nil, {}, {}
 G._cards, G._chips = cards, chips
 
-local function petsText(n) return format(n == 1 and L["%d pet"] or L["%d pets"], n) end
 
 local function openOrCreate(card)
     local set = card.existing or ns.Recipes.Create(card.recipe)
@@ -89,7 +88,7 @@ local function initCard(card, recipe)
         card.create:SetEnabled(true)
         card.reason:SetText("")
     else
-        card.count:SetText(recipe.noPet and L["No pet"] or n > 0 and petsText(n) or "")
+        card.count:SetText(recipe.noPet and L["No pet"] or n > 0 and ns.Widgets.PetCount(n) or "")
         card.create:SetText(L["Create"])
         card.create:SetEnabled(ok)
         card.reason:SetText(reason or "")
@@ -263,7 +262,6 @@ local function build()
     G._withPets = withPets
     for _, g in ipairs(GROUPS) do
         local b = ns.Widgets.Button(gallery, g.label, function() view.group = g.key G:Refresh() end)
-        b:SetWidth(math.max(50, (tonumber(b:GetFontString():GetStringWidth()) or 0) + 20))
         b.group = g.key
         chips[#chips + 1] = b
     end

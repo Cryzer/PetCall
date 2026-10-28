@@ -22,12 +22,45 @@ describe("PetGridModel", function()
     it("filters selected/unselected/types/favorites", function()
         assert.same({ "a", "c" }, ns.PetGridModel.Filter(set, { show = "selected" }))
         assert.same({ "b" }, ns.PetGridModel.Filter(set, { show = "unselected" }))
-        assert.same({ "a", "c" }, ns.PetGridModel.Filter(set, { types = { [8] = true } }))
-        assert.same({ "c" }, ns.PetGridModel.Filter(set, { favoritesOnly = true }))
+        assert.same({ "a", "c" }, ns.PetGridModel.Filter(set, { filters = { types = { [8] = true } } }))
+        assert.same({ "c" }, ns.PetGridModel.Filter(set, { filters = { favorites = true } }))
+        assert.same({ "a" }, ns.PetGridModel.Filter(set, { filters = { level = { operator = "==", level = 25 } } }))
+        assert.same({ "a" }, ns.PetGridModel.Filter(set, { filters = { rare = true } }))
+        -- an open rule shows exactly its pets: search and segment wait
+        assert.same({ "a", "c" }, ns.PetGridModel.Filter(set,
+            { search = "zzz", show = "unselected", editing = {}, filters = { types = { [8] = true } } }))
+    end)
+    it("filters by journal source, as the where-from text names it", function()
+        _G.BATTLE_PET_SOURCE_1, _G.BATTLE_PET_SOURCE_2 = "Drop", "Pet Battle"
+        W.world.sources[1] = "Drop: Hogger"
+        W.world.sources[2] = "Pet Battle: Elwynn Forest"
+        W.world.sources[3] = "Pet Battle: Westfall"
+        assert.same({ "b", "c" }, ns.PetGridModel.Filter(set, { filters = { sources = { [2] = true } } }))
+        assert.same({ "a", "b", "c" }, ns.PetGridModel.Filter(set, { filters = { sources = { [1] = true, [2] = true } } }))
+        assert.same({ "c" }, ns.PetGridModel.Filter(set, { filters = { sources = { [2] = true }, types = { [8] = true } } }))
+        local counts = ns.PetGridModel.SourceCounts()
+        assert.equal(1, counts[1])
+        assert.equal(2, counts[2])
+        _G.BATTLE_PET_SOURCE_1, _G.BATTLE_PET_SOURCE_2 = nil, nil
+    end)
+    it("names the filters, counts the menu ones, says when the list is narrowed and clears it", function()
+        _G.BATTLE_PET_SOURCE_2, _G.BATTLE_PET_NAME_8 = "Pet Battle", "Beast"
+        local state = { search = "", show = "all", sort = "level", filters = {} }
+        assert.is_false(ns.PetGridModel.IsNarrowed(state))
+        state.filters = { favorites = true, types = { [8] = true }, sources = { [2] = true } }
+        assert.is_true(ns.PetGridModel.IsNarrowed(state))
+        local tokens = ns.PetGridModel.Tokens(state)
+        assert.same({ "Favorites", "Beast", "Pet Battle" }, { tokens[1].label, tokens[2].label, tokens[3].label })
+        tokens[2].clear()
+        assert.is_nil(state.filters.types, "the last pet type gone: no type filter")
+        state.search, state.show = "kit", "selected"
+        ns.PetGridModel.ClearFilters(state)
+        assert.same({ search = "", show = "all", sort = "level", filters = {} }, state)
+        _G.BATTLE_PET_SOURCE_2, _G.BATTLE_PET_NAME_8 = nil, nil
     end)
     it("counts auto-rule pets as selected", function()
         set:SetDefaultWeight(0)
-        ns.AutoRules.AddChip(set.settings.filter, "favorites", 1)
+        table.insert(set.settings.filter, { "favorites", 1 })
         set:FiltersChanged()
         assert.same({ "c" }, ns.PetGridModel.Filter(set, { show = "selected" }))
         local text, kind = ns.PetGridModel.Badge(set, "c")

@@ -149,7 +149,6 @@ function SetMixin:GetAutoWeight(petID)
     return self:GetWeightTable().auto[petID] or 0
 end
 
-function SetMixin:GetAutoRules() return ns.AutoRules.ToChips(self.settings.filter) end
 function SetMixin:FiltersChanged() changed(self) end
 
 function SetMixin:GetWeightTable()

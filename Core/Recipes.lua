@@ -33,13 +33,6 @@ local CLASS_TYPES = {
 }
 
 local I = "Interface\\Icons\\"
--- a source label as the game shows it in the journal ("World Event: ..."), English when it has none
-local function sourceLabel(i, english)
-    local s = _G["BATTLE_PET_SOURCE_" .. i]
-    if type(s) == "string" and s ~= "" and s ~= "BATTLE_PET_SOURCE_" .. i then return s end
-    return english
-end
-
 -- category = the gallery section, by when a set is used
 local FIXED = {
     -- everyday: used everywhere, just above the Default set
@@ -69,7 +62,7 @@ local FIXED = {
       conditions = { CITY, { "timeOfDay", from = 18 * 60, to = 23 * 60 } }, rules = { { "favorites", OFTEN }, types(RARELY, 1) } },
     { key = "tradingpost", category = "town", icon = I .. "INV_Misc_Coin_01", title = L["Trading Post finds"],
       hint = L["In cities. Pets from the Trading Post."],
-      conditions = { CITY }, rules = { { "source", NORMAL, text = sourceLabel(12, "Trading Post") } } },
+      conditions = { CITY }, rules = { { "source", NORMAL, sources = { 12 } } } },
     { key = "home", category = "town", icon = I .. "INV_Misc_Rune_01", title = L["At my house"],
       hint = L["At your house and plot. Your favorites."],
       conditions = { { "housing", ownHome = true } }, rules = { { "favorites", NORMAL } } },
@@ -139,7 +132,7 @@ local FIXED = {
     -- holidays
     { key = "festive", category = "holiday", icon = I .. "INV_Misc_Gift_01", title = L["Festive mood"],
       hint = L["During any holiday. Every world event pet you own."],
-      conditions = { { "holiday", holidayIDs = { 0 } } }, rules = { { "source", NORMAL, text = sourceLabel(7, "World Event") } } },
+      conditions = { { "holiday", holidayIDs = { 0 } } }, rules = { { "source", NORMAL, sources = { 7 } } } },
 }
 
 local function copy(v)
@@ -174,11 +167,11 @@ local function familyRecipe(t)
 end
 
 local function sourceRecipe(i)
-    local label = sourceLabel(i)
+    local label = ns.AutoRules.SourceLabel(i)
     if not label then return nil end
     return finish({ key = "source:" .. i, category = "sources",
         title = format(L["%s pets"], label), hint = format(L["Everywhere, before the Default set. Source: %s."], label),
-        conditions = {}, rules = { { "source", NORMAL, text = label } }, lowest = true })
+        conditions = {}, rules = { { "source", NORMAL, sources = { i } } }, lowest = true })
 end
 
 local function holidayRecipe(h)

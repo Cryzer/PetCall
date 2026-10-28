@@ -15,6 +15,86 @@ local DOTS = { on = "Interface\\COMMON\\Indicator-Green", off = "Interface\\COMM
     warn = "Interface\\COMMON\\Indicator-Yellow" }
 function Widgets.Dot(kind) return "|T" .. DOTS[kind] .. ":12:12|t" end
 
+-- Layout follows the text, in every language: controls take the width their text needs
+-- and rows of controls continue on the next line instead of running out of the window.
+local BUTTON_MIN_W, BUTTON_PAD = 64, 12
+
+-- the width a font string's text needs on one line, whatever width it was given
+function Widgets.TextWidth(fs)
+    if not fs then return 0 end
+    local w = fs.GetUnboundedStringWidth and fs:GetUnboundedStringWidth() or fs:GetStringWidth()
+    return math.ceil(tonumber(w) or 0)
+end
+
+-- a button, dropdown or chip as wide as its text, plus extra for an arrow or a ×; the
+-- templates keep their label as .Text (a dropdown's is not its button font string)
+function Widgets.FitButton(b, extra)
+    local fs = b.Text or (b.GetFontString and b:GetFontString())
+    b:SetWidth(math.max(BUTTON_MIN_W, Widgets.TextWidth(fs) + 2 * BUTTON_PAD + (extra or 0)))
+end
+
+-- Places items left to right in container, like words in a line: an item that does not
+-- fit starts a new row. { frame, right = true } puts an item at the right end of its row,
+-- { frame, newRow = true } starts a row with it; a label wider than a whole row wraps at
+-- the row's width. Hidden items take no room.
+-- opts: width (else the container's), gap (8), rowGap (4), rowHeight (the least, 22).
+-- Sets the container's height and returns it.
+function Widgets.Flow(container, items, opts)
+    opts = opts or {}
+    local width = opts.width or tonumber(container:GetWidth()) or 0
+    if width <= 0 then width = math.huge end      -- not laid out yet: one row
+    local gap, rowGap, minHeight = opts.gap or 8, opts.rowGap or 4, opts.rowHeight or 22
+    local rows, row = {}, nil
+    local function newRow()
+        row = { left = {}, right = {}, used = 0, height = minHeight }
+        rows[#rows + 1] = row
+    end
+    newRow()
+    for _, item in ipairs(items) do
+        local f = item.frame or item
+        if f:IsShown() then
+            local w
+            if f.GetObjectType and f:GetObjectType() == "FontString" then
+                w = Widgets.TextWidth(f)
+                f:SetWordWrap(w > width)
+                if w > width then w = width end
+                f:SetWidth(w)
+            else
+                w = tonumber(f:GetWidth()) or 0
+            end
+            if row.used > 0 and (item.newRow or row.used + gap + w > width) then newRow() end
+            row.used = row.used + (row.used > 0 and gap or 0) + w
+            local h = tonumber(f.GetStringHeight and f:GetStringHeight() or f:GetHeight()) or 0
+            row.height = math.max(row.height, h)
+            local side = item.right and row.right or row.left
+            side[#side + 1] = { f = f, w = w }
+        end
+    end
+    local y = 0
+    for _, r in ipairs(rows) do
+        local mid, x = -(y + r.height / 2), 0
+        for _, e in ipairs(r.left) do
+            e.f:ClearAllPoints()
+            e.f:SetPoint("LEFT", container, "TOPLEFT", x, mid)
+            x = x + e.w + gap
+        end
+        x = 0
+        for i = #r.right, 1, -1 do
+            local e = r.right[i]
+            e.f:ClearAllPoints()
+            e.f:SetPoint("RIGHT", container, "TOPRIGHT", -x, mid)
+            x = x + e.w + gap
+        end
+        y = y + r.height + rowGap
+    end
+    local height = y - rowGap
+    container:SetHeight(height)
+    return height
+end
+
+-- "1 pet", "35 pets"
+function Widgets.PetCount(n) return format(n == 1 and ns.L["%d pet"] or ns.L["%d pets"], n) end
+
 function Widgets.Label(parent, text, font)
     local fs = parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlight")
     fs:SetJustifyH("LEFT")
@@ -26,7 +106,7 @@ function Widgets.Button(parent, text, onClick)
     local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
     b:SetText(text)
     b:SetHeight(22)
-    b:SetWidth(math.max(80, b:GetFontString():GetStringWidth() + 24))
+    Widgets.FitButton(b)
     b.onClick = onClick                -- a field, so a reused button can be given a new one
     b:SetScript("OnClick", function(self, button) self.onClick(self, button) end)
     ns.Skin:Apply("Button", b)
@@ -70,16 +150,67 @@ function Widgets.SetPicked(b, on)
     b:GetFontString():SetTextColor(1, on and 1 or 0.82, on and 1 or 0)   -- white when picked, gold otherwise
 end
 
--- A menu pinned to a button (above it) instead of at the cursor, the way Blizzard's
--- dropdowns open; falls back to a plain context menu on clients without the menu manager.
-function Widgets.OpenMenuAbove(owner, build)
-    if MenuUtil.CreateRootMenuDescription and Menu and Menu.GetManager and MenuVariants and AnchorUtil then
-        local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
-        build(owner, root)
-        Menu.GetManager():OpenMenu(owner, root, AnchorUtil.CreateAnchor("BOTTOMLEFT", owner, "TOPLEFT", 0, 2))
-    else
-        MenuUtil.CreateContextMenu(owner, build)
+-- Lifts a box that floats over the window (a popover, a dialog) off what is under it.
+-- The stock look's frames already stand out; the dark looks style them like the window
+-- itself, often see-through, so there the box gets an opaque base, a lighter shade, an
+-- accent edge and a shadow around it. Call it after the skin has styled the frame: the
+-- flat look hides a frame's textures when it styles it.
+local raised = {}
+local function paintRaised(f)
+    local r, g, b = ns.Skin:Accent()
+    for _, e in ipairs(f.pcEdges) do e:SetColorTexture(r, g, b, 0.9) end
+end
+ns.Skin:OnLooksChanged(function() for _, f in ipairs(raised) do paintRaised(f) end end)
+
+-- four strips on the frame's sides: inside (edges) or just outside (shadow)
+local function strips(f, layer, sublevel, size, outside)
+    local out = {}
+    local o = outside and size or 0
+    for _, side in ipairs({
+        { "BOTTOMLEFT", "TOPLEFT", -o, 0, "BOTTOMRIGHT", "TOPRIGHT", o, 0, "h" },
+        { "TOPLEFT", "BOTTOMLEFT", -o, 0, "TOPRIGHT", "BOTTOMRIGHT", o, 0, "h" },
+        { "TOPRIGHT", "TOPLEFT", 0, 0, "BOTTOMRIGHT", "BOTTOMLEFT", 0, 0, "w" },
+        { "TOPLEFT", "TOPRIGHT", 0, 0, "BOTTOMLEFT", "BOTTOMRIGHT", 0, 0, "w" },
+    }) do
+        local t = f:CreateTexture(nil, layer, nil, sublevel)
+        if outside then
+            t:SetPoint(side[1], f, side[2], side[3], side[4])
+            t:SetPoint(side[5], f, side[6], side[7], side[8])
+        else
+            -- the same sides, inside the frame
+            t:SetPoint(side[2], f, side[2])
+            t:SetPoint(side[6], f, side[6])
+        end
+        if side[9] == "h" then t:SetHeight(size) else t:SetWidth(size) end
+        out[#out + 1] = t
     end
+    return out
+end
+
+function Widgets.Raise(f)
+    if ns.Skin:Look() == "blizzard" or f.pcEdges then return end
+    f.pcBase = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+    f.pcBase:SetAllPoints()
+    f.pcBase:SetColorTexture(0.05, 0.05, 0.06, 1)
+    f.pcLift = f:CreateTexture(nil, "BACKGROUND", nil, -6)
+    f.pcLift:SetAllPoints()
+    f.pcLift:SetColorTexture(1, 1, 1, 0.05)
+    for _, t in ipairs(strips(f, "BACKGROUND", -8, 6, true)) do t:SetColorTexture(0, 0, 0, 0.6) end
+    f.pcEdges = strips(f, "OVERLAY", 7, 1)
+    paintRaised(f)
+    raised[#raised + 1] = f
+end
+
+-- A box above the window (naming a new set), on the tooltip frame
+function Widgets.Popover(parent)
+    local f = CreateFrame("Frame", nil, parent, "TooltipBackdropTemplate")
+    f:SetFrameStrata("DIALOG")
+    f:SetToplevel(true)
+    f:EnableMouse(true)
+    f:Hide()
+    if ns.Skin:Look() ~= "blizzard" then ns.Skin:Apply("Panel", f) end
+    Widgets.Raise(f)
+    return f
 end
 
 -- Row of joined buttons, one selected: items = { {value =, label =} }, get() -> value
@@ -89,13 +220,12 @@ function Widgets.Segmented(parent, items, get, onPick)
     local x = 0
     for i, item in ipairs(items) do
         local b = Widgets.Button(f, item.label, function() onPick(item.value) f:Refresh() end)
-        b:SetWidth(math.max(64, b:GetFontString():GetStringWidth() + 20))
         b:SetPoint("LEFT", x, 0)
-        x = x + b:GetWidth() - 2
+        x = x + b:GetWidth() - 2       -- joined: each button covers its neighbour's border
         b.value = item.value
         f.buttons[i] = b
     end
-    f:SetSize(math.max(1, x), 22)
+    f:SetSize(math.max(1, x + 2), 22)
     function f:Refresh()
         local cur = get()
         for _, b in ipairs(self.buttons) do
@@ -220,7 +350,7 @@ function Widgets.NewPool()
         local b = self:Take(kind or "button", parent, function() return Widgets.Button(parent, "", noop) end)
         b:SetText(text)
         b:SetHeight(22)
-        b:SetWidth(math.max(80, b:GetFontString():GetStringWidth() + 24))
+        Widgets.FitButton(b)
         b:SetEnabled(true)
         b.onClick = onClick
         return b

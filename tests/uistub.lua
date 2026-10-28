@@ -162,6 +162,7 @@ function Universal:Click(button)
 end
 
 U.universal = universal
+U.Universal = Universal
 
 -- Records a Blizzard menu description tree; items can be found by text and clicked.
 local MenuMT = {}
@@ -277,11 +278,15 @@ local function registerLibStandIns()
     U.ldb, U.icon = ldb, icon
 end
 
-function U.load()
+-- opts.prepare(U) runs once the stub is in place, before any addon file loads;
+-- opts.afterFile(path, ns) after each file (tests/layout.lua uses both)
+function U.load(opts)
+    opts = opts or {}
     W.reset()
     U.install()
     registerLibStandIns()
-    return W.load({ ui = U.uiFiles() })
+    if opts.prepare then opts.prepare(U) end
+    return W.load({ ui = U.uiFiles(), afterFile = opts.afterFile })
 end
 
 U.W = W

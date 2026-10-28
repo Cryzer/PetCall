@@ -27,4 +27,18 @@ describe("Locale keys", function()
         end
         assert.same({}, missing)
     end)
+    -- a change that drops a text drops its key too: no translator works on dead strings
+    it("every enUS key is used by the code", function()
+        local used = {}
+        local files = sourceFiles()
+        files[#files + 1] = "ReleaseNotes.lua"
+        for _, path in ipairs(files) do
+            for key in read(path):gmatch('L%["(.-)"%]') do used[key] = true end
+        end
+        local unused = {}
+        for key in read("Locales/enUS.lua"):gmatch('\nL%["(.-)"%]%s*=') do
+            if not used[key] then unused[#unused + 1] = key end
+        end
+        assert.same({}, unused)
+    end)
 end)

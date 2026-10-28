@@ -85,9 +85,8 @@ function Help.Areas()
         local content = box(f.content)
         if tab == "pets" and content then
             local page = ns.UI.PetsTabPage
-            local rules = box(ns.UI.PetsTabRulesBar)
-            if rules then add("toolbar", { l = content.l, t = content.t, r = content.r, b = rules.t }, "DOWN") end
-            add("rules", rules, "DOWN")
+            add("toolbar", page and union({ page.toolbar, page.filterBar }), "DOWN")
+            add("rules", box(page and page.rulesBtn), "DOWN")
             add("grid", box(page and page.grid), "RIGHT")
             add("preview", box(ns.UI.Preview:GetPanel()), "LEFT")
         elseif tab == "when" or tab == "settings" then

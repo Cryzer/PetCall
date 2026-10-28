@@ -43,11 +43,14 @@ local function setMenu(owner, root, set)
     end
 end
 
-local CARD_H = 42
-local STEP = CARD_H + 4
-local LIST_TOP = 40          -- below the title and the hint
-local FOOT_H = 30            -- + New and Import
-local NOW_H = 62 + 22        -- the Out now card and its caption
+-- Cards are as tall as their name and state need, never less than CARD_H; the list,
+-- the Out now card and the buttons at the foot make room for whatever their text takes.
+local CARD_H, CARD_PAD, GAP = 42, 7, 4
+local STEP = CARD_H + GAP     -- one turn of the mouse wheel
+local TEXT_X, TEXT_RIGHT = 44, 30      -- the text starts after the icon and leaves the pause button room
+local NOW_MIN_H, NOW_PAD, NOW_TEXT_X = 62, 8, 58
+local CAPTION_H = 22          -- "Out now" above its card
+local listTop, footH, nowH = 40, 30, NOW_MIN_H
 local FALLBACK_ICON = "Interface\\Icons\\Tracking_WildPet"
 
 -- the pet a set is most likely to summon stands for the set
@@ -62,7 +65,7 @@ local function stateLine(set)
     local status = set:GetStatus()
     if status == "active" then
         if set:IsNoPet() then return format("|cff4cd964%s|r · %s", L["Active now"], L["no pet"]) end
-        return format("|cff4cd964%s|r · %s", L["Active now"], format(L["%d pets"], (ns.UI.SetHeader.Counts(set))))
+        return format("|cff4cd964%s|r · %s", L["Active now"], ns.Widgets.PetCount((ns.UI.SetHeader.Counts(set))))
     elseif status == "paused" then
         return "|cff808080" .. ns.UI.SetHeader.PauseText(set) .. "|r"
     elseif status == "empty" then
@@ -99,15 +102,11 @@ local function row(i)
     r.icon:SetSize(32, 32)
     r.icon:SetPoint("LEFT", 5, 0)
     r.name = r:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 7, -2)
-    r.name:SetPoint("RIGHT", -30, 0)
+    r.name:SetPoint("TOPLEFT", TEXT_X, -CARD_PAD)
     r.name:SetJustifyH("LEFT")
-    r.name:SetWordWrap(false)
     r.state = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    r.state:SetPoint("BOTTOMLEFT", r.icon, "BOTTOMRIGHT", 7, 2)
-    r.state:SetPoint("RIGHT", -30, 0)
+    r.state:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -2)
     r.state:SetJustifyH("LEFT")
-    r.state:SetWordWrap(false)
     -- place in the list, on the icon; the default set has none (it is always last)
     r.rank = r:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
     r.rank:SetPoint("BOTTOMRIGHT", r.icon, "BOTTOMRIGHT", 2, -2)
@@ -138,6 +137,27 @@ local function row(i)
     return r
 end
 
+local function textHeight(fs) return math.ceil(tonumber(fs:GetStringHeight()) or 0) end
+
+-- the height of every shown card when its text gets `width`; the list's total
+local function sizeCards(width)
+    local total = 0
+    for _, r in ipairs(rows) do
+        if r:IsShown() then
+            r.name:SetWidth(width)
+            r.state:SetWidth(width)
+            -- a state too long for one line breaks at its dot, not inside "539 pets"
+            r.state:SetText(r.stateText)
+            if ns.Widgets.TextWidth(r.state) > width then r.state:SetText((r.stateText:gsub(" · ", "\n"))) end
+            r.cardH = math.max(CARD_H, 2 * CARD_PAD + textHeight(r.name) + 2 + textHeight(r.state))
+            total = total + r.cardH + GAP
+        end
+    end
+    return math.max(0, total - GAP)
+end
+
+local function listHeight() return tonumber(list and list:GetHeight()) or 0 end
+
 function SetList:Refresh()
     if not list then return end
     local sets = ns.Sets:List()
@@ -145,9 +165,6 @@ function SetList:Refresh()
     for i, set in ipairs(sets) do
         local r = row(i)
         r.set = set
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", 4, -(i - 1) * STEP + scroll)
-        r:SetPoint("RIGHT", SetList.CanScroll() and -10 or -4, 0)
         r.icon:SetTexture(setIcon(set))
         local paused = set:IsPaused()
         r.icon:SetDesaturated(paused)
@@ -155,12 +172,29 @@ function SetList:Refresh()
         r.name:SetFontObject(paused and "GameFontDisable" or "GameFontNormal")
         SetList.PaintPause(r)
         r.rank:SetText(set:IsDefault() and "" or i)
-        r.state:SetText(stateLine(set))
+        r.stateText = stateLine(set)
         r.selected:SetShown(selected == set)
         r.selected:SetVertexColor(ns.Skin:Accent())
         r:Show()
     end
     for i = #sets + 1, #rows do rows[i]:Hide() end
+    -- the cards take the whole width unless they need the scroll bar beside them
+    local width = tonumber(list:GetWidth()) or 0
+    if width <= 0 then width = PANEL_W end
+    local right = 4
+    if sizeCards(width - 4 - right - TEXT_X - TEXT_RIGHT) > listHeight() then
+        right = 10
+        sizeCards(width - 4 - right - TEXT_X - TEXT_RIGHT)
+    end
+    local y = 0
+    for i = 1, #sets do
+        local r = rows[i]
+        r:SetHeight(r.cardH)
+        r:ClearAllPoints()
+        r:SetPoint("TOPLEFT", 4, -y + scroll)
+        r:SetPoint("RIGHT", -right, 0)
+        y = y + r.cardH + GAP
+    end
     rail.count:SetText(#sets)
     SetList:PaintScroll()
     list.canScroll = SetList.CanScroll()
@@ -168,11 +202,10 @@ end
 
 -- Scrolling: the cards move inside the clipped list; a thin bar shows where you are.
 local function contentHeight()
-    local n = 0
-    for _, r in ipairs(rows) do if r:IsShown() then n = n + 1 end end
-    return n * STEP - 4
+    local total = 0
+    for _, r in ipairs(rows) do if r:IsShown() then total = total + (r.cardH or CARD_H) + GAP end end
+    return math.max(0, total - GAP)
 end
-local function listHeight() return tonumber(list and list:GetHeight()) or 0 end
 local function maxScroll() return math.max(0, contentHeight() - listHeight()) end
 function SetList.CanScroll() return list ~= nil and maxScroll() > 0 end
 
@@ -197,14 +230,43 @@ function SetList:PaintScroll()
     list.thumb:SetPoint("TOPRIGHT", 0, -(h - th) * scroll / (total - h))
 end
 
--- Room for the list: the Out now card goes when it would leave fewer than three cards.
+local function panelWidth()
+    local width = tonumber(panel:GetWidth()) or 0
+    return width > 0 and width or PANEL_W
+end
+
+-- the Out now card as tall as its three lines need
+local function sizeNowCard()
+    local c = nowCard
+    local width = panelWidth() - 8 - NOW_TEXT_X - 6
+    for _, fs in ipairs({ c.name, c.from, c.state }) do fs:SetWidth(width) end
+    nowH = math.max(NOW_MIN_H, 2 * NOW_PAD + textHeight(c.name) + 3 + textHeight(c.from) + 3 + textHeight(c.state))
+    c:SetHeight(nowH)
+end
+
+-- Top to bottom: the title and its hint, the list, + New and Import (they act on the
+-- list, so they sit right under it), then the Out now card at the very foot. The card
+-- goes when it would leave fewer than three cards of list.
 local function layoutPanel()
     if not nowCard then return end
+    local width = panelWidth()
+    panel.hint:SetWidth(width - 12)
+    listTop = 6 + textHeight(panel.title) + 3 + textHeight(panel.hint) + 6
+    list:SetPoint("TOPLEFT", 0, -listTop)
+    footH = 4 + ns.Widgets.Flow(panel.foot, { SetList._newButton, panel.import }, { width = width - 8, gap = 4 }) + 4
+    sizeNowCard()
     local h = tonumber(panel:GetHeight()) or 0
-    local showNow = h - LIST_TOP - FOOT_H - NOW_H >= 3 * STEP
+    local showNow = h - listTop - footH - nowH - CAPTION_H >= 3 * STEP
     nowCard:SetShown(showNow)
     nowCard.caption:SetShown(showNow)
-    list:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, FOOT_H + (showNow and NOW_H or 0) + 4)
+    nowCard:ClearAllPoints()
+    nowCard:SetPoint("BOTTOMLEFT", 4, 4)
+    nowCard:SetPoint("BOTTOMRIGHT", -4, 4)
+    local footY = 4 + (showNow and nowH + CAPTION_H or 0)
+    panel.foot:ClearAllPoints()
+    panel.foot:SetPoint("BOTTOMLEFT", 4, footY)
+    panel.foot:SetPoint("BOTTOMRIGHT", -4, footY)
+    list:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, footY + footH - 4)
     SetList:Refresh()
 end
 SetList.LayoutPanel = layoutPanel
@@ -214,7 +276,8 @@ function SetList:SetCollapsed(collapsed, user)
     collapsedNow = collapsed and true or false
     panel:SetShown(not collapsed)
     rail:SetShown(collapsed)
-    f.left:SetWidth(collapsed and RAIL_W or PANEL_W)
+    -- the rail is as wide as its label needs
+    f.left:SetWidth(collapsed and math.max(RAIL_W, ns.Widgets.TextWidth(rail.label) + 8) or PANEL_W)
     if user then ns.db.global.window.setsCollapsed = collapsed end
     if ns.UI.StatusBar then ns.UI.StatusBar:Refresh() end
 end
@@ -241,15 +304,18 @@ end
 -- Drag and drop: the card is lifted and follows the cursor above the others; the
 -- other cards slide apart to leave the gap where it will land. Dropping it there
 -- moves the set to that place.
-local function slotY(pos) return -(pos - 1) * STEP + scroll end
 
--- the place (1..n) for a card whose top is `top` pixels below the start of the list
-function SetList.SlotFor(top, n)
-    local pos = math.floor(top / STEP + 0.5) + 1
-    return math.max(1, math.min(n, pos))
+-- the place for a card whose top is `top` pixels below the start of the list: the
+-- nearest of `tops`, where the card would start in each place
+function SetList.SlotFor(top, tops)
+    local best = 1
+    for i, t in ipairs(tops) do
+        if math.abs(top - t) < math.abs(top - tops[best]) then best = i end
+    end
+    return best
 end
 
-local drag      -- { row, others, n, from, grab, slot }
+local drag      -- { row, others, tops, from, grab, slot }
 
 local function orderRows()
     local out = {}
@@ -276,24 +342,24 @@ local function follow()
     if y > (list:GetTop() or 0) - 12 then scroll = math.max(0, scroll - 4)
     elseif y < (list:GetBottom() or 0) + 12 then scroll = math.min(maxScroll(), scroll + 4) end
     local top = cursorBelowTop() - drag.grab
-    top = math.max(0, math.min((drag.n - 1) * STEP, top))
+    top = math.max(0, math.min(drag.tops[#drag.tops], top))
     place(drag.row, -top + scroll)
-    drag.slot = SetList.SlotFor(top, drag.n)
-    local pos = 1
-    for _, r in ipairs(drag.others) do
-        if pos == drag.slot then pos = pos + 1 end
-        place(r, slotY(pos))
-        pos = pos + 1
+    drag.slot = SetList.SlotFor(top, drag.tops)
+    local y = 0
+    for i, r in ipairs(drag.others) do
+        if i == drag.slot then y = y + drag.row.cardH + GAP end
+        place(r, -y + scroll)
+        y = y + r.cardH + GAP
     end
 end
 
 function SetList.StartDrag(r)
     if not r.set or r.set:IsDefault() then return end
-    local order = orderRows()
-    drag = { row = r, others = {}, n = #order }
-    for k, x in ipairs(order) do
+    drag = { row = r, others = {}, tops = { 0 } }
+    for k, x in ipairs(orderRows()) do
         if x == r then drag.from = k else drag.others[#drag.others + 1] = x end
     end
+    for _, x in ipairs(drag.others) do drag.tops[#drag.tops + 1] = drag.tops[#drag.tops] + x.cardH + GAP end
     drag.slot = drag.from
     -- where on the card it was picked up, so it does not jump to the cursor
     drag.grab = cursorBelowTop() - ((list:GetTop() or 0) - (r:GetTop() or 0) + scroll)
@@ -345,13 +411,15 @@ function SetList:RefreshNow(blockers)
     else
         nowCard.state:SetText("|cffffb040" .. format(L["Paused: %s"], blockers[1].label) .. "|r")
     end
+    -- new text may need another height, and that changes the room for the list
+    local was = nowH
+    sizeNowCard()
+    if nowH ~= was then layoutPanel() end
 end
 
 local function buildNowCard()
     local c = CreateFrame("Button", nil, panel)
-    c:SetHeight(62)
-    c:SetPoint("BOTTOMLEFT", 4, FOOT_H + 4)
-    c:SetPoint("BOTTOMRIGHT", -4, FOOT_H + 4)
+    c:SetHeight(NOW_MIN_H)
     c.bg = c:CreateTexture(nil, "BACKGROUND")
     c.bg:SetAllPoints()
     c.bg:SetAtlas("PetList-ButtonBackground")
@@ -365,17 +433,11 @@ local function buildNowCard()
     c.border:SetTexture("Interface\\Common\\WhiteIconFrame")
     c.border:SetAllPoints(c.icon)
     c.name = ns.Widgets.Label(c, "", "GameFontNormalLarge")
-    c.name:SetPoint("TOPLEFT", c.icon, "TOPRIGHT", 8, 1)
-    c.name:SetPoint("RIGHT", -6, 0)
-    c.name:SetWordWrap(false)
+    c.name:SetPoint("TOPLEFT", NOW_TEXT_X, -NOW_PAD)
     c.from = ns.Widgets.Label(c, "", "GameFontHighlightSmall")
     c.from:SetPoint("TOPLEFT", c.name, "BOTTOMLEFT", 0, -3)
-    c.from:SetPoint("RIGHT", -6, 0)
-    c.from:SetWordWrap(false)
     c.state = ns.Widgets.Label(c, "", "GameFontNormalSmall")
     c.state:SetPoint("TOPLEFT", c.from, "BOTTOMLEFT", 0, -3)
-    c.state:SetPoint("RIGHT", -6, 0)
-    c.state:SetWordWrap(false)
     -- open the set it came from with the pet selected
     c:SetScript("OnClick", function(self)
         if not self.petID then return end
@@ -395,12 +457,10 @@ function SetList:GetRail() return rail end
 ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     panel = CreateFrame("Frame", nil, frame.left)
     panel:SetAllPoints()
-    local title = ns.Widgets.Label(panel, L["Sets"], "GameFontNormal")
-    title:SetPoint("TOPLEFT", 6, -6)
-    local hint = ns.Widgets.Label(panel, L["The top one that fits is used. Drag to reorder."], "GameFontDisableSmall")
-    hint:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
-    hint:SetPoint("RIGHT", -6, 0)
-    hint:SetWordWrap(false)
+    panel.title = ns.Widgets.Label(panel, L["Sets"], "GameFontNormal")
+    panel.title:SetPoint("TOPLEFT", 6, -6)
+    panel.hint = ns.Widgets.Label(panel, L["The top one that fits is used. Drag to reorder."], "GameFontDisableSmall")
+    panel.hint:SetPoint("TOPLEFT", panel.title, "BOTTOMLEFT", 0, -3)
     local collapse = CreateFrame("Button", nil, panel)
     collapse:SetSize(20, 20)
     collapse:SetPoint("TOPRIGHT", -2, -2)
@@ -409,8 +469,8 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     ns.Widgets.Tooltip(collapse, L["Collapse"])
 
     list = CreateFrame("Frame", nil, panel)
-    list:SetPoint("TOPLEFT", 0, -LIST_TOP)
-    list:SetPoint("BOTTOMRIGHT", 0, FOOT_H + NOW_H + 4)
+    list:SetPoint("TOPLEFT", 0, -listTop)
+    list:SetPoint("BOTTOMRIGHT", 0, footH + nowH + CAPTION_H + 4)
     list:SetClipsChildren(true)
     list:EnableMouseWheel(true)
     list:SetScript("OnMouseWheel", function(_, delta) SetList:ScrollBy(-delta * STEP) end)
@@ -432,13 +492,8 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     SetList._list = list
 
     -- naming a new set: a popover above "+ New", on the window so no card covers it
-    newBox = CreateFrame("Frame", nil, frame, "TooltipBackdropTemplate")
-    newBox:SetSize(PANEL_W + 40, 86)
-    newBox:SetFrameStrata("DIALOG")
-    newBox:SetToplevel(true)
-    newBox:EnableMouse(true)
-    newBox:Hide()
-    ns.Skin:Apply("Panel", newBox)
+    -- + New: a name for an empty set, or a template to start from, in one box
+    newBox = ns.Widgets.Popover(frame)
     newBox.title = ns.Widgets.Label(newBox, L["Name the new set"], "GameFontNormal")
     newBox.title:SetPoint("TOPLEFT", 12, -10)
     newBox.edit = CreateFrame("EditBox", nil, newBox, "InputBoxTemplate")
@@ -462,31 +517,41 @@ ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     newBox.edit:SetScript("OnEscapePressed", closeNameBox)
     newBox.edit:SetScript("OnEnterPressed", create)
     newBox.create = ns.Widgets.Button(newBox, L["Create"], create)
-    newBox.create:SetWidth(80)
-    newBox.create:SetPoint("BOTTOMRIGHT", -12, 10)
+    newBox.create:SetPoint("TOPRIGHT", newBox.edit, "BOTTOMRIGHT", 0, -8)
     newBox.cancel = ns.Widgets.Button(newBox, L["Cancel"], closeNameBox)
-    newBox.cancel:SetWidth(80)
     newBox.cancel:SetPoint("RIGHT", newBox.create, "LEFT", -6, 0)
+    newBox.divider = newBox:CreateTexture(nil, "ARTWORK")
+    newBox.divider:SetColorTexture(1, 1, 1, 0.15)
+    newBox.divider:SetHeight(1)
+    newBox.divider:SetPoint("TOPLEFT", newBox.title, "BOTTOMLEFT", 0, -64)
+    newBox.divider:SetPoint("RIGHT", -12, 0)
+    newBox.template = ns.Widgets.Button(newBox, L["From a template..."], function()
+        closeNameBox()
+        ns.UI.RecipeGallery:Show()
+    end)
+    newBox.template:SetPoint("TOPLEFT", newBox.divider, "BOTTOMLEFT", 0, -8)
+    newBox.template:SetPoint("RIGHT", -12, 0)
     newBox:SetScript("OnHide", function() newBox.edit:ClearFocus() end)
     SetList._nameBox = newBox
 
+    -- as wide as its buttons need, at least as wide as the panel; as tall as the title
     local function openNameBox()
+        local w = math.max(PANEL_W + 40, 24 + newBox.cancel:GetWidth() + 6 + newBox.create:GetWidth(),
+            24 + ns.Widgets.TextWidth(newBox.template:GetFontString()) + 24)
+        newBox.title:SetWidth(w - 24)
+        newBox:SetSize(w, 10 + textHeight(newBox.title) + 64 + 1 + 8 + 22 + 12)
         newBox:ClearAllPoints()
         newBox:SetPoint("BOTTOMLEFT", SetList._newButton, "TOPLEFT", 0, 6)
         newBox:Show()
         newBox.edit:SetFocus()
     end
-    SetList.OpenNew = openNameBox
-    local new = ns.Widgets.Button(panel, L["+ New"], function(self)
-        ns.Widgets.OpenMenuAbove(self, function(owner, root)
-            root:CreateButton(L["Empty set"], openNameBox)
-            root:CreateButton(L["From a template..."], function() ns.UI.RecipeGallery:Show() end)
-        end)
+    local new = ns.Widgets.Button(panel, L["+ New"], function()
+        if newBox:IsShown() then closeNameBox() else openNameBox() end
     end)
     SetList._newButton = new
-    new:SetPoint("BOTTOMLEFT", 4, 4)
-    local import = ns.Widgets.Button(panel, L["Import"], function() if ns.UI.Share then ns.UI.Share:ShowImport() end end)
-    import:SetPoint("LEFT", new, "RIGHT", 4, 0)
+    panel.import = ns.Widgets.Button(panel, L["Import"], function() if ns.UI.Share then ns.UI.Share:ShowImport() end end)
+    -- + New and Import side by side, or one above the other when they do not fit
+    panel.foot = CreateFrame("Frame", nil, panel)
 
     nowCard = buildNowCard()
     SetList._nowCard = nowCard

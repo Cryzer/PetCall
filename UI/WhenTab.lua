@@ -28,7 +28,7 @@ end
 local function chip(parent, text, onRemove)
     local b = frames:Button(parent, text .. "  ×", onRemove, "chip")
     b:SetHeight(20)
-    b:SetWidth(b:GetFontString():GetStringWidth() + 20)
+    ns.Widgets.FitButton(b)
     return b
 end
 
@@ -98,7 +98,7 @@ local function buildField(row, e, field, prev)
             cb.text:ClearAllPoints()
             cb.text:SetPoint("LEFT", cb, "RIGHT", 2, 0)
             place(cb, gap)
-            gap = 2 + (tonumber(cb.text:GetStringWidth()) or 0) + 16
+            gap = 2 + ns.Widgets.TextWidth(cb.text) + 16
         end
         prev = prev.text or prev          -- what comes next (the remove ×) follows the last label
     elseif field.kind == "class" then

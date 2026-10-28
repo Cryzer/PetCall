@@ -12,18 +12,24 @@ local function isSelected(set, id)
     return false
 end
 
+-- state: { search, show = "all" | "selected" | "unselected", sort, filters, editing }.
+-- filters are the groups a rule is made of (see AutoRules.FromFilters), so the list shows
+-- what a rule made from them would pick. While a rule is being edited, search and the
+-- segment are left out: the list shows exactly the rule's pets.
 function M.Filter(set, state)
     state = state or {}
-    local search = strlower(state.search or "")
+    local editing = state.editing ~= nil
+    local search = editing and "" or strlower(state.search or "")
+    local show = editing and "all" or state.show
+    local rule = state.filters and ns.AutoRules.FromFilters(state.filters)
     local out = {}
     for _, id in ns.PetCache:IteratePetIDs() do
         local info = ns.PetCache:GetInfo(id)
         local ok = ns.PetCache:IsPrimary(id)
         if search ~= "" and not strfind(info.sortKey, search, 1, true) then ok = false end
-        if ok and state.show == "selected" and not isSelected(set, id) then ok = false end
-        if ok and state.show == "unselected" and isSelected(set, id) then ok = false end
-        if ok and state.types and next(state.types) and not state.types[info.petType] then ok = false end
-        if ok and state.favoritesOnly and not info.isFavorite then ok = false end
+        if ok and show == "selected" and not isSelected(set, id) then ok = false end
+        if ok and show == "unselected" and isSelected(set, id) then ok = false end
+        if ok and rule and not ns.AutoRules.Match(rule, id) then ok = false end
         if ok then out[#out + 1] = id end
     end
     local key = state.sort or "name"
@@ -60,6 +66,51 @@ function M.Counts(set)
         tbl.counts = { inSet, all - inSet }
     end
     return tbl.counts[1], tbl.counts[2]
+end
+
+-- how many tiles (copies grouped) a rule picks
+function M.CountMatching(entry)
+    local n = 0
+    for _, id in ns.PetCache:IteratePetIDs() do
+        if ns.PetCache:IsPrimary(id) and ns.AutoRules.Match(entry, id) then n = n + 1 end
+    end
+    return n
+end
+
+-- pets (one per tile) from each journal source the game names, whatever the other filters say
+function M.SourceCounts()
+    local counts = {}
+    for i = 1, ns.AutoRules.NumSources() do
+        if ns.AutoRules.SourceLabel(i) then counts[i] = M.CountMatching({ "source", sources = { i } }) end
+    end
+    return counts
+end
+
+-- each filter choice, as AutoRules.Tokens names it, with clear() that turns it off
+function M.Tokens(state)
+    local f = state.filters or {}
+    local out = ns.AutoRules.Tokens(f)
+    for _, tok in ipairs(out) do
+        tok.clear = function()
+            if tok.value ~= nil then
+                f[tok.group][tok.value] = nil
+                if not next(f[tok.group]) then f[tok.group] = nil end
+            else
+                f[tok.group] = nil
+            end
+        end
+    end
+    return out
+end
+
+-- true when the list shows fewer pets than the set has: search, segment or filters
+function M.IsNarrowed(state)
+    return (state.search or "") ~= "" or (state.show or "all") ~= "all" or next(state.filters or {}) ~= nil
+end
+
+-- back to every pet; the sort order stays
+function M.ClearFilters(state)
+    state.search, state.show, state.filters = "", "all", {}
 end
 
 function M.Rows(ids, columns)

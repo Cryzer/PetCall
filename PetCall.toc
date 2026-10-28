@@ -57,7 +57,6 @@ UI\PetGridModel.lua
 UI\SetHeader.lua
 UI\PetPreview.lua
 UI\PetsTab.lua
-UI\AutoRulesBar.lua
 UI\SetList.lua
 UI\RecipeGallery.lua
 UI\StatusBar.lua

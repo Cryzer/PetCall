@@ -72,6 +72,18 @@ function Header.Summary(set)
 end
 
 local header
+local PAD = 8
+
+-- The set's name with its status beside it, or under it when both do not fit; the
+-- summary wraps below them and the header grows to hold it all.
+local function layout()
+    if not header then return end
+    local w = (tonumber(header:GetWidth()) or 0) - 20
+    if w <= 0 then return end
+    local top = ns.Widgets.Flow(header.top, { header.title, header.pillFrame }, { width = w, gap = 10, rowHeight = 18 })
+    header.summary:SetWidth(w)
+    header:SetHeight(PAD + top + 4 + math.ceil(tonumber(header.summary:GetStringHeight()) or 0) + PAD)
+end
 
 -- the summary counts the set's pets over the whole collection: not worth doing for
 -- a closed window, which catches up when it opens (WindowShown)
@@ -88,8 +100,9 @@ function Header:Refresh()
     if status == "outranked" then text = Header.OutrankedText(set) end
     header.status:SetText(text)
     header.pill:SetColorTexture(st[2], st[3], st[4], 0.85)
-    header.pillFrame:SetWidth(header.status:GetStringWidth() + 16)
+    header.pillFrame:SetWidth(ns.Widgets.TextWidth(header.status) + 16)
     header.summary:SetText(Header.Summary(set))
+    layout()
 end
 
 ns:RegisterCallback(Header, "WindowBuilt", function(_, frame)
@@ -97,23 +110,22 @@ ns:RegisterCallback(Header, "WindowBuilt", function(_, frame)
     header.bg = header:CreateTexture(nil, "BACKGROUND")
     header.bg:SetAllPoints()
     header.bg:SetColorTexture(1, 1, 1, 0.04)
-    header.title = ns.Widgets.Label(header, "", "GameFontNormalHuge")
-    header.title:SetPoint("TOPLEFT", 10, -8)
-    header.title:SetWordWrap(false)
-    header.pillFrame = CreateFrame("Frame", nil, header)
+    header.top = CreateFrame("Frame", nil, header)
+    header.top:SetPoint("TOPLEFT", 10, -PAD)
+    header.top:SetPoint("RIGHT", -10, 0)
+    header.title = ns.Widgets.Label(header.top, "", "GameFontNormalHuge")
+    header.pillFrame = CreateFrame("Frame", nil, header.top)
     header.pillFrame:SetHeight(18)
-    header.pillFrame:SetPoint("LEFT", header.title, "RIGHT", 10, 0)
     header.pill = header.pillFrame:CreateTexture(nil, "BACKGROUND")
     header.pill:SetAllPoints()
     header.status = ns.Widgets.Label(header.pillFrame, "", "GameFontHighlightSmall")
     header.status:SetPoint("CENTER")
     header.summary = ns.Widgets.Label(header, "", "GameFontHighlight")
-    header.summary:SetPoint("TOPLEFT", header.title, "BOTTOMLEFT", 0, -4)
-    header.summary:SetPoint("RIGHT", -10, 0)
-    header.summary:SetWordWrap(false)
-    ns.Widgets.Tooltip(header, nil, function() return header.summary:GetText() end)
+    header.summary:SetPoint("TOPLEFT", header.top, "BOTTOMLEFT", 0, -4)
+    header.summary:SetWordWrap(true)
     Header:Refresh()
 end)
+ns:RegisterCallback(Header, "WindowResized", layout)
 
 local refresh = ns.Debounce(0.05, function() Header:Refresh() end)
 for _, cb in ipairs({ "SelectedSetChanged", "SetsChanged", "CurrentSetChanged", "ConditionStateChanged", "PetsChanged", "WindowShown" }) do

@@ -42,6 +42,8 @@ function Skin:Look()
 end
 function Skin._Forget() look = nil end      -- for tests
 
+-- The flat look hides every texture a control has when it is skinned (the template's
+-- art), so textures of our own on a control are created after Apply, never before.
 function Skin:Apply(kind, frame, ...)
     if not frame then return end
     local l = self:Look()

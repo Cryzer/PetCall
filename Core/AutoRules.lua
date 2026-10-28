@@ -1,7 +1,7 @@
 local _, ns = ...
 
 local L = ns.L
-local tonumber, tinsert, tremove, ipairs, type, strfind, strlower = tonumber, tinsert, tremove, ipairs, type, strfind, strlower
+local tonumber, ipairs, pairs, type, strfind, strlower, sort, concat = tonumber, ipairs, pairs, type, strfind, strlower, table.sort, table.concat
 
 local AutoRules = {}
 ns.AutoRules = AutoRules
@@ -13,26 +13,42 @@ local ops = {
     ["<="] = function(a, b) return a <= b end,
     ["<"] = function(a, b) return a < b end,
 }
-AutoRules.OPERATORS = { "==", ">=", ">", "<=", "<" }
 
-local function petTypeValues()
-    local out = {}
-    for i = 1, C_PetJournal.GetNumPetTypes() do
-        out[#out + 1] = { value = i, label = _G["BATTLE_PET_NAME_" .. i] or tostring(i) }
-    end
-    return out
+-- how many journal sources the client has (older clients: none)
+function AutoRules.NumSources() return C_PetJournal.GetNumPetSources and C_PetJournal.GetNumPetSources() or 0 end
+
+-- a journal source ("Drop", "Pet Battle"...) as the game names it; nil for a slot it leaves empty
+function AutoRules.SourceLabel(i)
+    local s = _G["BATTLE_PET_SOURCE_" .. i]
+    if type(s) == "string" and s ~= "" and s ~= "BATTLE_PET_SOURCE_" .. i then return s end
 end
+
+-- a pet comes from a source when its "where from" text mentions it
+local function mentions(petID, text)
+    return text ~= "" and strfind(ns.PetCache:GetSourceText(petID), strlower(text), 1, true) ~= nil
+end
+
+-- "Level 25", "Level 1–24", "Level 20+"...
+local function levelText(operator, level)
+    local n = tonumber(level) or 0
+    local range = operator == "==" and tostring(n)
+        or operator == "<" and ("1–" .. (n - 1))
+        or operator == "<=" and ("1–" .. n)
+        or operator == ">" and ((n + 1) .. "+")
+        or (n .. "+")
+    return format(L["Level %s"], range)
+end
+
+local function typeName(t) return _G["BATTLE_PET_NAME_" .. t] or tostring(t) end
 
 local types = {
     favorites = {
-        key = "favorites", label = L["Favorites"], fields = {},
+        key = "favorites",
         match = function(e, info) return info.isFavorite end,
         describe = function() return L["Favorites"] end,
-        new = function() return { "favorites" } end,
     },
     petType = {
-        key = "petType", label = L["Pet Type"],
-        fields = { { key = "petTypes", kind = "multiChoice", values = petTypeValues } },
+        key = "petType",
         match = function(e, info)
             if e.petTypes then
                 for _, t in ipairs(e.petTypes) do if t == info.petType then return true end end
@@ -42,50 +58,54 @@ local types = {
         end,
         describe = function(e)
             local names = {}
-            local list = e.petTypes or { tonumber(e.petType) }
-            for _, t in ipairs(list) do names[#names + 1] = _G["BATTLE_PET_NAME_" .. t] or tostring(t) end
-            return L["Type"] .. ": " .. table.concat(names, ", ")
+            for _, t in ipairs(e.petTypes or { tonumber(e.petType) }) do names[#names + 1] = typeName(t) end
+            return concat(names, ", ")
         end,
-        new = function() return { "petType", petTypes = { 1 } } end,
     },
     level = {
-        key = "level", label = L["Level"],
-        fields = { { key = "operator", kind = "operator" }, { key = "level", kind = "number", min = 1, max = 25 } },
+        key = "level",
         match = function(e, info)
             local cmp, n = ops[e.operator or "?"], tonumber(e.level)
             return cmp ~= nil and n ~= nil and cmp(info.level, n)
         end,
-        describe = function(e) return L["Level"] .. " " .. (e.operator or "?") .. " " .. tostring(e.level) end,
-        new = function() return { "level", operator = ">=", level = "25" } end,
+        describe = function(e) return levelText(e.operator, e.level) end,
     },
-}
-types.rare = {
-    key = "rare", label = L["Rare or better"], fields = {},
-    match = function(e, info) return (info.quality or 0) >= 4 end,
-    describe = function() return L["Rare or better"] end,
-    new = function() return { "rare" } end,
-}
-types.source = {
-    key = "source", label = L["Source mentions"],
-    fields = { { key = "text", kind = "text" } },
-    match = function(e, info)
-        local t = strlower(e.text or "")
-        return t ~= "" and strfind(ns.PetCache:GetSourceText(info.petID), t, 1, true) ~= nil
-    end,
-    describe = function(e)
-        local t = e.text or ""
-        return L["Source"] .. ": " .. (t ~= "" and t or L["no text yet"])
-    end,
-    new = function() return { "source", text = "" } end,
-}
-types.nativeZone = {
-    key = "nativeZone", label = L["Native to where I am"], fields = {},
-    match = function(e, info)
-        local zone = strlower(GetZoneText() or "")
-        return zone ~= "" and strfind(ns.PetCache:GetSourceText(info.petID), zone, 1, true) ~= nil
-    end,
-    describe = function() return L["Native to where I am"] end,
-    new = function() return { "nativeZone" } end,
+    rare = {
+        key = "rare",
+        match = function(e, info) return (info.quality or 0) >= 4 end,
+        describe = function() return L["Rare or better"] end,
+    },
+    -- journal sources by number (sources = { 2, 7 }), or older rules: any text the source mentions
+    source = {
+        key = "source",
+        match = function(e, info)
+            if e.sources then
+                for _, i in ipairs(e.sources) do
+                    local label = AutoRules.SourceLabel(i)
+                    if label and mentions(info.petID, label) then return true end
+                end
+                return false
+            end
+            return mentions(info.petID, e.text or "")
+        end,
+        describe = function(e)
+            if e.sources then
+                local names = {}
+                for _, i in ipairs(e.sources) do names[#names + 1] = AutoRules.SourceLabel(i) or tostring(i) end
+                return concat(names, ", ")
+            end
+            local t = e.text or ""
+            return L["Source"] .. ": " .. (t ~= "" and t or L["no text yet"])
+        end,
+    },
+    nativeZone = {
+        key = "nativeZone",
+        match = function(e, info)
+            local zone = GetZoneText() or ""
+            return mentions(info.petID, zone)
+        end,
+        describe = function() return L["From this zone"] end,
+    },
 }
 local order = { "favorites", "petType", "level", "rare", "source", "nativeZone" }
 
@@ -94,8 +114,6 @@ function AutoRules.Types()
     for _, k in ipairs(order) do out[#out + 1] = types[k] end
     return out
 end
-
-function AutoRules.Label(key) return types[key] and types[key].label or key end
 
 local function matchEntry(e, info)
     local kind = e[1]
@@ -124,35 +142,14 @@ end
 
 function AutoRules.Weight(entry) return entry[2] or 1 end
 
-local function isLeaf(e) return types[e[1]] ~= nil end
-
-function AutoRules.ToChips(list)
-    local chips = {}
-    for i, e in ipairs(list or {}) do
-        local chip = { index = i, entry = e, legacy = false, match = "all", criteria = {} }
-        if isLeaf(e) then
-            chip.criteria[1] = e
-        elseif e[1] == "AND" or e[1] == "OR" then
-            chip.match = e[1] == "AND" and "all" or "any"
-            for _, sub in ipairs(e.items or {}) do
-                if isLeaf(sub) then chip.criteria[#chip.criteria + 1] = sub else chip.legacy = true end
-            end
-            if #chip.criteria == 0 then chip.legacy = true end
-        else
-            chip.legacy = true
-        end
-        chips[#chips + 1] = chip
-    end
-    return chips
-end
-
 function AutoRules.Describe(e)
     local kind = e[1]
     local text
     if kind == "AND" or kind == "OR" then
         local parts = {}
         for _, sub in ipairs(e.items or {}) do parts[#parts + 1] = AutoRules.Describe(sub) end
-        text = "(" .. table.concat(parts, kind == "AND" and (" " .. L["and"] .. " ") or (" " .. L["or"] .. " ")) .. ")"
+        text = concat(parts, kind == "AND" and (" " .. L["and"] .. " ") or (" " .. L["or"] .. " "))
+        if #parts > 1 then text = "(" .. text .. ")" end
     elseif types[kind] then
         text = types[kind].describe(e)
     else
@@ -162,85 +159,111 @@ function AutoRules.Describe(e)
     return text
 end
 
--- Editing helpers. Chips keep the 1.0 shape: a leaf, or AND/OR of leaves.
+-- Rules and the pet list's filters are one thing: a rule is the filters it was made from.
+-- Filters: { favorites = true, types = { [petType] = true }, sources = { [journal source] = true },
+-- sourceText = "older rules' text", level = { operator =, level = }, rare = true,
+-- nativeZone = true }, every group optional. Any choice inside a group will do; every
+-- group must match.
 
-function AutoRules.AddChip(list, typeKey, weight)
-    local e = types[typeKey].new()
-    e[2] = weight or 1
-    tinsert(list, e)
-    return true
+local function sortedKeys(set)
+    local out = {}
+    for k in pairs(set or {}) do out[#out + 1] = k end
+    sort(out)
+    return out
 end
 
-function AutoRules.RemoveChip(list, index)
-    tremove(list, index)
-    return true
+-- the rule (without its weight) the filters make, or nil when no group is set
+function AutoRules.FromFilters(f)
+    local items = {}
+    if f.favorites then items[#items + 1] = { "favorites" } end
+    local list = sortedKeys(f.types)
+    if #list > 0 then items[#items + 1] = { "petType", petTypes = list } end
+    if f.level then items[#items + 1] = { "level", operator = f.level.operator, level = tostring(f.level.level) } end
+    if f.rare then items[#items + 1] = { "rare" } end
+    list = sortedKeys(f.sources)
+    if #list > 0 then items[#items + 1] = { "source", sources = list } end
+    if f.sourceText then items[#items + 1] = { "source", text = f.sourceText } end
+    if f.nativeZone then items[#items + 1] = { "nativeZone" } end
+    if #items == 0 then return nil end
+    if #items == 1 then return items[1] end
+    return { "AND", items = items }
 end
 
-function AutoRules.SetChipWeight(list, index, w)
-    list[index][2] = w
-    return true
-end
-
-function AutoRules.AddCriterion(list, index, typeKey)
-    local e = list[index]
-    local new = types[typeKey].new()
-    if isLeaf(e) then
-        local w = e[2]
-        e[2] = nil
-        list[index] = { "AND", items = { e, new }, w }
+-- one condition into the filters; false when the group is taken already or cannot be shown
+local function addLeaf(f, e)
+    if e.negate then return false end
+    local k = e[1]
+    if k == "favorites" and not f.favorites then
+        f.favorites = true
+    elseif k == "petType" and not f.types then
+        f.types = {}
+        for _, t in ipairs(e.petTypes or { tonumber(e.petType) }) do f.types[t] = true end
+    elseif k == "level" and not f.level then
+        f.level = { operator = e.operator, level = tonumber(e.level) }
+    elseif k == "rare" and not f.rare then
+        f.rare = true
+    elseif k == "source" and e.sources and not f.sources then
+        f.sources = {}
+        for _, i in ipairs(e.sources) do f.sources[i] = true end
+    elseif k == "source" and not e.sources and not f.sourceText then
+        f.sourceText = e.text or ""
+    elseif k == "nativeZone" and not f.nativeZone then
+        f.nativeZone = true
     else
-        tinsert(e.items, new)
+        return false
     end
     return true
 end
 
-function AutoRules.RemoveCriterion(list, index, ci)
-    local e = list[index]
-    if isLeaf(e) then
-        tremove(list, index)
-        return true
+-- the filters a rule is made of, or nil for a rule they cannot show: "any one of these",
+-- the same condition twice, "not", or the nested rules of version 1.0
+function AutoRules.ToFilters(e)
+    local f = {}
+    if types[e[1]] then return addLeaf(f, e) and f or nil end
+    local items = e.items or {}
+    if e.negate or not (e[1] == "AND" or (e[1] == "OR" and #items == 1)) then return nil end
+    for _, sub in ipairs(items) do
+        if not types[sub[1]] or not addLeaf(f, sub) then return nil end
     end
-    tremove(e.items, ci)
-    if #e.items == 1 then
-        local only = e.items[1]
-        only[2] = e[2]
-        list[index] = only
-    elseif #e.items == 0 then
-        tremove(list, index)
+    return next(f) and f or nil
+end
+
+-- what the filters say, one entry per choice in the order the menu has them:
+-- { label =, group =, value = } (value is the pet type or source number)
+function AutoRules.Tokens(f)
+    local out = {}
+    local function add(group, label, value) out[#out + 1] = { group = group, label = label, value = value } end
+    if f.favorites then add("favorites", L["Favorites"]) end
+    for _, t in ipairs(sortedKeys(f.types)) do add("types", typeName(t), t) end
+    if f.level then add("level", levelText(f.level.operator, f.level.level)) end
+    if f.rare then add("rare", L["Rare or better"]) end
+    for _, i in ipairs(sortedKeys(f.sources)) do add("sources", AutoRules.SourceLabel(i) or tostring(i), i) end
+    if f.sourceText then add("sourceText", L["Source"] .. ": " .. (f.sourceText ~= "" and f.sourceText or L["no text yet"])) end
+    if f.nativeZone then add("nativeZone", L["From this zone"]) end
+    return out
+end
+
+-- the word between two filter choices: "or" inside a group (Beast or Aquatic), "and"
+-- between groups (and Rare or better)
+function AutoRules.Join(prev, tok) return prev.group == tok.group and L["or"] or L["and"] end
+
+-- the filters as one line: "Beast or Aquatic and Rare or better"
+function AutoRules.Sentence(f)
+    local out, prev = {}, nil
+    for _, tok in ipairs(AutoRules.Tokens(f)) do
+        if prev then out[#out + 1] = AutoRules.Join(prev, tok) end
+        out[#out + 1] = tok.label
+        prev = tok
     end
-    return true
+    return concat(out, " ")
 end
 
-function AutoRules.SetMatch(list, index, match)
-    local e = list[index]
-    if not isLeaf(e) then e[1] = match == "any" and "OR" or "AND" end
-    return true
-end
-
-function AutoRules.SetField(leaf, key, value)
-    leaf[key] = value
-    if key == "petTypes" then leaf.petType = nil end
-    return true
-end
-
--- Collapses single-child AND/OR chains; only when the meaning stays identical.
-local function collapse(e)
-    if (e[1] == "AND" or e[1] == "OR") and not e.negate and e.items and #e.items == 1 then
-        return collapse(e.items[1])
-    end
-    return e
-end
-
-function AutoRules.Simplify(list, index)
-    local e = list[index]
-    local w = e[2]
-    local c = collapse(e)
-    if c == e then return false end
-    c = { unpack(c) }
-    for k, v in pairs(collapse(e)) do if type(k) ~= "number" then c[k] = v end end
-    c[2] = w
-    list[index] = c
-    return true
+-- the same text for two rules that pick the same pets the same way (weight left out)
+function AutoRules.Key(e)
+    local f = AutoRules.ToFilters(e)
+    local parts = {}
+    for _, tok in ipairs(f and AutoRules.Tokens(f) or {}) do parts[#parts + 1] = tok.group .. "=" .. tok.label end
+    return f and concat(parts, "\n") or AutoRules.Describe(e)
 end
 
 -- "native to where I am" depends on the zone: only sets that use it are rebuilt

@@ -89,7 +89,7 @@ read_globals = {
 
     -- WoW locale strings (global constants)
     "GENERAL", "DEFAULT_CHAT_FRAME",
-    "DELETE", "CANCEL", "ENABLE", "ALL", "DEFAULT", "FILTER",
+    "DELETE", "CANCEL", "SAVE", "ENABLE", "ALL", "DEFAULT", "FILTER",
     "YES", "NO", "LEVEL", "FAVORITES",
     "SOUNDKIT",
 

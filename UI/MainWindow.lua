@@ -144,7 +144,7 @@ function Main:Build()
     frame.header = CreateFrame("Frame", nil, frame.Inset)
     frame.header:SetPoint("TOPLEFT", frame.left, "TOPRIGHT", 6, 0)
     frame.header:SetPoint("RIGHT", -4, 0)
-    frame.header:SetHeight(52)
+    frame.header:SetHeight(52)       -- until the set header lays itself out
 
     frame.content = CreateFrame("Frame", nil, frame.Inset)
     frame.content:SetPoint("TOPLEFT", frame.header, "BOTTOMLEFT", 0, -28)
@@ -199,7 +199,6 @@ function Main:BuildTab(key)
     b:SetID(index)
     b:SetText(t.label)
     b:SetScript("OnClick", function() Main:SelectTab(key) end)
-    PanelTemplates_TabResize(b, 12)
     b:SetScript("OnShow", function() Main:LayoutTabs() end)
     b:SetScript("OnHide", function() Main:LayoutTabs() end)
     tabButtons[index], t.button = b, b
@@ -212,10 +211,20 @@ function Main:BuildTab(key)
     t.object = t.factory(t.page)
 end
 
+-- A tab as wide as its label. Blizzard's own resize measures the label before the skin
+-- has styled it and then holds the label at that width, which cuts a longer one short.
+local TAB_PAD, TAB_MIN_W = 16, 64
+local function sizeTab(b)
+    local text = b.Text or b:GetFontString()
+    if text then text:SetWidth(0) end
+    b:SetWidth(math.max(TAB_MIN_W, ns.Widgets.TextWidth(text) + 2 * TAB_PAD))
+end
+
 -- chains the visible tabs left to right; hidden tabs (When for the default set) leave no gap
 function Main:LayoutTabs()
     local prev
     for _, b in ipairs(tabButtons) do
+        sizeTab(b)
         b:ClearAllPoints()
         if not prev then
             b:SetPoint("BOTTOMLEFT", frame.content, "TOPLEFT", 4, 2)
@@ -235,6 +244,7 @@ function Main:SelectTab(key)
     PanelTemplates_SetTab(frame, t.button:GetID())
     -- after Blizzard's own selection, which moves the text and swaps the textures
     for k, other in pairs(tabs) do ns.Skin:SetTabSelected(other.button, k == key) end
+    Main:LayoutTabs()
     if t.object.Refresh then t.object:Refresh(selectedSet) end
 end
 

@@ -52,7 +52,7 @@ ns:RegisterCallback(Bar, "WindowBuilt", function(_, frame)
     bar.icon:SetPoint("LEFT", 2, 0)
     bar.auto = ns.Widgets.Checkbox(bar, L["Auto-summon"], function() return ns:IsAutoSummon() end,
         function(v) ns:SetAutoSummon(v) end)
-    bar.auto:SetPoint("RIGHT", -bar.auto.text:GetStringWidth() - 6, 0)
+    bar.auto:SetPoint("RIGHT", -ns.Widgets.TextWidth(bar.auto.text) - 6, 0)
     ns.Widgets.Tooltip(bar.auto, L["Auto-summon"], L["Automatically summon a companion pet when entering a new area or when idle."])
     bar.another = ns.Widgets.Button(bar, L["Summon another"], function() ns:SummonAnother() end)
     bar.another:SetPoint("RIGHT", bar.auto, "LEFT", -12, 0)

@@ -25,37 +25,35 @@ describe("AutoRules", function()
         assert.is_true(AR.Match({ "OR", items = { { "favorites" }, { "petType", petType = "8" } } }, "a"))
         assert.is_false(AR.Match({ "AND", items = { { "favorites" }, { "petType", petType = "8" } } }, "a"))
     end)
-    it("builds chips and marks deep trees legacy", function()
-        local list = {
-            { "favorites", 64 },
-            { "OR", items = { { "petType", petType = "8" }, { "favorites" } }, 8 },
-            { "AND", items = { { "OR", items = { { "favorites" } } } }, 1 },
-        }
-        local chips = AR.ToChips(list)
-        assert.equal(3, #chips)
-        assert.same({ false, "all", 1 }, { chips[1].legacy, chips[1].match, #chips[1].criteria })
-        assert.same({ false, "any", 2 }, { chips[2].legacy, chips[2].match, #chips[2].criteria })
-        assert.is_true(chips[3].legacy)
+    it("a rule is the filters it was made from, and back", function()
+        local f = { favorites = true, types = { [10] = true, [8] = true }, level = { operator = "==", level = 25 } }
+        local rule = AR.FromFilters(f)
+        assert.same({ "AND", items = { { "favorites" }, { "petType", petTypes = { 8, 10 } },
+            { "level", operator = "==", level = "25" } } }, rule)
+        assert.same(f, AR.ToFilters(rule))
+        assert.same({ "rare" }, AR.FromFilters({ rare = true }), "one group: a plain rule")
+        assert.is_nil(AR.FromFilters({}))
+        -- older rules: one pet type, a source text, a lone condition in OR
+        assert.same({ types = { [8] = true } }, AR.ToFilters({ "petType", 8, petType = "8" }))
+        assert.same({ sourceText = "Trading Post" }, AR.ToFilters({ "source", 8, text = "Trading Post" }))
+        assert.same({ favorites = true }, AR.ToFilters({ "OR", items = { { "favorites" } }, 8 }))
     end)
-    it("edits chips keeping the 1.0 storage shape", function()
-        local list = {}
-        AR.AddChip(list, "favorites", 8)
-        assert.same({ { "favorites", 8 } }, list)
-        AR.AddCriterion(list, 1, "level")
-        assert.equal("AND", list[1][1])
-        assert.equal(8, list[1][2])
-        assert.equal(2, #list[1].items)
-        AR.SetMatch(list, 1, "any")
-        assert.equal("OR", list[1][1])
-        AR.RemoveCriterion(list, 1, 2)
-        assert.same({ { "favorites", 8 } }, list)
-        AR.RemoveChip(list, 1)
-        assert.same({}, list)
+    it("rules the filters cannot show are left as they are", function()
+        assert.is_nil(AR.ToFilters({ "OR", items = { { "favorites" }, { "rare" } }, 8 }))
+        assert.is_nil(AR.ToFilters({ "AND", items = { { "rare" }, { "rare" } }, 8 }), "the same condition twice")
+        assert.is_nil(AR.ToFilters({ "favorites", 8, negate = true }))
+        assert.is_nil(AR.ToFilters({ "AND", items = { { "OR", items = { { "favorites" } } } }, 1 }))
     end)
-    it("simplifies a nested single-child node", function()
-        local list = { { "AND", items = { { "OR", items = { { "favorites" } } } }, 1 } }
-        assert.is_true(AR.Simplify(list, 1))
-        assert.same({ { "favorites", 1 } }, list)
+    it("names each filter choice and tells rules apart by what they pick", function()
+        _G.BATTLE_PET_NAME_8 = "Beast"
+        local labels = {}
+        for _, t in ipairs(AR.Tokens({ types = { [8] = true }, level = { operator = "<", level = 25 }, nativeZone = true })) do
+            labels[#labels + 1] = t.label
+        end
+        assert.same({ "Beast", "Level 1–24", "From this zone" }, labels)
+        assert.equal(AR.Key({ "petType", 8, petType = "8" }), AR.Key({ "petType", 64, petTypes = { 8 } }))
+        assert.is_true(AR.Key({ "rare", 8 }) ~= AR.Key({ "favorites", 8 }))
+        _G.BATTLE_PET_NAME_8 = nil
     end)
     it("source, native zone and rare rules", function()
         W.world.sources[1] = "|cFFFFD200World Event:|r Hallow's End"
@@ -71,6 +69,11 @@ describe("AutoRules", function()
         assert.is_true(AR.Match({ "rare", 1 }, "a"))
         assert.is_false(AR.Match({ "rare", 1 }, "b"))
         assert.equal("Source: Hallow's End", AR.Describe({ "source", 1, text = "Hallow's End" }))
+        -- journal sources by number match their name in the where-from text
+        _G.BATTLE_PET_SOURCE_7 = "World Event"
+        assert.is_true(AR.Match({ "source", 1, sources = { 3, 7 } }, "a"))
+        assert.is_false(AR.Match({ "source", 1, sources = { 7 } }, "b"))
+        _G.BATTLE_PET_SOURCE_7 = nil
     end)
     it("a set with a native-zone rule is rebuilt after a zone change, others are not", function()
         W.world.sources[2] = "Pet Battle: Durotar"

@@ -11,7 +11,7 @@ local function build()
     dialog = CreateFrame("Frame", "PetCallShareDialog", UIParent, "ButtonFrameTemplate")
     ButtonFrameTemplate_HidePortrait(dialog)
     ButtonFrameTemplate_HideButtonBar(dialog)
-    dialog:SetSize(520, 300)
+    dialog:SetSize(520, 320)
     dialog:SetPoint("CENTER")
     dialog:SetFrameStrata("DIALOG")
     dialog:SetMovable(true)
@@ -23,15 +23,40 @@ local function build()
     ns.Skin:Apply("Shell", dialog)
     ns.Skin:Apply("CloseButton", dialog.CloseButton)
     ns.Skin:Apply("Inset", dialog.Inset)
+    -- it opens over the window: opaque and edged, so the pets under it do not show through
+    ns.Widgets.Raise(dialog)
 
     dialog.hint = ns.Widgets.Label(dialog.Inset, "")
     dialog.hint:SetPoint("TOPLEFT", 8, -8)
     dialog.hint:SetPoint("RIGHT", -8, 0)
 
-    local sf = CreateFrame("ScrollFrame", nil, dialog.Inset, "ScrollFrameTemplate")
-    sf:SetPoint("TOPLEFT", 8, -28)
-    sf:SetPoint("RIGHT", -28, 0)
-    sf:SetHeight(140)
+    -- the text sits in a box that looks like a field: clicking anywhere in it types there
+    dialog.field = CreateFrame("Button", nil, dialog.Inset)
+    dialog.field:SetPoint("TOPLEFT", 6, -26)
+    dialog.field:SetPoint("RIGHT", -6, 0)
+    dialog.field:SetHeight(148)
+    dialog.field.bg = dialog.field:CreateTexture(nil, "BACKGROUND")
+    dialog.field.bg:SetAllPoints()
+    dialog.field.bg:SetColorTexture(0, 0, 0, 0.5)
+    for _, side in ipairs({ { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" } }) do
+        local line = dialog.field:CreateTexture(nil, "BORDER")
+        line:SetColorTexture(1, 1, 1, 0.2)
+        line:SetPoint(side[1])
+        line:SetPoint(side[2])
+        line:SetHeight(1)
+    end
+    for _, side in ipairs({ { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }) do
+        local line = dialog.field:CreateTexture(nil, "BORDER")
+        line:SetColorTexture(1, 1, 1, 0.2)
+        line:SetPoint(side[1])
+        line:SetPoint(side[2])
+        line:SetWidth(1)
+    end
+    dialog.field:SetScript("OnClick", function() dialog.text:SetFocus() end)
+
+    local sf = CreateFrame("ScrollFrame", nil, dialog.field, "ScrollFrameTemplate")
+    sf:SetPoint("TOPLEFT", 6, -4)
+    sf:SetPoint("BOTTOMRIGHT", -24, 4)
     dialog.text = CreateFrame("EditBox", nil, sf)
     dialog.text:SetMultiLine(true)
     dialog.text:SetFontObject("ChatFontNormal")
@@ -41,7 +66,7 @@ local function build()
     sf:SetScrollChild(dialog.text)
 
     dialog.nameLabel = ns.Widgets.Label(dialog.Inset, L["Set name:"])
-    dialog.nameLabel:SetPoint("TOPLEFT", sf, "BOTTOMLEFT", 0, -12)
+    dialog.nameLabel:SetPoint("TOPLEFT", dialog.field, "BOTTOMLEFT", 2, -12)
     dialog.name = CreateFrame("EditBox", nil, dialog.Inset, "InputBoxTemplate")
     dialog.name:SetSize(220, 20)
     dialog.name:SetAutoFocus(false)
@@ -50,7 +75,6 @@ local function build()
 
     dialog.status = ns.Widgets.Label(dialog.Inset, "", "GameFontHighlightSmall")
     dialog.status:SetPoint("TOPLEFT", dialog.nameLabel, "BOTTOMLEFT", 0, -10)
-    dialog.status:SetPoint("RIGHT", -8, 0)
     dialog.status:SetWordWrap(true)
 
     dialog.import = ns.Widgets.Button(dialog.Inset, L["Import"], function()
@@ -68,6 +92,8 @@ local function build()
         end
     end)
     dialog.import:SetPoint("BOTTOMRIGHT", -8, 8)
+    -- an error wraps beside the button, never under it
+    dialog.status:SetPoint("RIGHT", dialog.import, "LEFT", -8, 0)
     dialog.name:SetScript("OnEnterPressed", function() dialog.import:Click() end)
 end
 

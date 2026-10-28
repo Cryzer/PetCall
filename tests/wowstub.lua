@@ -378,6 +378,7 @@ function W.load(opts)
     for _, path in ipairs(W.tocFiles(opts)) do
         local chunk = assert(loadfile(path))
         chunk("PetCall", ns)
+        if opts and opts.afterFile then opts.afterFile(path, ns) end
     end
     return ns
 end

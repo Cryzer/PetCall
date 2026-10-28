@@ -23,6 +23,7 @@ local specs = {
     "tests/commands_spec.lua",
     "tests/menu_spec.lua",
     "tests/glyphs_spec.lua",
+    "tests/layout_spec.lua",      -- last: it replaces CreateFrame and a few globals for measuring
 }
 if arg and arg[1] then specs = { arg[1] } end
 for _, file in ipairs(specs) do

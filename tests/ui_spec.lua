@@ -35,64 +35,102 @@ describe("UI smoke", function()
             ns.UI.Preview:SetHover(nil)
         end)
     end)
-    it("auto rule chips render, open the editor and edit", function()
-        assert.has_no_error(function()
-            ns.UI.Main:Show()
-            ns.UI.Main:SelectTab("pets")
-            local set = ns.Sets:Get("$Default")
-            set.settings.filter = { { "favorites", 64 }, { "AND", items = { { "OR", items = { { "favorites" } } } }, 1 } }
-            ns.UI.AutoRulesBar:Refresh(set)
-            local chips = ns.UI.AutoRulesBar._chips
-            assert.is_true(chips[1]:IsShown())
-            chips[1]:Click()      -- editor for a simple chip
-            chips[2]:Click()      -- editor for a legacy chip
-            chips[1]:Click()
-            -- the editor belongs to the main window, so it closes with it
-            local editor = ns.UI.AutoRulesBar.GetEditor()
-            assert.equal(ns.UI.Main:GetFrame(), editor:GetParent())
-            assert.is_true(editor:IsShown())
-            editor.done:Click()
-            assert.is_false(editor:IsShown())
-            -- adding a condition keeps the editor open on the same rule
-            ns.AutoRules.AddCriterion(set.settings.filter, 1, "favorites")
-            ns.UI.AutoRulesBar:Refresh(set)
-            chips[1]:Click()
-            assert.is_true(editor:IsShown())
-            chips[1].remove:Click()
-            assert.equal(1, #set.settings.filter)
-        end)
-    end)
-    it("rule chips wrap onto more lines inside the window and the grid moves under them", function()
+    it("a rule is made from the list's filters and opened again from the Rules menu", function()
+        W.world.pets.b = { species = 2, name = "B", type = 3 }
+        W.world.favorites.a = true
+        ns.PetCache:Rescan()
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local page, set = ns.UI.PetsTabPage, ns.Sets:Get("$Default")
+        local bar = page.filterBar
+        assert.equal("Rules", page.rulesBtn:GetText())
+        page.favorites:Click()                                -- the star is the Favorites filter
+        assert.is_true(bar.makeRule:IsShown())
+        bar.makeRule:Click()
+        assert.equal("Editing rule", bar.shown:GetText())
+        assert.is_true(bar.chips[1]:GetText():find("^Favorites") ~= nil)
+        assert.is_true(bar.save:IsShown())
+        assert.is_false(bar.delete:IsShown(), "a new rule has nothing to delete")
+        assert.is_false(bar.makeRule:IsShown())
+        bar.save:Click()
+        assert.same({ { "favorites", 8 } }, set.settings.filter)   -- next to ticked pets: Often
+        assert.is_false(bar.save:IsShown())
+        assert.equal("favorites", ns.PetGridModel.Tokens(ns.UI.PetsTabState())[1].group, "the list is as it was")
+        page.favorites:Click()
+        -- the Rules menu opens a rule on the list, which then shows only its pets
+        assert.equal("Rules (1)", page.rulesBtn:GetText())
+        page.rulesBtn:Click()
+        assert.equal("More chance for", U.lastMenu.items[1].text)
+        assert.equal("Pick a rule to change it.", U.lastMenu.items[2].text)
+        assert.is_true(U.lastMenu.items[3].text:find("Very often") == nil and U.lastMenu.items[3].text:find("Often: Favorites") ~= nil,
+            U.lastMenu.items[3].text)
+        U.lastMenu.items[3]:Click()
+        assert.is_true(bar.delete:IsShown())
+        assert.equal("1 pet", bar.ruleCount:GetText())
+        -- a pet type from the Filter menu and another weight go into the rule
+        local root = U.newMenu()
+        page.filterBtn._setupMenu(page.filterBtn, root)
+        root:Find("Pet Type").items[1]:Click()
+        assert.equal("and", bar.chips[2].join:GetText(), "a second group: and")
+        -- + Condition on the rule line offers the same choices
+        bar.addCondition:Click()
+        U.lastMenu:Find("Pet Type").items[3]:Click()
+        assert.equal("or", bar.chips[3].join:GetText(), "a second pet type: or")
+        bar.chips[3]:Click()
+        root = U.newMenu()
+        bar.weight._setupMenu(bar.weight, root)
+        root:Find("Very often"):Click()
+        bar.save:Click()
+        local rule = set.settings.filter[1]
+        assert.same({ "AND", 64 }, { rule[1], rule[2] })
+        assert.equal(2, #rule.items)
+        page.rulesBtn:Click()
+        U.lastMenu.items[3]:Click()
+        bar.delete:Click()
+        assert.same({}, set.settings.filter)
+        assert.equal("Rules", page.rulesBtn:GetText())
+    end)
+    it("leaving a rule with changes asks to save it; one without changes just closes", function()
         local set = ns.Sets:Get("$Default")
-        set.settings.filter = {}
-        for _ = 1, 6 do set.settings.filter[#set.settings.filter + 1] = { "source", 64, text = "" } end
-        local bar = ns.UI.PetsTabRulesBar
-        bar.GetWidth = function() return 400 end
-        ns.UI.AutoRulesBar:Refresh(set)                     -- makes the chips
-        local text = { GetStringWidth = function() return 150 end }
-        for _, b in ipairs(ns.UI.AutoRulesBar._chips) do b.GetFontString = function() return text end end
-        ns.UI.AutoRulesBar:Refresh(set)
-        local chips = ns.UI.AutoRulesBar._chips
-        assert.equal("Source: no text yet · Very often", chips[1].tooltip)
-        local lines = ns.UI.AutoRulesBar:GetLines()
-        assert.is_true(lines >= 3, "lines: " .. lines)
-        for _, b in ipairs(chips) do
-            if b:IsShown() then
-                local x = b._points.TOPLEFT.x
-                assert.is_true(x + 186 <= 400, "chip runs out of the bar")     -- 150 text + 36
-            end
-        end
-        local add = bar.add._points.TOPLEFT
-        assert.is_true(add.x + 110 <= 400, "+ Add runs out of the bar")
-        assert.is_true(-add.y < lines * 24, "+ Add on the last line")
-        assert.equal(-(60 + (lines - 1) * 24), ns.UI.PetsTabPage.grid._points.TOPLEFT.y)
-        set.settings.filter = { { "favorites", 64 } }
-        ns.UI.AutoRulesBar:Refresh(set)
-        assert.equal(1, ns.UI.AutoRulesBar:GetLines())
-        assert.equal(-60, ns.UI.PetsTabPage.grid._points.TOPLEFT.y)
-        bar.GetWidth = nil
+        set.settings.filter = { { "favorites", 8 } }
+        set:FiltersChanged()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local page = ns.UI.PetsTabPage
+        local asked
+        local show = StaticPopup_Show
+        _G.StaticPopup_Show = function(which, _, _, data) asked = { which = which, data = data } end
+        page.rulesBtn:Click()
+        U.lastMenu.items[3]:Click()
+        ns.UI.Main:SelectTab("settings")
+        assert.is_nil(asked, "nothing changed: no question")
+        ns.UI.Main:SelectTab("pets")
+        page.rulesBtn:Click()
+        U.lastMenu.items[3]:Click()
+        local root = U.newMenu()
+        page.filterBtn._setupMenu(page.filterBtn, root)
+        root:Find("Rare or better"):Click()
+        ns.UI.Main:SelectTab("settings")
+        _G.StaticPopup_Show = show
+        assert.equal("PETCALL_RULE_UNSAVED", asked.which)
+        asked.data.onAccept()
+        assert.equal("AND", set.settings.filter[1][1])
+        assert.is_nil(ns.UI.PetsTabState().editing)
+    end)
+    it("a rule the filters cannot show is listed to read and delete", function()
+        local set = ns.Sets:Get("$Default")
+        set.settings.filter = { { "OR", items = { { "favorites" }, { "rare" } }, 8 } }
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        ns.UI.PetsTabPage.rulesBtn:Click()
+        local item = U.lastMenu.items[3]
+        assert.is_true(item.text:find("Complex rule") ~= nil, item.text)
+        assert.equal("(Favorites or Rare or better)", item.items[1].text)
+        item:Find("DELETE"):Click()
+        assert.same({}, set.settings.filter)
     end)
     it("sets panel, status bar and set settings tab", function()
         assert.has_no_error(function()
@@ -690,7 +728,53 @@ describe("UI smoke", function()
         assert.same({ "b" }, ids)
         page.show.buttons[1]:Click()                        -- All
         page.favorites:Click()
-        assert.is_true(ns.UI.PetsTabState().favoritesOnly)
+        assert.is_true(ns.UI.PetsTabState().filters.favorites)
+    end)
+
+    it("an open rule shows what it gives each pet, and a pet's menu opens the rules that pick it", function()
+        local set = ns.Sets:Get("$Default")
+        set.settings.filter = { { "petType", 64, petTypes = { 1 } } }
+        set:SetPetWeight("a", 0)                         -- in the set only through the rule
+        set:FiltersChanged()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local tile = gridTiles().a
+        assert.is_true(tile.sub:GetText():find("via a rule") ~= nil, tile.sub:GetText())
+        tile:GetScript("OnClick")(tile, "RightButton")
+        U.lastMenu:Find("Edit rule: BATTLE_PET_NAME_1"):Click()
+        assert.is_true(ns.UI.PetsTabPage.filterBar.save:IsShown())
+        tile = gridTiles().a
+        assert.is_true(tile.sub:GetText():find("+ Very often", 1, true) ~= nil, tile.sub:GetText())
+    end)
+    it("a narrowed list gets a line that names the menu filters, removes them and weighs the pets shown", function()
+        W.world.pets.b = { species = 2, name = "B" }
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local page, set = ns.UI.PetsTabPage, ns.Sets:Get("$Default")
+        local bar = page.filterBar
+        assert.is_false(bar:IsShown())
+        local root = U.newMenu()
+        page.filterBtn._setupMenu(page.filterBtn, root)
+        root:Find("Pet Type").items[1]:Click()           -- both pets are type 1
+        assert.is_true(bar:IsShown())
+        assert.equal("Showing 2 of 2", bar.shown:GetText())
+        assert.is_true(bar.chips[1]:GetText():find("^BATTLE_PET_NAME_1") ~= nil)
+        bar.bulk:Click()
+        U.lastMenu:Find("Never"):Click()
+        assert.equal(0, set:GetPetWeight("a"))
+        assert.equal(0, set:GetPetWeight("b"))
+        bar.chips[1]:Click()                             -- removes the type filter
+        assert.is_false(bar:IsShown())
+        ns.UI.PetsTabState().show = "selected"
+        ns.UI.PetsTab:Rebuild()
+        assert.is_true(bar:IsShown())
+        assert.is_false(bar.bulk:IsShown(), "nothing to weigh when no pet is shown")
+        bar.clear:Click()
+        assert.equal("all", ns.UI.PetsTabState().show)
+        assert.is_false(bar:IsShown())
     end)
 
     it("set settings hold the default weight and the reset that left the main view", function()
@@ -754,8 +838,7 @@ describe("UI smoke", function()
         local panel = ns.UI.Preview:GetPanel()
         assert.is_true(panel._points.TOPRIGHT.rel == page, "preview anchored to the page edge")
         assert.is_nil(page.count._points.BOTTOMRIGHT)
-        assert.is_true(page.count._points.RIGHT.rel == page, "count ends at the page edge")
-        assert.is_true(page.count._points.LEFT.rel ~= page.rulesBar, "count is not on the rules lines")
+        assert.is_true(page.count._points.RIGHT.rel == page.toolbar, "count at the right end of the toolbar")
     end)
     it("the About page scrolls and every line is on its scrolled body", function()
         ns.UI.Settings:RegisterAbout({})
@@ -973,27 +1056,25 @@ describe("UI smoke", function()
         ns.Sets:Create("Taken")
         ns.UI.Main:Show()
         ns.UI.SetList._newButton:Click()
-        U.lastMenu:Find("Empty set"):Click()
         local box = ns.UI.SetList._nameBox
         box.edit:SetText("Taken")
         box.create:Click()                                  -- PlaySound(nil) would raise here
         assert.is_true(box:IsShown())
     end)
-    it("+ New asks: empty set or from a recipe", function()
+    it("+ New opens one box: a name for an empty set, or a template", function()
         ns.UI.Main:Show()
         ns.UI.SetList._newButton:Click()
-        local root = U.lastMenu
-        root:Find("Empty set"):Click()
         local box = ns.UI.SetList._nameBox
         assert.is_true(box:IsShown())
+        assert.equal(ns.UI.SetList._newButton, box._points.BOTTOMLEFT.rel, "above + New")
         box.edit:SetText("Fishing")
         box.create:Click()
         assert.is_false(box:IsShown())
         assert.is_not_nil(ns.Sets:Get("Fishing"))
         assert.equal("when", ns.UI.Main:GetSelectedTab())
         ns.UI.SetList._newButton:Click()
-        root = U.lastMenu
-        root:Find("From a template"):Click()
+        box.template:Click()
+        assert.is_false(box:IsShown())
         assert.is_true(ns.UI.RecipeGallery:IsShown())
         ns.UI.Main:SelectSet("$Default")
         assert.is_false(ns.UI.RecipeGallery:IsShown())
@@ -1033,20 +1114,6 @@ describe("UI smoke", function()
         ns.UI.Main:SelectSet("$Default")
         ns.UI.SetHeader:Refresh()
         assert.equal("Standing by", ns.UI.Main:GetFrame().header.status:GetText())
-    end)
-    it("+ New opens its menu above the button, not at the cursor", function()
-        ns.UI.Main:Show()
-        local opened
-        local G = _G
-        G.MenuVariants = { GetDefaultContextMenuMixin = function() return {} end }
-        G.AnchorUtil = { CreateAnchor = function(point, rel, relPoint) return { point = point, rel = rel, relPoint = relPoint } end }
-        G.Menu = { GetManager = function() return { OpenMenu = function(_, owner, root, anchor) opened = { owner = owner, root = root, anchor = anchor } end } end }
-        G.MenuUtil.CreateRootMenuDescription = function() return U.newMenu() end
-        ns.UI.SetList._newButton:Click()
-        G.Menu, G.MenuVariants, G.AnchorUtil, G.MenuUtil.CreateRootMenuDescription = nil, nil, nil, nil
-        assert.equal(ns.UI.SetList._newButton, opened.anchor.rel)
-        assert.equal("BOTTOMLEFT", opened.anchor.point)
-        assert.is_not_nil(opened.root:Find("From a template"))
     end)
     it("a pet in the set through a rule has a lit tick that cannot be ticked off", function()
         W.world.pets.b = { species = 2, name = "B" }
@@ -1113,10 +1180,12 @@ describe("UI smoke", function()
         W.advance(1)
         ns.UI.SetList:Refresh()
         local SlotFor = ns.UI.SetList.SlotFor
-        assert.equal(1, SlotFor(-30, 2))                    -- held above the list
-        assert.equal(1, SlotFor(10, 2))
-        assert.equal(2, SlotFor(40, 2))                     -- past half a card: next place
-        assert.equal(2, SlotFor(999, 2))                    -- never below the last place
+        local tops = { 0, 46 }                              -- where the card starts in each place
+        assert.equal(1, SlotFor(-30, tops))                 -- held above the list
+        assert.equal(1, SlotFor(10, tops))
+        assert.equal(2, SlotFor(40, tops))                  -- past half a card: next place
+        assert.equal(2, SlotFor(999, tops))                 -- never below the last place
+        assert.equal(2, SlotFor(70, { 0, 60, 120 }), "a taller card above moves the places down")
         -- pick up B (first) and carry it one card down: the cursor moves 46 px
         local rowB
         for _, r in ipairs(ns.UI.SetList._rows) do if r:IsShown() and r.set == b then rowB = r end end
@@ -1214,7 +1283,7 @@ describe("UI smoke", function()
         SlashCmdList.PETCALL("model")
         assert.is_true(#W.world.printed - before >= 3)
     end)
-    it("a set that picks only by rules names them in the header, the rules bar and its settings", function()
+    it("a set that picks only by rules names them in the header, the Rules menu and its settings", function()
         local set = ns.Recipes.Create({ key = "t", title = "Finds", hint = "", conditions = { { "specialLocation", locs = { "city" } } },
             rules = { { "source", 1, text = "Trading Post" } } })
         ns.UI.Main:Show()
@@ -1222,14 +1291,17 @@ describe("UI smoke", function()
         ns.UI.Main:SelectTab("pets")
         W.advance(1)
         assert.is_true(ns.UI.SetHeader.Summary(set):find("chosen by rules: Source: Trading Post") ~= nil, ns.UI.SetHeader.Summary(set))
-        assert.equal("Pets from rules:", ns.UI.PetsTabRulesBar.label:GetText())
+        ns.UI.PetsTabPage.rulesBtn:Click()
+        assert.equal("Pets from rules", U.lastMenu.items[1].text)
         ns.UI.Main:SelectTab("settings")
         local page = ns.UI.SetSettingsPage
         assert.equal("Source: Trading Post", page.rules:GetText())
         page.editRules:Click()
         assert.equal("pets", ns.UI.Main:GetSelectedTab())
         ns.UI.Main:SelectSet("$Default")
-        assert.equal("More chance for:", ns.UI.PetsTabRulesBar.label:GetText())
+        ns.UI.Main:SelectTab("pets")
+        ns.UI.PetsTabPage.rulesBtn:Click()
+        assert.equal("More chance for", U.lastMenu.items[1].text)
     end)
     it("a resize while the window is still being built is not passed on", function()
         local n, ready = 0, false
@@ -1477,7 +1549,7 @@ describe("UI smoke", function()
         ns.PetCache:Rescan()
         local set = ns.Sets:Get("$Default")
         assert.equal(0, set:GetAutoWeight("a"))
-        ns.AutoRules.AddChip(set.settings.filter, "favorites", 8)
+        table.insert(set.settings.filter, { "favorites", 8 })
         set:FiltersChanged()
         assert.equal(8, set:GetAutoWeight("a"))
         local inSet, leftOut = ns.UI.SetHeader.Counts(set)
@@ -1525,30 +1597,6 @@ describe("UI smoke", function()
         ns.UI.Main:SelectTab("when")
         assert.equal(before, #U.created)
         assert.equal(0, shown("UICheckButtonTemplate"))
-    end)
-    it("opening the rule editor again reuses its frames", function()
-        ns.UI.Main:Show()
-        ns.UI.Main:SelectTab("pets")
-        local set = ns.Sets:Get("$Default")
-        set.settings.filter = { { "favorites", 8 }, { "rare", 8 } }
-        ns.AutoRules.AddCriterion(set.settings.filter, 1, "level")
-        ns.AutoRules.AddCriterion(set.settings.filter, 1, "source")
-        ns.AutoRules.AddCriterion(set.settings.filter, 1, "petType")
-        ns.UI.AutoRulesBar:Refresh(set)
-        local chips = ns.UI.AutoRulesBar._chips
-        chips[1]:Click()
-        chips[2]:Click()
-        local before = #U.created
-        for _ = 1, 3 do chips[1]:Click() chips[2]:Click() end
-        assert.equal(before, #U.created, "no new frames for the same rules")
-        -- the small rule shows only its own controls
-        local editor = ns.UI.AutoRulesBar.GetEditor()
-        local boxes = 0
-        for _, f in ipairs(U.created) do
-            if f.poolKind and f._type == "EditBox" and f:IsVisible() then boxes = boxes + 1 end
-        end
-        assert.equal(0, boxes)
-        assert.is_true(editor:IsShown())
     end)
     it("the recipe gallery counts each recipe's pets once until the pets change", function()
         ns.UI.Main:Show()
@@ -1646,7 +1694,8 @@ describe("UI smoke", function()
         place(f.content, 304, 656, 688, 418)
         place(f.status, 108, 228, 860, 22)
         for i, b in ipairs(ns.UI.Main:GetTabButtons()) do place(b, 304 + (i - 1) * 80, 682, 78, 24) end
-        place(ns.UI.PetsTabRulesBar, 300, 626, 690, 24)
+        place(ns.UI.PetsTabPage.toolbar, 310, 652, 680, 24)
+        place(ns.UI.PetsTabPage.rulesBtn, 640, 651, 80, 22)
         place(ns.UI.PetsTabPage.grid, 306, 596, 440, 360)
         place(ns.UI.Preview:GetPanel(), 750, 596, 240, 360)
         local function keys()
