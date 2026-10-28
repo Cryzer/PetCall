@@ -187,9 +187,11 @@ function ns.UI.NewModelViewer(parent, opts)
     -- its shape comes the same twice in a row. A model that does not load in time shows
     -- unfitted.
     function v:FitPending()
-        local seen = shape(self.actor)
-        if not self.sizeSaid and seen and seen == self.lastShape then self:Settle() end
-        self.lastShape = seen
+        if not self.sizeSaid then
+            local seen = shape(self.actor)
+            if seen and seen == self.lastShape then self:Settle() end
+            self.lastShape = seen
+        end
         if self.fitUntil and GetTime() > self.fitUntil then self:Reveal("shown unfitted") end
     end
     function v:Reveal(what)

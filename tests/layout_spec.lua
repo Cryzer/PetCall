@@ -198,6 +198,26 @@ describe("Layout", function()
         assert.same({}, Layout.Check(U, panel))
     end)
 
+    it("a rebuild of the pet grid measures only tile text it has not measured before", function()
+        local ns, U = Layout.load()
+        U.W.world.pets = {}
+        for i = 1, 30 do U.W.world.pets["m" .. i] = { species = 100 + i, name = "M" .. i } end
+        local setText, names = U.Universal.SetText, 0
+        U.Universal.SetText = function(self, t)
+            if type(t) == "string" and t:match("^M%d+$") then names = names + 1 end
+            return setText(self, t)
+        end
+        U.W.login()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        local first = names
+        names = 0
+        ns.UI.PetsTab:Rebuild()
+        U.Universal.SetText = setText
+        assert.is_true(first > 0)
+        assert.equal(30, names, "only the 30 tiles set their names: none is measured again")
+    end)
+
     it("the preview model stays put whatever the text under it; a long source shows whole", function()
         local ns, U = Layout.load({ pseudo = true })
         U.W.world.pets = { a = { species = 1, name = "A" }, b = { species = 2, name = "B" }, c = { species = 3, name = "C" } }

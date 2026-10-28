@@ -178,7 +178,8 @@ end
 local BADGE_COLORS = { never = { 0.6, 0.6, 0.6 }, manual = { 0.4, 1, 0.4 }, auto = { 0.4, 0.8, 1 } }
 -- "manual" badges follow the EllesmereUI accent when it is present
 local function refreshAccent() if ns.Skin:IsActive() then BADGE_COLORS.manual = { ns.Skin:Accent() } end end
-ns.Skin:OnLooksChanged(function() refreshAccent() Tab:Rebuild() end)
+local measured = {}
+ns.Skin:OnLooksChanged(function() measured = {} refreshAccent() Tab:Rebuild() end)    -- the font may change too
 
 -- second line: what kind of pet, and how often it is drawn when that is not "Normal"
 local function subText(petID, info)
@@ -210,17 +211,33 @@ local function nameWidth() return tileW - 4 - NAME_X - CHECK_ROOM end
 local function subWidth() return tileW - 4 - NAME_X - 6 end
 local function textHeight(fs) return math.ceil(tonumber(fs:GetStringHeight()) or 0) end
 
+-- the height a text takes at a width, measured once: most tiles share the line under the
+-- name, and names stay the same from one rebuild to the next
+local function measuredHeight(which, text, width)
+    local m = measured[which]
+    if not m or m.width ~= width then
+        m = { width = width, heights = {} }
+        measured[which] = m
+    end
+    local h = m.heights[text]
+    if not h then
+        local fs = measure[which]
+        fs:SetWidth(width)
+        fs:SetText(text)
+        h = textHeight(fs)
+        m.heights[text] = h
+    end
+    return h
+end
+
 -- how tall a pet's tile needs to be for its name and the line under it
 local function tileHeight(petID)
     if heights[petID] then return heights[petID] end
     local h = TILE_H - 4
     local info = ns.PetCache:GetInfo(petID)
     if info then
-        measure.name:SetWidth(nameWidth())
-        measure.name:SetText(displayName(info))
-        measure.sub:SetWidth(subWidth())
-        measure.sub:SetText(subText(petID, info))
-        h = math.max(h, 2 * TILE_PAD + textHeight(measure.name) + 2 + textHeight(measure.sub))
+        h = math.max(h, 2 * TILE_PAD + measuredHeight("name", displayName(info), nameWidth()) + 2
+            + measuredHeight("sub", subText(petID, info), subWidth()))
     end
     heights[petID] = h
     return h
