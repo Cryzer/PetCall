@@ -109,7 +109,6 @@ function SetMixin:IsPaused()
     return false
 end
 
-function SetMixin:SetPriority(w) if not self:IsDefault() then self.settings.priority = w changed(self) end end
 function SetMixin:SetImmediate(v) self.settings.immediate = v and true or nil changed(self) end
 
 -- what happens when the set starts being used: "keep" the pet that is out, a new pet
@@ -188,10 +187,6 @@ end
 function SetMixin:Unavailable(petID)
     if ns.PetCache:OnCooldown(petID) then return L["On cooldown"] end
     if not C_PetJournal.PetIsSummonable(petID) then return L["Cannot be summoned"] end
-end
-
-function SetMixin:GetChance(petID)
-    return ns.Weights.Chance(self:GetWeightTable(), petID), self:Unavailable(petID)
 end
 
 -- tickets per tile (copies add up on their primary) and the tile that has the most,
@@ -287,7 +282,7 @@ end
 
 -- A set object outlives its data when it is deleted or the profile changes; its
 -- mutators must not touch the (new) profile's tables or revive its freed watcher.
-for _, method in ipairs({ "Rename", "Delete", "SetEnabled", "Pause", "Resume", "SetPriority", "SetImmediate", "SetDefaultWeight",
+for _, method in ipairs({ "Rename", "Delete", "SetEnabled", "Pause", "Resume", "SetImmediate", "SetDefaultWeight",
     "SetOnActivate", "SetNoPet", "SetSwitchMinutes", "SetAnnounce",
     "SetPetWeight", "SetPetWeights", "ClearPetWeights", "FiltersChanged", "SetConditionModel", "ConditionsChanged",
     "ApplyTemplate" }) do

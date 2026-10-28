@@ -1,6 +1,6 @@
 local _, ns = ...
 
-local pairs, type, next, sort = pairs, type, next, table.sort
+local pairs, type, sort = pairs, type, table.sort
 
 local DB = {}
 ns.DB, ns.Profiles = DB, DB

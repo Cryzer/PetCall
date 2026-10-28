@@ -1,9 +1,8 @@
 local _, ns = ...
 
-local L = ns.L
 local GetItemCount, GetItemInfo, IsEquippedItem = C_Item.GetItemCount, C_Item.GetItemInfo, C_Item.IsEquippedItem
-local GetZoneText, ipairs, pairs, tonumber, strsub, setmetatable, rawset, sort =
-    GetZoneText, ipairs, pairs, tonumber, strsub, setmetatable, rawset, table.sort
+local GetZoneText, ipairs, pairs, tonumber, setmetatable, rawset, sort =
+    GetZoneText, ipairs, pairs, tonumber, setmetatable, rawset, table.sort
 
 local SI = ns:NewModule("SpecialItems")
 ns.SpecialItems = SI

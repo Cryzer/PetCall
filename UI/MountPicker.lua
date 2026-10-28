@@ -304,7 +304,6 @@ end
 
 function Picker:Close() if win then win:Hide() end end
 function Picker:IsShown() return win ~= nil and win:IsShown() end
-function Picker:GetEntry() return entry end
 function Picker:GetPreviewed() return current end
 
 -- the When tab drew its conditions again: close unless ours is still among them

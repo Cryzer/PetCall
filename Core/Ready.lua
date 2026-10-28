@@ -5,7 +5,7 @@ local GetTime, HasFullControl, InCombatLockdown, IsFalling, IsFlying, IsInInstan
     UnitCastingInfo, UnitChannelInfo, UnitIsDeadOrGhost, UnitInVehicle, IsMounted, UnitIsAFK =
     GetTime, HasFullControl, InCombatLockdown, IsFalling, IsFlying, IsInInstance, IsResting, IsStealthed,
     UnitCastingInfo, UnitChannelInfo, UnitIsDeadOrGhost, UnitInVehicle, IsMounted, UnitIsAFK
-local pairs, ipairs, next, sort, tconcat, tinsert = pairs, ipairs, next, table.sort, table.concat, table.insert
+local pairs, ipairs, next, sort, tconcat = pairs, ipairs, next, table.sort, table.concat
 
 local Ready = ns:NewModule("Ready")
 ns.Ready = Ready

@@ -5,7 +5,7 @@ ns.name = ADDON
 local tocVersion = C_AddOns.GetAddOnMetadata(ADDON, "Version")
 ns.version = (tocVersion and not tocVersion:find("@")) and tocVersion or "dev"
 
-local pairs, ipairs, type, select, tostring = pairs, ipairs, type, select, tostring
+local pairs, ipairs, type, tostring = pairs, ipairs, type, tostring
 
 --
 -- Events

@@ -77,7 +77,6 @@ describe("Conditions", function()
         assert.is_false(eval({ "zone", zoneName = "Stormwind City", negate = true }))
         assert.is_true(eval({ "OR", items = { { "zone", zoneName = "X" }, { "specialLocation", loc = "city" } } }))
         assert.is_false(eval({ "AND", items = { { "zone", zoneName = "X" }, { "specialLocation", loc = "city" } } }))
-        assert.is_true(C.EvalList({}, C.Context()))
     end)
 
     it("luacode returns the function result, runs setup once, disabled when imported", function()
@@ -140,7 +139,9 @@ describe("Conditions", function()
                 if name ~= "$Default" then
                     local list = deepcopy(F.db.profiles.Default.sets[name].trigger or {})
                     ns2.Conditions.Normalize(list)
-                    assert.equal(ref.value, ns2.Conditions.EvalList(list, ns2.Conditions.Context()), "world " .. wi .. " set " .. name)
+                    local value, ctx = true, ns2.Conditions.Context()
+                    for _, e in ipairs(list) do value = value and ns2.Conditions.Eval(e, ctx) end
+                    assert.equal(ref.value, value, "world " .. wi .. " set " .. name)
                 end
             end
         end

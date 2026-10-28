@@ -1,7 +1,7 @@
 local _, ns = ...
 
 local L = ns.L
-local type, pairs, ipairs, tostring = type, pairs, ipairs, tostring
+local type, pairs, ipairs = type, pairs, ipairs
 
 local Share = {}
 ns.Share = Share

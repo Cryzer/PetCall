@@ -151,8 +151,6 @@ function Help:Toggle()
     if self:IsShown() then self:Hide(true) else self:Show() end
 end
 
-function Help.GetButton() return button end
-
 function Help:IsPickerShown() return available() and HelpPlate.IsShowingHelpInfo(pickerPlate) end
 
 function Help:TogglePicker(win)

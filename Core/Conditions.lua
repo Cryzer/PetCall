@@ -143,13 +143,6 @@ function C.Eval(e, ctx)
     return result, reason
 end
 
-function C.EvalList(list, ctx)
-    for _, e in ipairs(list or {}) do
-        if not C.Eval(e, ctx) then return false end
-    end
-    return true
-end
-
 function C.Describe(e)
     local text
     if isNode(e) then
