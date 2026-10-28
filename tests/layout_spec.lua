@@ -154,6 +154,37 @@ describe("Layout", function()
         assert.same({}, Layout.Check(U, ns.UI.RecipeGallery:GetFrame()))
     end)
 
+    it("set settings rows stack by what they hold, and labels and controls share a column", function()
+        local ns, U = Layout.load({ pseudo = true })
+        U.W.login()
+        local set = ns.Sets:Create("Town")
+        set.settings.filter = { { "favorites", 64 }, { "petType", 8, petTypes = { 7 } } }
+        set:FiltersChanged()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Town")
+        ns.UI.Main:SelectTab("settings")
+        Layout.SetWindowSize(ns, U, 640, 440)
+        local page = ns.UI.SetSettingsPage
+        local placed = 0
+        for _, sec in ipairs(page.sections) do
+            if sec:IsShown() then
+                local above
+                for _, row in ipairs(sec.rows) do
+                    local r = Layout.Rect(row.box)
+                    assert.is_not_nil(r, "every row is placed")
+                    placed = placed + 1
+                    local bottom = r.b
+                    if row.help then bottom = math.min(bottom, Layout.Rect(row.help).b) end
+                    if row.label then bottom = math.min(bottom, Layout.Rect(row.label).b) end
+                    if above then assert.is_true(r.t <= above, "a row starts below the one before") end
+                    above = bottom
+                end
+            end
+        end
+        assert.is_true(placed >= 10, "rows placed: " .. placed)
+        assert.same({}, Layout.Check(U, page))
+    end)
+
     it("the How often scale and its name fit in a longer language", function()
         local ns, U = Layout.load({ pseudo = true })
         U.W.world.pets = { a = { species = 1, name = "A" } }

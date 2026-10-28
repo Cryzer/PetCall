@@ -65,6 +65,16 @@ Screens.list = {
         ns.UI.Main:SelectSet("$Default")
         ns.UI.Main:SelectTab("settings")
     end },
+    { name = "Set settings of a paused set with rules", open = function(ns)
+        local town = ns.Sets:Create("Town and capital cities")
+        town:ApplyTemplate("city")
+        town.settings.filter = { { "favorites", 64 }, { "petType", 8, petTypes = { 7 } } }
+        town:FiltersChanged()
+        town:Pause("hour")
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Town and capital cities")
+        ns.UI.Main:SelectTab("settings")
+    end },
     { name = "New set", open = function(ns)
         pets(ns)
         ns.UI.SetList._newButton:Click()

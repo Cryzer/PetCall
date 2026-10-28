@@ -50,8 +50,21 @@ function Layout.TextSize(text, font, width, wrap)
     local w, lines = measure(text, font)
     if wrap ~= false and width and width > 0 and w > width then
         lines = 0
+        -- lines break between words, as the game's do, so a line is often not full
+        local space = GLYPH[kind]
         for line in (tostring(text or ""):gsub("|n", "\n") .. "\n"):gmatch("(.-)\n") do
-            lines = lines + math.max(1, math.ceil(measure(line, font) / width))
+            local n, used = 1, 0
+            for word in line:gmatch("%S+") do
+                local ww = measure(word, font)
+                if used > 0 and used + space + ww > width then
+                    n, used = n + 1, 0
+                end
+                while ww > width do                 -- a word longer than the line breaks inside
+                    n, ww = n + 1, ww - width
+                end
+                used = used + (used > 0 and space or 0) + ww
+            end
+            lines = lines + n
         end
         w = width
     end
@@ -182,6 +195,11 @@ local function install(U)
     function Universal:SetWordWrap(v) self._wrap = v and true or false end
     function Universal:SetFrameStrata(s) self._strata = s end
     function Universal:SetClipsChildren(v) self._clips = v and true or false end
+    -- a scroll frame shows its child from the top left, and cuts off what scrolls past it
+    function Universal:SetScrollChild(child)
+        child._points = { TOPLEFT = { rel = self, relPoint = "TOPLEFT", x = 0, y = 0 } }
+        self._clips = true
+    end
     function Universal:CreateFontString(_, _, font) return newFontString(U, self, font) end
     function Universal:SetText(t)
         self._text = t
@@ -389,7 +407,10 @@ function Layout.Check(U, root)
         -- over its edge on purpose
         local exempt = rawget(f, "_scrollRow") or isPopup(f)
             or (not text and rawget(parent, "_template") == "ButtonFrameTemplate")
-        if pr and not exempt and (r.l < pr.l - SLACK or r.r > pr.r + SLACK or r.b < pr.b - SLACK or r.t > pr.t + SLACK) then
+        -- what a scroll frame holds may run past its bottom: it scrolls into view
+        local scrolls = parent and rawget(parent, "_clips")
+        local outV = pr and not scrolls and (r.b < pr.b - SLACK or r.t > pr.t + SLACK)
+        if pr and not exempt and (r.l < pr.l - SLACK or r.r > pr.r + SLACK or outV) then
             if isFontString(f) and text and (r.l < pr.l - SLACK or r.r > pr.r + SLACK) then
                 -- a centred label wider than its control: say how much room it needs
                 add(describe(f) .. " needs " .. fmt(r.r - r.l) .. " px, " .. describe(parent) .. " has " .. fmt(pr.r - pr.l))

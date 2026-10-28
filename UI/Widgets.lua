@@ -18,6 +18,8 @@ function Widgets.Dot(kind) return "|T" .. DOTS[kind] .. ":12:12|t" end
 -- Layout follows the text, in every language: controls take the width their text needs
 -- and rows of controls continue on the next line instead of running out of the window.
 local BUTTON_MIN_W, BUTTON_PAD = 64, 12
+-- a dropdown's text sits between its left inset and the arrow
+local DROPDOWN_PAD = 48
 
 -- the width a font string's text needs on one line, whatever width it was given
 function Widgets.TextWidth(fs)
@@ -358,6 +360,19 @@ function Widgets.Dropdown(parent, width, buildMenu)
     return dd
 end
 
+-- widens a dropdown to its longest text (its choices, or the text it shows without one);
+-- never narrower than width
+local ddMeasure
+function Widgets.FitDropdown(dd, labels, width)
+    ddMeasure = ddMeasure or UIParent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local w = width or 0
+    for _, text in ipairs(labels) do
+        ddMeasure:SetText(text)
+        w = math.max(w, Widgets.TextWidth(ddMeasure) + DROPDOWN_PAD)
+    end
+    dd:SetWidth(math.ceil(w))
+end
+
 function Widgets.Search(parent, onChanged)
     local eb = CreateFrame("EditBox", nil, parent, "SearchBoxTemplate")
     eb:SetHeight(20)
@@ -457,7 +472,10 @@ function Widgets.NewPool()
         local dd = self:Take(defaultText and "textDropdown" or "dropdown", parent, function() return Widgets.Dropdown(parent, width, noop) end)
         dd:SetWidth(width)
         dd:SetupMenu(buildMenu)
-        if defaultText then dd:SetDefaultText(defaultText) end
+        if defaultText then
+            dd:SetDefaultText(defaultText)
+            Widgets.FitDropdown(dd, { defaultText }, width)
+        end
         return dd
     end
 
