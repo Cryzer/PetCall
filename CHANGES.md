@@ -27,10 +27,14 @@
 ### Fixed
 
 - Only Summon After Zoning now also counts walking into a new zone, as its description says, not only loading screens. Before, walking from Elwynn Forest into Westfall left you without a pet, even with Auto Switch when changing maps on.
-- No text is cut short any more, in any language: tabs fit their labels, and the set header, set cards, pet tiles, template cards, the Out now card and the status bar wrap long text and grow to hold it.
+- No text is cut short any more, in any language: tabs fit their labels, and the set header, set cards, pet tiles, template cards, the Out now card, the status bar and the hint in the mount preview wrap long text and grow to hold it.
 - + New and Import sit right under the set list, with Out now below them. + New opens one box for a name or a template.
 - The + New box, import and export stand out from the window on the dark looks.
 - The pet in the preview stays in one place as you go from pet to pet, however many lines of text are under it.
+
+### Translations
+
+- Every text is translated into all ten languages: German, Spanish (both), French, Italian, Korean, Portuguese, Russian and Chinese (both). That includes the options from PetCall 1.x that never were, and the help now matches the window as it is.
 
 ### For translators
 
