@@ -773,7 +773,7 @@ function Tab:RefreshFilterBar(shown, all)
             if byHand > 0 then count = count .. " · " .. format(L["%d by hand"], byHand) end
             bar.ruleCount:SetText(count)
         else
-            bar.bulk:SetText(format(L["Set weight for %d shown"], shown))
+            bar.bulk:SetText(format(L["How often for %d shown"], shown))
             ns.Widgets.FitButton(bar.bulk)
         end
     end

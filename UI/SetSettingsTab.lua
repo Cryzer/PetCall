@@ -158,7 +158,7 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     -- which pets and how often, for pets nobody set by hand
     local pets = section(L["Pets"])
     page.petsSection = pets
-    local dwLabel = ns.Widgets.Label(pets, L["Pets you haven't set by hand:"])
+    local dwLabel = ns.Widgets.Label(pets, L["Other pets:"])
     dwLabel:SetPoint("TOPLEFT", pets.rule, "BOTTOMLEFT", 0, -14)
     page.dwLabel = dwLabel
     page.defaultWeight = ns.Widgets.Dropdown(pets, 180, function(owner, root)
@@ -168,10 +168,10 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
         end
     end)
     page.defaultWeight:SetPoint("LEFT", dwLabel, "LEFT", LABEL_COL, 0)
-    local dwHelp = help(pets, L["New pets you collect get this too. \"Never\" means only the pets you tick are used."])
+    local dwHelp = help(pets, L["Pets no rule picks and you have not set by hand, new pets you collect included. \"Never\" means only the pets you tick or a rule picks are used."])
     dwHelp:SetPoint("TOPLEFT", page.defaultWeight, "BOTTOMLEFT", 0, -4)
-    page.reset = ns.Widgets.Button(pets, L["Reset all weights"], function()
-        StaticPopup_Show("PETCALL_CONFIRM", L["Reset all pet weights in this set?"], nil,
+    page.reset = ns.Widgets.Button(pets, L["Undo all by hand"], function()
+        StaticPopup_Show("PETCALL_CONFIRM", L["Give every pet you set by hand back to the rules and to Other pets?"], nil,
             { onAccept = function() set:ClearPetWeights() end })
     end)
     -- the pet rules live on the Pets tab; say what they are and lead there
@@ -221,7 +221,7 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     end)
     page.delete:SetPoint("TOPLEFT", d.rule, "BOTTOMLEFT", -2, -10)
     page.delete:GetFontString():SetTextColor(1, 0.35, 0.3)
-    local delHelp = help(d, L["Removes the set with its conditions and weights."])
+    local delHelp = help(d, L["Removes the set with its conditions, rules and pets."])
     delHelp:SetPoint("LEFT", page.delete, "RIGHT", 10, 0)
     d:SetHeight(50)
     tinsert(page.sections, d)
