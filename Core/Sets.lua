@@ -144,15 +144,40 @@ function SetMixin:SetPetWeights(petIDs, w)
 end
 function SetMixin:ClearPetWeights() wipe(self.settings.pets) changed(self) end
 
--- the tickets the set's rules give a pet, worked out with the set's draw table
+-- the weight the set's strongest rule for a pet gives it, worked out with the draw table
 function SetMixin:GetAutoWeight(petID)
     return self:GetWeightTable().auto[petID] or 0
 end
 
+-- how often the pet comes out in this set and why: "hand", "rule" or "default"
+function SetMixin:GetLevel(petID)
+    return ns.Weights.Effective(self.settings, petID, self:GetWeightTable().auto[petID])
+end
+
+-- drop the pets' own setting: they come out as their rules or the set's default say
+function SetMixin:UseRule(petIDs)
+    for _, id in ipairs(petIDs) do self.settings.pets[id] = nil end
+    changed(self)
+end
+
 function SetMixin:FiltersChanged() changed(self) end
+
+-- Before 2.2 a pet's own weight and its rules' weights added up; now its own setting
+-- wins. An own setting that only repeated the set's default (ticking a pet stored
+-- Normal) would now shut its rules out, so those go, once per set.
+local function ownSettingsWin(settings)
+    if settings.ownWins then return end
+    local same = {}
+    for id, w in pairs(settings.pets) do
+        if w == ns.Weights.Effective({ pets = {}, defaultValue = settings.defaultValue }, id) then same[#same + 1] = id end
+    end
+    for _, id in ipairs(same) do settings.pets[id] = nil end
+    settings.ownWins = true
+end
 
 function SetMixin:GetWeightTable()
     if self.dirty or not self.weights then
+        ownSettingsWin(self.settings)
         self.weights = ns.Weights.Build(self.settings, self.weights)
         self.dirty = false
     end

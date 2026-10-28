@@ -18,14 +18,43 @@ describe("Weights", function()
         W.login()
         W.advance(1)
     end)
-    it("matches 1.0.x weight tables for every set", function()
+    local function sums(tbl)
+        local out = {}
+        for i = 1, #tbl, 2 do out[tbl[i + 1]] = (out[tbl[i + 1]] or 0) + tbl[i] end
+        return out
+    end
+    it("matches 1.0.x weight tables for every set without rules", function()
         for name, ref in pairs(REF[1].sets) do
-            local tbl = ns.Weights.Build(ns.db.profile.sets[name])
-            assert.equal(ref.total, tbl.total, name .. " total")
-            local sums = {}
-            for i = 1, #tbl, 2 do sums[tbl[i + 1]] = (sums[tbl[i + 1]] or 0) + tbl[i] end
-            assert.same(ref.weights, sums, name .. " weights")
+            local settings = ns.db.profile.sets[name]
+            if #(settings.filter or {}) == 0 then
+                local tbl = ns.Weights.Build(settings)
+                assert.equal(ref.total, tbl.total, name .. " total")
+                assert.same(ref.weights, sums(tbl), name .. " weights")
+            end
         end
+    end)
+    it("a pet's own setting wins over rules; without one the strongest rule decides", function()
+        -- 1.x added a pet's own weight and every rule's weight up; since 2.2 they do not
+        local d = ns.Weights.Build(ns.db.profile.sets["$Default"])
+        assert.same({ ["BattlePet-0-0001"] = 8,           -- its own Often, though the favorites rule says 64
+            ["BattlePet-0-0003"] = 0.125, ["BattlePet-0-0005"] = 1,
+            ["BattlePet-0-0007"] = 64 }, sums(d))       -- no own setting: the favorites rule
+        assert.equal(73.125, d.total)
+        local r = ns.Weights.Build(ns.db.profile.sets["RaidOrZone"])
+        assert.same({ ["BattlePet-0-0001"] = 8, ["BattlePet-0-0002"] = 8, ["BattlePet-0-0003"] = 8,
+            ["BattlePet-0-0005"] = 1, ["BattlePet-0-0007"] = 8 }, sums(r), "level 25 (1) and beast or favorite (8): the stronger")
+        assert.equal(8, r.auto["BattlePet-0-0001"])
+    end)
+    it("an own setting that only repeats the set's default leaves the rules to decide, once", function()
+        local set = ns.Sets:Get("$Default")
+        set.settings.ownWins = nil
+        set.settings.pets["BattlePet-0-0007"] = 1           -- ticked before 2.2: Normal, the default
+        set:FiltersChanged()
+        assert.equal(64, (set:GetLevel("BattlePet-0-0007")))
+        assert.is_nil(set.settings.pets["BattlePet-0-0007"])
+        assert.equal(8, set.settings.pets["BattlePet-0-0001"], "a real choice stays")
+        set:SetPetWeight("BattlePet-0-0007", 1)              -- chosen now: it wins
+        assert.equal(1, (set:GetLevel("BattlePet-0-0007")))
     end)
     it("picks proportionally and reports chance", function()
         local tbl = { 1, "a", 3, "b", total = 4 }

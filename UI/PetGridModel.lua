@@ -7,7 +7,7 @@ ns.PetGridModel = M
 -- a tile stands for all copies of a pet: it is selected when any copy can be drawn
 local function isSelected(set, id)
     for _, copy in ipairs(ns.PetCache:GetCopies(id)) do
-        if set:GetPetWeight(copy) > 0 or set:GetAutoWeight(copy) > 0 then return true end
+        if (set:GetLevel(copy)) > 0 then return true end
     end
     return false
 end
@@ -123,11 +123,11 @@ function M.Rows(ids, columns)
     return rows
 end
 
--- rules add their tickets whatever the weight says, so a pet a rule matches is never
--- "left out", even when its own weight is Never
+-- "never" when the pet does not come out, "auto" when a rule says how often, "manual"
+-- when its own setting or the set's default does
 function M.Badge(set, id)
-    local w = set:GetPetWeight(id)
-    if w > 0 then return ns.Weights.Short(w), "manual" end
-    if set:GetAutoWeight(id) > 0 then return ns.L["auto"], "auto" end
-    return ns.Weights.Short(0), "never"
+    local w, source = set:GetLevel(id)
+    if w <= 0 then return ns.Weights.Short(0), "never" end
+    if source == "rule" then return ns.L["auto"], "auto" end
+    return ns.Weights.Short(w), "manual"
 end

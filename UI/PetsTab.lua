@@ -33,8 +33,14 @@ local function weightMenu(owner, root, petID)
     if not info then return end
     root:CreateTitle(displayName(info))
     for _, lvl in ipairs(ns.Weights.LEVELS) do
-        root:CreateRadio(lvl.label, function() return ns.Weights.Nearest(set:GetPetWeight(petID)) == lvl.value end,
+        root:CreateRadio(lvl.label, function() return ns.Weights.Nearest((set:GetLevel(petID))) == lvl.value end,
             function() set:SetPetWeights(ns.PetCache:GetCopies(petID), lvl.value) end)
+    end
+    -- its own setting overrides a rule: offer the rule's level back
+    local _, source = set:GetLevel(petID)
+    if source == "hand" and set:GetAutoWeight(petID) > 0 then
+        root:CreateButton(format(L["Use the rule (%s)"], ns.Weights.Label(set:GetAutoWeight(petID))),
+            function() set:UseRule(ns.PetCache:GetCopies(petID)) end)
     end
     -- the rules that pick this pet, to open from here
     local divided = false
@@ -72,19 +78,20 @@ local function tile_OnClick(self, button)
     paintSelection()
 end
 
--- the checkbox includes the pet (all copies) at Normal or excludes it (Never); a pet
--- that is in only through a rule cannot be ticked off: the rule decides
+-- The checkbox leaves the pet (all copies) out, even when a rule picks it: its own
+-- setting wins. Ticking it again drops that setting, so the pet comes back as its rule
+-- or the set's default say, or at Normal when neither would take it.
 local function check_OnClick(self)
     local id = self:GetParent().petID
     if not id then return end
-    local _, kind = ns.PetGridModel.Badge(set, id)
-    if kind == "auto" then
-        UIErrorsFrame:AddMessage(L["A rule puts this pet in the set. Change the rule in the Rules menu to leave it out."], 1, 0.82, 0)
-        ns.Widgets.ErrorSound()
-        return
+    local copies = ns.PetCache:GetCopies(id)
+    local included = set:GetLevel(id) > 0
+    if included then
+        set:SetPetWeights(copies, ns.Weights.NEVER)
+    else
+        set:UseRule(copies)
+        if set:GetLevel(id) <= 0 then set:SetPetWeights(copies, ns.Weights.NORMAL) end
     end
-    local included = set:GetPetWeight(id) > 0
-    set:SetPetWeights(ns.PetCache:GetCopies(id), included and ns.Weights.NEVER or ns.Weights.NORMAL)
     PlaySound(included and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 end
 
@@ -155,7 +162,7 @@ local function createTile(parent)
     ns.Widgets.Tooltip(t.check, L["Include in this set"], function(self)
         local id = self:GetParent().petID
         if id and select(2, ns.PetGridModel.Badge(set, id)) == "auto" then
-            return L["In the set through a \"More chance for\" rule."]
+            return L["A rule puts this pet in the set. Untick it to leave this one out anyway."]
         end
         return L["Unchecked pets are never summoned by this set."]
     end)
@@ -176,11 +183,16 @@ ns.Skin:OnLooksChanged(function() refreshAccent() Tab:Rebuild() end)
 -- second line: what kind of pet, and how often it is drawn when that is not "Normal"
 local function subText(petID, info)
     local _, kind = ns.PetGridModel.Badge(set, petID)
-    local w = set:GetPetWeight(petID)
+    local w, source = set:GetLevel(petID)
+    local byHand = source == "hand" and (editing or set:GetAutoWeight(petID) > 0)
     local parts = { _G["BATTLE_PET_NAME_" .. (info.petType or 0)] or "" }
-    if editing then
+    if editing and not byHand then
         -- every pet shown is one the open rule picks: say what the rule gives it
-        parts[#parts + 1] = "|cff66ccff+ " .. ns.Weights.Label(editing.weight) .. "|r"
+        parts[#parts + 1] = "|cff66ccff" .. ns.Weights.Label(editing.weight) .. "|r"
+    elseif byHand then
+        -- its own setting wins over the rules that pick it
+        local label = w > 0 and ns.Weights.Label(w) or L["Left out"]
+        parts[#parts + 1] = "|cffffffff" .. label .. "|r |cff999999" .. L["by hand"] .. "|r"
     elseif kind == "never" then
         parts[#parts + 1] = "|cff999999" .. L["Left out"] .. "|r"
     elseif kind == "auto" then
@@ -241,7 +253,7 @@ local function setupTile(t, petID, height)
     t.name:ClearAllPoints()
     t.name:SetPoint("TOPLEFT", NAME_X, -math.max(TILE_PAD, math.floor((height - text) / 2)))
     local _, kind = ns.PetGridModel.Badge(set, petID)
-    local included = set:GetPetWeight(petID) > 0 or kind == "auto"
+    local included = set:GetLevel(petID) > 0
     -- hundreds of identical bright ticks are noise: quiet until the tile is hovered;
     -- pets that are in through a rule get the rule colour
     t.check.tex:SetDesaturated(not included)
@@ -561,7 +573,7 @@ local PENCIL = "|TInterface\\Buttons\\UI-GuildButton-PublicNote-Up:14:14|t "
 -- (from older versions) can be read and deleted. Last: a new rule from the filters on now.
 local function rulesMenu(owner, root)
     local list = rulesOf(set)
-    root:CreateTitle(ns.UI.SetHeader.RulesOnly(set) and L["Pets from rules"] or L["More chance for"])
+    root:CreateTitle(ns.UI.SetHeader.RulesOnly(set) and L["Pets from rules"] or L["Rules"])
     if #list > 0 then root:CreateTitle(L["Pick a rule to change it."]) end
     for i, e in ipairs(list) do
         local f = ns.AutoRules.ToFilters(e)
@@ -754,7 +766,12 @@ function Tab:RefreshFilterBar(shown, all)
             bar.weight:SetDefaultText(ns.Weights.Label(editing.weight))
             if bar.weight.GenerateMenu then bar.weight:GenerateMenu() end
             ns.Widgets.FitButton(bar.weight, 24)
-            bar.ruleCount:SetText(ns.Widgets.PetCount(shown))
+            -- the rule's pets, and how many of them keep their own setting instead
+            local byHand = 0
+            for _, id in ipairs(shownIDs) do if set:HasManualWeight(id) then byHand = byHand + 1 end end
+            local count = ns.Widgets.PetCount(shown)
+            if byHand > 0 then count = count .. " · " .. format(L["%d by hand"], byHand) end
+            bar.ruleCount:SetText(count)
         else
             bar.bulk:SetText(format(L["Set weight for %d shown"], shown))
             ns.Widgets.FitButton(bar.bulk)
@@ -797,7 +814,7 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     ns.Skin:Apply("Dropdown", filterBtn)
     page.filterBtn = filterBtn
     page.rulesBtn = ns.Widgets.Button(page, L["Rules"], function(self) MenuUtil.CreateContextMenu(self, rulesMenu) end)
-    ns.Widgets.Tooltip(page.rulesBtn, L["Rules"], L["Rules give whole groups of pets more chance, including pets you collect later. Filter the list and Make a rule, or pick a rule here to change it."])
+    ns.Widgets.Tooltip(page.rulesBtn, L["Rules"], L["Rules say how often whole groups of pets come out, including pets you collect later. Filter the list and Make a rule, or pick a rule here to change it."])
 
     page.filterBar = CreateFrame("Frame", nil, page)
     local bar = page.filterBar
@@ -825,7 +842,7 @@ ns.UI.Main:RegisterTab("pets", L["Pets"], function(p)
     end)
     bar.bulk = small("", function(self) MenuUtil.CreateContextMenu(self, function(_, root) weightLevelsMenu(root) end) end)
     bar.makeRule = small(L["Make a rule"], function() startEditing(nil, state.filters, newRuleWeight()) end)
-    ns.Widgets.Tooltip(bar.makeRule, L["Make a rule"], L["Gives these pets more chance from now on, including pets you collect later that match."])
+    ns.Widgets.Tooltip(bar.makeRule, L["Make a rule"], L["These pets come out as often as you pick, from now on, including pets you collect later that match."])
     bar.petsWord = ns.Widgets.Label(bar, L["pets"], "GameFontDisable")
     bar.addCondition = small(L["+ Condition"], function(self)
         MenuUtil.CreateContextMenu(self, function(_, root) conditionItems(root, true) end)

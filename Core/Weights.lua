@@ -47,8 +47,18 @@ function Weights.PetWeight(settings, petID)
     return settings.defaultValue or 0
 end
 
--- out.auto: petID -> the tickets its rules would give it (summonable or not), so the UI
--- can tell "in through a rule" without judging every pet against the rules again
+-- How often a pet comes out, and why: its own setting wins ("hand"); a pet without one
+-- comes out as often as the strongest rule that picks it ("rule"), else at the set's
+-- default ("default"). ruleW is the strongest rule's weight, or nil.
+function Weights.Effective(settings, petID, ruleW)
+    local own = rawget(settings.pets, petID)
+    if own ~= nil then return own, "hand" end
+    if ruleW then return ruleW, "rule" end
+    return Weights.PetWeight(settings, petID), "default"
+end
+
+-- out.auto: petID -> the weight its strongest rule gives it (summonable or not, whatever
+-- its own setting), so the UI can tell "through a rule" without judging every pet again
 function Weights.Build(settings, out)
     out = out or {}
     local auto = out.auto
@@ -61,22 +71,17 @@ function Weights.Build(settings, out)
         -- a pet the game will not summon gets no tickets from anywhere: drawing it would
         -- summon nothing (1.x let rules give it tickets)
         local summonable = C_PetJournal.PetIsSummonable(petID)
-        local value = Weights.PetWeight(settings, petID)
-        if value > 0 and summonable then
-            out[#out + 1], out[#out + 2] = value, petID
-            out.total = out.total + value
-        end
         if hasFilters then
             for _, entry in ipairs(filters) do
                 if ns.AutoRules.Match(entry, petID) then
-                    local w = ns.AutoRules.Weight(entry)
-                    if summonable then
-                        out[#out + 1], out[#out + 2] = w, petID
-                        out.total = out.total + w
-                    end
-                    auto[petID] = (auto[petID] or 0) + w
+                    auto[petID] = math.max(auto[petID] or 0, ns.AutoRules.Weight(entry))
                 end
             end
+        end
+        local value = Weights.Effective(settings, petID, auto[petID])
+        if value > 0 and summonable then
+            out[#out + 1], out[#out + 2] = value, petID
+            out.total = out.total + value
         end
     end
     return out

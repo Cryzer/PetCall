@@ -46,6 +46,13 @@ Screens.list = {
         ns.UI.PetsTabPage.rulesBtn:Click()
         U.lastMenu.items[3]:Click()
     end },
+    { name = "Pets, a pet by hand over its rule", open = function(ns)
+        local set = ns.Sets:Get("$Default")
+        set.settings.filter = { { "favorites", 64 } }
+        set:SetPetWeight("c", 0)
+        pets(ns)
+        ns.UI.Preview:SetSelected("c")
+    end },
     { name = "When", open = function(ns)
         local town = ns.Sets:Create("Town and capital cities")
         town:ApplyTemplate("city")

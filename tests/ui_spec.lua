@@ -61,7 +61,7 @@ describe("UI smoke", function()
         -- the Rules menu opens a rule on the list, which then shows only its pets
         assert.equal("Rules (1)", page.rulesBtn:GetText())
         page.rulesBtn:Click()
-        assert.equal("More chance for", U.lastMenu.items[1].text)
+        assert.equal("Rules", U.lastMenu.items[1].text)
         assert.equal("Pick a rule to change it.", U.lastMenu.items[2].text)
         assert.is_true(U.lastMenu.items[3].text:find("Very often") == nil and U.lastMenu.items[3].text:find("Often: Favorites") ~= nil,
             U.lastMenu.items[3].text)
@@ -734,8 +734,7 @@ describe("UI smoke", function()
     it("an open rule shows what it gives each pet, and a pet's menu opens the rules that pick it", function()
         local set = ns.Sets:Get("$Default")
         set.settings.filter = { { "petType", 64, petTypes = { 1 } } }
-        set:SetPetWeight("a", 0)                         -- in the set only through the rule
-        set:FiltersChanged()
+        set:FiltersChanged()                             -- no own setting: the rule decides
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
         W.advance(1)
@@ -745,7 +744,13 @@ describe("UI smoke", function()
         U.lastMenu:Find("Edit rule: BATTLE_PET_NAME_1"):Click()
         assert.is_true(ns.UI.PetsTabPage.filterBar.save:IsShown())
         tile = gridTiles().a
-        assert.is_true(tile.sub:GetText():find("+ Very often", 1, true) ~= nil, tile.sub:GetText())
+        assert.is_true(tile.sub:GetText():find("Very often", 1, true) ~= nil, tile.sub:GetText())
+        -- left out by hand while the rule is open: the tile and the rule's count say so
+        tile.check:Click()
+        W.advance(1)
+        tile = gridTiles().a
+        assert.is_true(tile.sub:GetText():find("Left out") ~= nil and tile.sub:GetText():find("by hand") ~= nil, tile.sub:GetText())
+        assert.equal("1 pet · 1 by hand", ns.UI.PetsTabPage.filterBar.ruleCount:GetText())
     end)
     it("a narrowed list gets a line that names the menu filters, removes them and weighs the pets shown", function()
         W.world.pets.b = { species = 2, name = "B" }
@@ -837,6 +842,24 @@ describe("UI smoke", function()
         assert.equal(1, panel.chanceBar._value)          -- the most likely pet fills the bar
         ns.UI.Preview:SetSelected("b")
         assert.is_true(panel.chanceBar._value < 1)
+        -- a rule's level shows in the rule's colour; a choice by hand says so and gives the rule back
+        set.settings.filter = { { "favorites", 8 } }
+        W.world.favorites.b = true
+        ns.PetCache:Rescan()
+        set:FiltersChanged()
+        ns.UI.Preview:SetSelected("b")
+        assert.equal(5, panel.scale.index)
+        assert.is_true(panel.weight:GetText():find("from a rule") ~= nil, panel.weight:GetText())
+        assert.is_false(panel.useRule:IsShown())
+        set:SetPetWeight("b", 0)
+        ns.UI.Preview:Refresh()
+        assert.equal(1, panel.scale.index)
+        assert.is_true(panel.weight:GetText():find("by hand") ~= nil, panel.weight:GetText())
+        assert.is_true(panel.useRule:IsShown())
+        panel.useRule:Click()
+        assert.is_false(set:HasManualWeight("b"))
+        set.settings.filter = {}
+        set:FiltersChanged()
     end)
     it("the preview panel sits at the right edge and the count on the toolbar line, clear of the rule chips", function()
         ns.UI.Main:Show()
@@ -1122,7 +1145,7 @@ describe("UI smoke", function()
         ns.UI.SetHeader:Refresh()
         assert.equal("Standing by", ns.UI.Main:GetFrame().header.status:GetText())
     end)
-    it("a pet in the set through a rule has a lit tick that cannot be ticked off", function()
+    it("a pet in the set through a rule is left out by its tick and comes back to the rule", function()
         W.world.pets.b = { species = 2, name = "B" }
         ns.PetCache:Rescan()
         local set = ns.Sets:Create("Rules")
@@ -1138,11 +1161,20 @@ describe("UI smoke", function()
         local tile = gridTiles().b
         assert.equal(0.5, tile.checkAlpha)                  -- lit like any included pet, not ghosted
         assert.is_true(tile.sub:GetText():find("via a rule") ~= nil)
-        tile.check:Click()
-        assert.equal(0, set:GetPetWeight("b"))             -- the click did not add a manual weight
+        tile.check:Click()                                  -- its own Never wins over the rule
+        assert.is_false(set:Contains("b"))
+        assert.equal("never", select(2, ns.PetGridModel.Badge(set, "b")))
+        tile.check:Click()                                  -- ticked again: back to what the rule gives
+        assert.is_false(set:HasManualWeight("b"))
         assert.is_true(set:Contains("b"))
-        set:SetPetWeight("b", 0)                            -- a manual Never does not hide a rule pet
         assert.equal("auto", select(2, ns.PetGridModel.Badge(set, "b")))
+        -- the pet's menu gives the rule's level back after a choice by hand
+        set:SetPetWeight("b", 8)
+        W.advance(1)
+        tile = gridTiles().b
+        tile:GetScript("OnClick")(tile, "RightButton")
+        U.lastMenu:Find("Use the rule (Normal)"):Click()
+        assert.is_false(set:HasManualWeight("b"))
     end)
     it("recipe cards: sections, no placeholder pet icons, Open for a set you already have", function()
         ns.UI.Main:Show()
@@ -1308,7 +1340,7 @@ describe("UI smoke", function()
         ns.UI.Main:SelectSet("$Default")
         ns.UI.Main:SelectTab("pets")
         ns.UI.PetsTabPage.rulesBtn:Click()
-        assert.equal("More chance for", U.lastMenu.items[1].text)
+        assert.equal("Rules", U.lastMenu.items[1].text)
     end)
     it("a resize while the window is still being built is not passed on", function()
         local n, ready = 0, false
@@ -1394,9 +1426,9 @@ describe("UI smoke", function()
         -- the controls stand on the bottom edge: no text above can push them into Summon
         assert.is_true(panel.scale._points.BOTTOMLEFT.rel == panel)
         assert.is_true(panel.scale._points.BOTTOMLEFT.y >= 30 + 8)
-        assert.is_true(panel.weight._points.BOTTOMLEFT.rel == panel)
+        assert.is_true(panel.weightRow._points.BOTTOMLEFT.rel == panel)
         -- the source lines end above "How often"
-        assert.is_true(panel.source._points.BOTTOMRIGHT.rel == panel.weight)
+        assert.is_true(panel.source._points.BOTTOMRIGHT.rel == panel.weightRow)
         -- without the chance bar the scale moves down to the Summon button
         local high = panel.scale._points.BOTTOMLEFT.y
         panel._scripts.OnSizeChanged(panel, 240, 220)

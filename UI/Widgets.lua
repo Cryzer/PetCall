@@ -284,6 +284,7 @@ function Widgets.StepScale(parent, steps, onPick, onHover)
     function f:Paint()
         local shown, faint = self.hover or self.index, self.hover ~= nil and self.hover ~= self.index
         local r, g, b = ns.Skin:Accent()
+        if self.color then r, g, b = unpack(self.color) end
         for i, btn in ipairs(self.steps) do
             local lit = shown ~= nil and (i == 1 and shown == 1 or i > 1 and shown > 1 and i <= shown)
             if i == 1 then
@@ -298,6 +299,11 @@ function Widgets.StepScale(parent, steps, onPick, onHover)
     end
     function f:SetIndex(i)
         self.index = i
+        self:Paint()
+    end
+    -- { r, g, b } for the lit steps instead of the accent, or nil
+    function f:SetColor(color)
+        self.color = color
         self:Paint()
     end
     f:Paint()

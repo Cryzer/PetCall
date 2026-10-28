@@ -22,13 +22,32 @@ local FULL, NO_SOURCE, NO_CHANCE = 222, 176, 122
 local SUMMON_TOP, CHANCE_BOTTOM, SCALE_BOTTOM, SCALE_LOW = 30, 38, 92, 38
 local PANEL_W = 240
 local SCALE_W = PANEL_W - 14      -- the How often scale and its name
+local NAME_LINE_H = 12            -- the budgets count one line for that name
 
 -- "How often: Often" for the picked step, or for the step under the cursor
+-- and where the picked one comes from: "· from a rule", or "· by hand" when the pet's own
+-- setting stands in for a rule, with the button that gives the rule's level back
+local RULE_COLOR = { 0.4, 0.8, 1 }
 function Preview.NameWeight(hovered)
-    local step = hovered or ns.Weights.LEVELS[panel.scale.index or 0]
-    if not step then panel.weight:SetText(L["How often"]) return end
-    local color = hovered and hovered ~= ns.Weights.LEVELS[panel.scale.index or 0] and "|cffaaaaaa" or "|cffffffff"
-    panel.weight:SetText(format(L["How often: %s"], color .. step.label .. "|r"))
+    local picked = ns.Weights.LEVELS[panel.scale.index or 0]
+    local step = hovered or picked
+    local text = L["How often"]
+    if step then
+        local color = hovered and hovered ~= picked and "|cffaaaaaa" or "|cffffffff"
+        text = format(L["How often: %s"], color .. step.label .. "|r")
+        if step == picked and panel.levelSource == "rule" then
+            text = text .. " · |cff66ccff" .. L["from a rule"] .. "|r"
+        elseif step == picked and panel.useRule.ruleW then
+            text = text .. " · |cff999999" .. L["by hand"] .. "|r"
+        end
+    end
+    panel.weight:SetText(text)
+    -- more lines than the budgets count (a long name, Use the rule under it) come out of
+    -- the model's room, so the panel is laid out again when they change
+    local before = tonumber(panel.weightRow:GetHeight()) or 0
+    ns.Widgets.Flow(panel.weightRow, { panel.weight, { frame = panel.useRule, right = true } },
+        { width = SCALE_W, gap = 6, rowHeight = NAME_LINE_H })
+    if panel.relayout and (tonumber(panel.weightRow:GetHeight()) or 0) ~= before then panel.relayout() end
 end
 
 -- Blizzard's source text: "|n" line breaks, sometimes blank lines and trailing breaks
@@ -44,15 +63,16 @@ local function placeControls(withChance)
     local bottom = withChance and SCALE_BOTTOM or SCALE_LOW
     panel.scale:ClearAllPoints()
     panel.scale:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, bottom)
-    panel.weight:ClearAllPoints()
-    panel.weight:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, bottom + panel.scale:GetHeight() + 4)
+    panel.weightRow:ClearAllPoints()
+    panel.weightRow:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, bottom + panel.scale:GetHeight() + 4)
     -- the source lines end above the scale's name, however many lines that name takes
-    panel.source:SetPoint("BOTTOMRIGHT", panel.weight, "TOPRIGHT", 0, 8)
+    panel.source:SetPoint("BOTTOMRIGHT", panel.weightRow, "TOPRIGHT", 0, 8)
 end
 
--- -> model height (0 = no model), show source, show chance
-function Preview.Layout(h)
-    h = h or 0
+-- -> model height (0 = no model), show source, show chance; extra: room the controls
+-- take beyond the budgets
+function Preview.Layout(h, extra)
+    h = (h or 0) - (extra or 0)
     if h - FULL >= 110 then return h - FULL, true, true end
     if h - NO_SOURCE >= 80 then return h - NO_SOURCE, false, true end
     if h - NO_CHANCE >= 60 then return h - NO_CHANCE, false, false end
@@ -88,9 +108,10 @@ function Preview:Attach(parent)
     model:SetPoint("TOPLEFT", 4, -4)
     model:SetPoint("TOPRIGHT", -4, -4)
     model:SetHeight(260)
-    panel:SetScript("OnSizeChanged", function(_, _, h)
-        if not panel.weight then return end         -- still being built
-        local slot, withSource, withChance = Preview.Layout(h)
+    function panel.relayout(h)
+        h = tonumber(h or panel:GetHeight()) or 0
+        local extra = math.max(0, (tonumber(panel.weightRow:GetHeight()) or 0) - NAME_LINE_H)
+        local slot, withSource, withChance = Preview.Layout(h, extra)
         local mh, gap = Preview.ModelBox(slot)
         model:SetShown(mh > 0)
         model:ClearAllPoints()
@@ -107,6 +128,9 @@ function Preview:Attach(parent)
         for _, part in ipairs({ panel.chanceLabel, panel.chanceBar, panel.chance, panel.reason }) do
             part:SetShown(withChance)
         end
+    end
+    panel:SetScript("OnSizeChanged", function(_, _, h)
+        if panel.weightRow then panel.relayout(h) end    -- else still being built
     end)
 
     panel.name = ns.Widgets.Label(panel, "", "GameFontNormalLarge")
@@ -130,9 +154,20 @@ function Preview:Attach(parent)
 
     -- how often: one row of rising steps, named above it; the step under the cursor
     -- names itself there before it is clicked
-    panel.weight = ns.Widgets.Label(panel, "", "GameFontNormalSmall")
-    panel.weight:SetWidth(SCALE_W)
-    panel.weight:SetWordWrap(true)
+    panel.weightRow = CreateFrame("Frame", nil, panel)
+    panel.weightRow:SetWidth(SCALE_W)
+    panel.weight = ns.Widgets.Label(panel.weightRow, "", "GameFontNormalSmall")
+    panel.useRule = ns.Widgets.Button(panel.weightRow, L["Use the rule"], function(self)
+        if shownID and set then set:UseRule(ns.PetCache:GetCopies(shownID)) end
+        self.ruleW = nil
+    end)
+    ns.Widgets.Tooltip(panel.useRule, L["Use the rule"], function(self)
+        return self.ruleW and format(L["The rule gives %s."], ns.Weights.Label(self.ruleW)) or nil
+    end)
+    panel.useRule:SetNormalFontObject("GameFontNormalSmall")
+    panel.useRule:SetHighlightFontObject("GameFontHighlightSmall")
+    panel.useRule:SetHeight(18)
+    panel.useRule:Hide()
     panel.scale = ns.Widgets.StepScale(panel, ns.Weights.LEVELS, function(value)
         if shownID and set then set:SetPetWeights(ns.PetCache:GetCopies(shownID), value) end
     end, function(step) Preview.NameWeight(step) end)
@@ -218,6 +253,8 @@ function Preview:ShowPet(petID, forSet)
         panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("") panel.reason:SetText("")
         panel.chanceBar:SetValue(0)
         panel.scale:SetIndex(nil)
+        panel.useRule.ruleW = nil
+        panel.useRule:Hide()
         Preview.NameWeight()
         viewer:Clear()
         viewer.creatureID = nil      -- forget it, or the same pet would not be loaded again
@@ -240,10 +277,16 @@ function Preview:ShowPet(petID, forSet)
     local _, _, _, _, source = C_PetJournal.GetPetInfoBySpeciesID(info.speciesID)
     panel.source:SetText(Preview.CleanSource(source))
     if set then
-        local current = ns.Weights.Nearest(set:GetPetWeight(petID))
+        -- what the pet gets: its own setting, else its strongest rule, else the default
+        local w, source = set:GetLevel(petID)
+        local current, ruleW = ns.Weights.Nearest(w), set:GetAutoWeight(petID)
         for i, lvl in ipairs(ns.Weights.LEVELS) do
             if lvl.value == current then panel.scale:SetIndex(i) end
         end
+        panel.levelSource = source
+        panel.scale:SetColor(source == "rule" and RULE_COLOR or nil)
+        panel.useRule.ruleW = source == "hand" and ruleW > 0 and ruleW or nil
+        panel.useRule:SetShown(panel.useRule.ruleW ~= nil)
         Preview.NameWeight()
         -- every copy of the pet is a separate ticket in the draw
         local tbl = set:GetWeightTable()
