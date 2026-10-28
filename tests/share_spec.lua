@@ -107,6 +107,15 @@ describe("Share", function()
         assert.is_true(t[3].ownHome)
         assert.same({ "Necromancer" }, t[4].outfitNames)
     end)
+    it("keeps the rules' pet types and sources through export and import", function()
+        local set = ns.Sets:Create("Src3")
+        set.settings.filter = { { "AND", ns.Weights.NORMAL, items = {
+            { "petType", petTypes = { 2, 5 } }, { "source", sources = { 3, 7 } } } } }
+        assert.is_true((ns.Share:Import(ns.Share:Export("Src3"), "Copy3")))
+        local items = ns.Sets:Get("Copy3").settings.filter[1].items
+        assert.same({ 2, 5 }, items[1].petTypes)
+        assert.same({ 3, 7 }, items[2].sources)
+    end)
     it("keeps the per-set choices through export and import", function()
         local set = ns.Sets:Create("Src2")
         set:SetNoPet(true)
