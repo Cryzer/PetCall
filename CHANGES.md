@@ -18,7 +18,7 @@
 - A pet's own setting now beats its rules, and a pet picked by two rules follows the stronger one. Before, they were added up, so in sets with rules some pets may come out more or less often than before.
 - The time-of-day templates cover the whole day without overlapping (server time): Morning critters 06–10, Daylight wanderers 10–18, Elemental dusk 18–20, Night owls 20–02, Witching hour 02–06. Sets you already made keep their hours.
 - Clearer wording: a set without conditions says it is used everywhere, "Left out" only marks pets you took out yourself, and the chance bar matches the percentage next to it.
-- Smoother: PetCall does less work in the background, and the templates open at once.
+- Smoother: PetCall does less work in the background.
 
 ### Fixed
 
