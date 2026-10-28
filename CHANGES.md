@@ -13,6 +13,9 @@
 
 ### Changed
 
+- Rules about where you are name the place: "From this expansion (Midnight)", "From this zone (Silvermoon City)".
+- A set without conditions says it is used everywhere, and one with rules about where you are says the set below it takes over where it has no pets. Before, "No conditions yet" sounded like something was missing.
+- In a set of rules, a pet nothing picks is only greyed; "Left out" stays on pets you took out by hand.
 - The time-of-day templates follow one another round the clock without overlapping: Morning critters 06–10, Daylight wanderers 10–18, Elemental dusk 18–20, Night owls 20–02 and Witching hour 02–06. Before, dusk and night overlapped, the witching hour lay inside the night and nothing covered the day. Their descriptions now say the hours are server time. Sets you already made from them keep their hours.
 - A pet's own setting now wins over its rules, and a pet two rules pick comes out as often as the stronger rule says. Before, a pet's own weight and its rules' weights were added up. Sets without rules draw exactly as before; in sets with rules, pets that have both a setting of their own and a rule can come out more or less often than they used to.
 - Ticking a pet used to store "Normal" for it, which would now shut its rules out. Those stored settings that only repeat the set's level for other pets are removed once per set; settings you really chose, such as Often, stay.

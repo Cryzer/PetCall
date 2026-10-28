@@ -868,6 +868,34 @@ describe("UI smoke", function()
         ns:Fire("SetsChanged")
         assert.equal(10 + 40 + 18 + 40 + 10, got)            -- the Default set: note and pets
     end)
+    it("a set without conditions says it is used everywhere, and a place set that the set below takes over", function()
+        local H = ns.UI.SetHeader
+        local plain = ns.Sets:Create("Plain")
+        local here = ns.Sets:Create("Here")
+        here.settings.filter[1] = { "expansionHere", 1 }
+        here:FiltersChanged()
+        assert.is_true(H.Summary(plain):find("^No conditions, so this set is used everywhere%.") ~= nil, H.Summary(plain))
+        assert.is_nil(H.Summary(plain):find("set below", 1, true))
+        assert.is_true(H.Summary(here):find("set below", 1, true) ~= nil, H.Summary(here))
+    end)
+    it("in a set of rules a pet nothing picks is only greyed; one taken out by hand still says so", function()
+        W.world.pets.b = { species = 2, name = "B", type = 3 }
+        ns.PetCache:Rescan()
+        local set = ns.Sets:Create("Rules")
+        set.settings.defaultValue = 0
+        set.settings.filter[1] = { "petType", 1, petTypes = { 3 } }
+        set:FiltersChanged()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Rules")
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local tiles = gridTiles()
+        assert.is_nil(tiles.a.sub:GetText():find("Left out"), tiles.a.sub:GetText())
+        set:SetPetWeight("b", 0)
+        W.advance(1)
+        tiles = gridTiles()
+        assert.is_true(tiles.b.sub:GetText():find("Left out") ~= nil, tiles.b.sub:GetText())
+    end)
     it("tiles say the pet type and how often, not just the level", function()
         W.world.pets.b = { species = 2, name = "B", type = 3 }
         W.world.pets.c = { species = 3, name = "C" }

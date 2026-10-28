@@ -67,7 +67,14 @@ function Header.Summary(set)
     end
     if set:IsNoPet() then picks = L["While it is used, PetCall keeps your pet away."] end
     if set:IsDefault() then return L["Used when no other set is active."] .. " " .. picks end
-    if not set:HasConditions() then return L["No conditions yet, so this set is always active."] .. " " .. picks end
+    if not set:HasConditions() then
+        local text = L["No conditions, so this set is used everywhere."]
+        -- with no pets for where you are it is not active: the set below it is used
+        if ns.AutoRules.PlaceKey(set.settings.filter) then
+            text = text .. " " .. L["Where it has no pets for the place you are in, the set below it is used."]
+        end
+        return text .. " " .. picks
+    end
     return format(L["When: %s."], describeConditions(set)) .. " " .. picks
 end
 

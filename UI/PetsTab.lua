@@ -194,7 +194,8 @@ local function subText(petID, info)
         -- its own setting wins over the rules that pick it
         local label = w > 0 and ns.Weights.Label(w) or L["Left out"]
         parts[#parts + 1] = "|cffffffff" .. label .. "|r |cff999999" .. L["by hand"] .. "|r"
-    elseif kind == "never" then
+    elseif kind == "never" and source == "hand" then
+        -- a pet nothing picks is greyed already; one taken out by hand says so
         parts[#parts + 1] = "|cff999999" .. L["Left out"] .. "|r"
     elseif kind == "auto" then
         parts[#parts + 1] = "|cff66ccff" .. L["via a rule"] .. "|r"

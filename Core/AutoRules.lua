@@ -59,6 +59,16 @@ end
 
 local function typeName(t) return _G["BATTLE_PET_NAME_" .. t] or tostring(t) end
 
+-- "From this zone (Silvermoon City)": the place a rule about where you are picks for now
+local function zoneText()
+    local zone = GetZoneText() or ""
+    return zone ~= "" and format("%s (%s)", L["From this zone"], zone) or L["From this zone"]
+end
+local function expansionText()
+    local here = ns.Expansions.Here()
+    return here and format("%s (%s)", L["From this expansion"], ns.Expansions.Name(here)) or L["From this expansion"]
+end
+
 local types = {
     favorites = {
         key = "favorites",
@@ -135,7 +145,7 @@ local types = {
         match = function(e, info, pass)
             return mentions(info.petID, zoneIn(pass), pass)
         end,
-        describe = function() return L["From this zone"] end,
+        describe = zoneText,
     },
     -- the pet came with the expansion of the land the player is in
     expansionHere = {
@@ -144,7 +154,7 @@ local types = {
             local here = hereIn(pass)
             return here ~= nil and ns.Expansions.Of(info.speciesID) == here
         end,
-        describe = function() return L["From this expansion"] end,
+        describe = expansionText,
     },
 }
 local order = { "favorites", "petType", "level", "rare", "source", "expansion", "nativeZone", "expansionHere" }
@@ -278,10 +288,11 @@ function AutoRules.ToFilters(e)
 end
 
 -- what the filters say, one entry per choice in the order the menu has them:
--- { label =, group =, value = } (value is the pet type, source or expansion number)
+-- { label =, group =, value = } (value is the pet type, source or expansion number); a
+-- place choice names where you are, and its key stays the same anywhere
 function AutoRules.Tokens(f)
     local out = {}
-    local function add(group, label, value) out[#out + 1] = { group = group, label = label, value = value } end
+    local function add(group, label, value, key) out[#out + 1] = { group = group, label = label, value = value, key = key } end
     if f.favorites then add("favorites", L["Favorites"]) end
     for _, t in ipairs(sortedKeys(f.types)) do add("types", typeName(t), t) end
     if f.level then add("level", levelText(f.level.operator, f.level.level)) end
@@ -289,8 +300,8 @@ function AutoRules.Tokens(f)
     for _, i in ipairs(sortedKeys(f.sources)) do add("sources", AutoRules.SourceLabel(i) or tostring(i), i) end
     if f.sourceText then add("sourceText", L["Source"] .. ": " .. (f.sourceText ~= "" and f.sourceText or L["no text yet"])) end
     for _, i in ipairs(sortedKeys(f.expansions)) do add("expansions", ns.Expansions.Name(i), i) end
-    if f.nativeZone then add("nativeZone", L["From this zone"]) end
-    if f.expansionHere then add("expansionHere", L["From this expansion"]) end
+    if f.nativeZone then add("nativeZone", zoneText(), nil, L["From this zone"]) end
+    if f.expansionHere then add("expansionHere", expansionText(), nil, L["From this expansion"]) end
     return out
 end
 
@@ -313,7 +324,7 @@ end
 function AutoRules.Key(e)
     local f = AutoRules.ToFilters(e)
     local parts = {}
-    for _, tok in ipairs(f and AutoRules.Tokens(f) or {}) do parts[#parts + 1] = tok.group .. "=" .. tok.label end
+    for _, tok in ipairs(f and AutoRules.Tokens(f) or {}) do parts[#parts + 1] = tok.group .. "=" .. (tok.key or tok.label) end
     return f and concat(parts, "\n") or AutoRules.Describe(e)
 end
 
