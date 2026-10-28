@@ -41,6 +41,20 @@ describe("Expansions", function()
         W.world.expansionLevel = 3
         assert.equal(11, ns.Expansions.Newest())
     end)
+    it("the zone data covers every expansion and lists each map once", function()
+        local seen = {}
+        for e = 0, 11 do
+            local list = ns.ZoneExpansionData[e]
+            assert.is_true(list ~= nil and #list > 0)
+            for _, id in ipairs(list) do
+                assert.is_nil(seen[id])
+                seen[id] = e
+            end
+        end
+        assert.equal(0, seen[84])      -- Stormwind City
+        assert.equal(3, seen[249])     -- Uldum, on Kalimdor but from Cataclysm
+        assert.equal(10, seen[2339])   -- Dornogal
+    end)
     it("names expansions as the game does, and an unknown one by its number", function()
         assert.equal("Legion", ns.Expansions.Name(6))
         assert.equal("12", ns.Expansions.Name(12))
