@@ -806,6 +806,23 @@ describe("UI smoke", function()
         assert.is_false(bar:IsShown())
     end)
 
+    it("the Filter menu keeps the pets from the expansion you are in", function()
+        W.world.pets.b = { species = 115, name = "B" }  -- Warlords of Draenor; a is Classic
+        W.world.mapID = 84                               -- Stormwind City: Classic
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectTab("pets")
+        W.advance(1)
+        local page = ns.UI.PetsTabPage
+        local bar = page.filterBar
+        local root = U.newMenu()
+        page.filterBtn._setupMenu(page.filterBtn, root)
+        root:Find("From this expansion"):Click()
+        assert.is_true(ns.UI.PetsTabState().filters.expansionHere)
+        assert.equal("Showing 1 of 2", bar.shown:GetText())
+        assert.is_true(bar.chips[1]:GetText():find("^From this expansion ") ~= nil, bar.chips[1]:GetText())
+    end)
+
     it("set settings hold the default weight and the reset that left the main view", function()
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("settings")

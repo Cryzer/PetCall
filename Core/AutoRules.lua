@@ -120,8 +120,17 @@ local types = {
         end,
         describe = function() return L["From this zone"] end,
     },
+    -- the pet came with the expansion of the land the player is in
+    expansionHere = {
+        key = "expansionHere",
+        match = function(e, info)
+            local here = ns.Expansions.Here()
+            return here ~= nil and ns.Expansions.Of(info.speciesID) == here
+        end,
+        describe = function() return L["From this expansion"] end,
+    },
 }
-local order = { "favorites", "petType", "level", "rare", "source", "expansion", "nativeZone" }
+local order = { "favorites", "petType", "level", "rare", "source", "expansion", "nativeZone", "expansionHere" }
 
 function AutoRules.Types()
     local out = {}
@@ -176,7 +185,7 @@ end
 -- Rules and the pet list's filters are one thing: a rule is the filters it was made from.
 -- Filters: { favorites = true, types = { [petType] = true }, sources = { [journal source] = true },
 -- sourceText = "older rules' text", level = { operator =, level = }, rare = true,
--- expansions = { [expansion] = true }, nativeZone = true }, every group optional. Any choice inside a group will do; every
+-- expansions = { [expansion] = true }, nativeZone = true, expansionHere = true }, every group optional. Any choice inside a group will do; every
 -- group must match.
 
 local function sortedKeys(set)
@@ -200,6 +209,7 @@ function AutoRules.FromFilters(f)
     list = sortedKeys(f.expansions)
     if #list > 0 then items[#items + 1] = { "expansion", expansions = list } end
     if f.nativeZone then items[#items + 1] = { "nativeZone" } end
+    if f.expansionHere then items[#items + 1] = { "expansionHere" } end
     if #items == 0 then return nil end
     if #items == 1 then return items[1] end
     return { "AND", items = items }
@@ -228,6 +238,8 @@ local function addLeaf(f, e)
         for _, i in ipairs(e.expansions or {}) do f.expansions[i] = true end
     elseif k == "nativeZone" and not f.nativeZone then
         f.nativeZone = true
+    elseif k == "expansionHere" and not f.expansionHere then
+        f.expansionHere = true
     else
         return false
     end
@@ -260,6 +272,7 @@ function AutoRules.Tokens(f)
     if f.sourceText then add("sourceText", L["Source"] .. ": " .. (f.sourceText ~= "" and f.sourceText or L["no text yet"])) end
     for _, i in ipairs(sortedKeys(f.expansions)) do add("expansions", ns.Expansions.Name(i), i) end
     if f.nativeZone then add("nativeZone", L["From this zone"]) end
+    if f.expansionHere then add("expansionHere", L["From this expansion"]) end
     return out
 end
 

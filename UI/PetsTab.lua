@@ -711,6 +711,7 @@ local function conditionItems(root, withFavorites)
     end
     root:CreateCheckbox(L["Rare or better"], function() return f.rare end, function() toggle("rare") end)
     root:CreateCheckbox(L["From this zone"], function() return f.nativeZone end, function() toggle("nativeZone") end)
+    root:CreateCheckbox(L["From this expansion"], function() return f.expansionHere end, function() toggle("expansionHere") end)
 end
 
 local function filterMenu(owner, root)

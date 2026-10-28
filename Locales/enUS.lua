@@ -81,6 +81,7 @@ L["Set %s for %d pets?"] = true
 L["Level %s"] = true
 L["Any level"] = true
 L["From this zone"] = true
+L["From this expansion"] = true
 L["Rules"] = true
 L["Rules (%d)"] = true
 L["Editing rule"] = true

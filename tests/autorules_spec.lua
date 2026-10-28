@@ -88,6 +88,22 @@ describe("AutoRules", function()
         assert.is_false(AR.Match({ "source", 1, sources = { 7 } }, "b"))
         _G.BATTLE_PET_SOURCE_7 = nil
     end)
+    it("from this expansion matches pets of the place's expansion only", function()
+        local mine = ns.Expansions.Of(ns.PetCache:GetSpeciesID("b"))
+        W.world.mapID = ns.ZoneExpansionData[mine][1]
+        assert.is_true(AR.Match({ "expansionHere", 1 }, "b"))
+        W.world.mapID = ns.ZoneExpansionData[(mine + 1) % 12][1]
+        assert.is_false(AR.Match({ "expansionHere", 1 }, "b"))
+        W.world.mapID = nil
+        assert.is_false(AR.Match({ "expansionHere", 1 }, "b"), "a loading screen is nowhere")
+        assert.equal("From this expansion", AR.Describe({ "expansionHere" }))
+    end)
+    it("the filters round-trip from this expansion", function()
+        local e = AR.FromFilters({ expansionHere = true })
+        assert.same({ "expansionHere" }, e)
+        assert.same({ expansionHere = true }, AR.ToFilters(e))
+        assert.equal("From this expansion", AR.Tokens({ expansionHere = true })[1].label)
+    end)
     it("a set with a native-zone rule is rebuilt after a zone change, others are not", function()
         W.world.sources[2] = "Pet Battle: Durotar"
         ns.PetCache:Rescan()
