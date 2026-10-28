@@ -1,6 +1,6 @@
 local _, ns = ...
 
-local type, tostring = type, tostring
+local type, tostring, pairs, ipairs = type, tostring, pairs, ipairs
 
 -- The expansion a pet species was added in (0 = Classic), as the game numbers them.
 -- Blizzard does not say: Core/ExpansionData.lua carries it, made by tools/gen_expansions.py.
@@ -31,6 +31,31 @@ function Expansions.Of(speciesID)
         if starts[mid] <= speciesID then found, lo = mid, mid + 1 else hi = mid - 1 end
     end
     return data.expansions[found]
+end
+
+-- the expansion of each map (uiMapID), from Core/ZoneExpansionData.lua
+local ofMap = {}
+for e, ids in pairs(ns.ZoneExpansionData) do
+    for _, id in ipairs(ids) do ofMap[id] = e end
+end
+local HOUSING = 11      -- houses and neighbourhoods came with Midnight
+
+-- a map newer than the data belongs where its parent map does; nil when nothing is known
+function Expansions.OfMap(uiMapID)
+    for _ = 1, 20 do
+        if not uiMapID or uiMapID == 0 then return nil end
+        if ofMap[uiMapID] then return ofMap[uiMapID] end
+        local info = C_Map.GetMapInfo(uiMapID)
+        uiMapID = info and info.parentMapID
+    end
+    return nil
+end
+
+-- the expansion of the land the player is in; nil during a loading screen
+function Expansions.Here()
+    local e = Expansions.OfMap(C_Map.GetBestMapForUnit("player"))
+    if e == nil and C_Housing and C_Housing.IsInsideHouseOrPlot() then return HOUSING end
+    return e
 end
 
 function Expansions.Name(index)

@@ -55,6 +55,23 @@ describe("Expansions", function()
         assert.equal(3, seen[249])     -- Uldum, on Kalimdor but from Cataclysm
         assert.equal(10, seen[2339])   -- Dornogal
     end)
+    it("a map is found directly, through its parents, or not at all", function()
+        assert.equal(0, ns.Expansions.OfMap(84))
+        W.world.mapParents[99999] = 2339                      -- a sub-map newer than the data
+        assert.equal(10, ns.Expansions.OfMap(99999))
+        W.world.mapParents[88888], W.world.mapParents[88887] = 88887, 88888   -- a loop
+        assert.is_nil(ns.Expansions.OfMap(88888))
+        assert.is_nil(ns.Expansions.OfMap(77777))             -- no data, no parent
+        assert.is_nil(ns.Expansions.OfMap(nil))
+    end)
+    it("here is the player's map; a loading screen is nowhere; a house counts as Midnight", function()
+        W.world.mapID = 249
+        assert.equal(3, ns.Expansions.Here())
+        W.world.mapID = nil
+        assert.is_nil(ns.Expansions.Here())
+        W.world.home.any = true
+        assert.equal(11, ns.Expansions.Here())
+    end)
     it("names expansions as the game does, and an unknown one by its number", function()
         assert.equal("Legion", ns.Expansions.Name(6))
         assert.equal("12", ns.Expansions.Name(12))
