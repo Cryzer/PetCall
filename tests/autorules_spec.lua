@@ -104,6 +104,50 @@ describe("AutoRules", function()
         assert.same({ expansionHere = true }, AR.ToFilters(e))
         assert.equal("From this expansion", AR.Tokens({ expansionHere = true })[1].label)
     end)
+    it("a set from this expansion is rebuilt only when the expansion changes", function()
+        local s = ns.Sets:Create("Here")
+        s.settings.defaultValue = 0
+        s.settings.filter = { { "expansionHere", 1 } }
+        s:FiltersChanged()
+        local rebuilt = 0
+        local filtersChanged = s.FiltersChanged
+        s.FiltersChanged = function(self) rebuilt = rebuilt + 1 return filtersChanged(self) end
+        W.world.mapID, W.world.zone = ns.ZoneExpansionData[10][1], "Somewhere"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        assert.equal(1, rebuilt)
+        W.world.mapID, W.world.zone = ns.ZoneExpansionData[10][2], "Elsewhere"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        assert.equal(1, rebuilt, "same expansion: nothing to do")
+        W.world.mapID = ns.ZoneExpansionData[9][1]
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        assert.equal(2, rebuilt, "another expansion: rebuilt")
+    end)
+    it("an empty set from this expansion yields to Default", function()
+        local owned = {}
+        for _, id in ns.PetCache:IteratePetIDs() do owned[ns.Expansions.Of(ns.PetCache:GetSpeciesID(id))] = true end
+        local empty
+        for e = 0, 11 do if not owned[e] then empty = e break end end
+        W.world.mapID = ns.ZoneExpansionData[empty][1]
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        local s = ns.Sets:Create("Here")
+        s.settings.defaultValue = 0
+        s.settings.filter = { { "expansionHere", 1 } }
+        s:FiltersChanged()
+        assert.is_false(s:IsActive())
+        assert.is_true(ns.Sets:GetCurrent():IsDefault())
+    end)
+    it("a zone set catches up on a zone change it missed while loading", function()
+        W.world.sources[2] = "Pet Battle: Durotar"
+        ns.PetCache:Rescan()
+        local zoneSet = ns.Sets:Create("Zone")
+        zoneSet.settings.defaultValue = 0
+        zoneSet.settings.filter = { { "nativeZone", 1 } }
+        zoneSet:FiltersChanged()
+        assert.is_false(zoneSet:Contains("b"))
+        W.world.zone = "Durotar"
+        W.fire("PLAYER_ENTERING_WORLD")
+        assert.is_true(zoneSet:Contains("b"))
+    end)
     it("a set with a native-zone rule is rebuilt after a zone change, others are not", function()
         W.world.sources[2] = "Pet Battle: Durotar"
         ns.PetCache:Rescan()

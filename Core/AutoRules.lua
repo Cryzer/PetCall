@@ -299,17 +299,48 @@ function AutoRules.Key(e)
     return f and concat(parts, "\n") or AutoRules.Describe(e)
 end
 
--- "native to where I am" depends on the zone: only sets that use it are rebuilt
-local function usesNativeZone(list)
+-- Rules about where the player is, and what each depends on
+local placeKinds = { "nativeZone", "expansionHere" }
+local placeOf = {
+    nativeZone = function() return GetZoneText() or "" end,
+    expansionHere = function() return ns.Expansions.Here() end,
+}
+
+local function usesPlace(list, kind)
     for _, e in ipairs(list or {}) do
-        if e[1] == "nativeZone" then return true end
-        if (e[1] == "AND" or e[1] == "OR") and usesNativeZone(e.items) then return true end
+        if e[1] == kind then return true end
+        if (e[1] == "AND" or e[1] == "OR") and usesPlace(e.items, kind) then return true end
     end
     return false
 end
-AutoRules.UsesNativeZone = usesNativeZone
-ns.Events.Register(AutoRules, "ZONE_CHANGED_NEW_AREA", function()
-    for _, set in ipairs(ns.Sets:List()) do
-        if usesNativeZone(set.settings.filter) then set:FiltersChanged() end
+
+-- where the player is, as far as these rules care ("nativeZone=Durotar"); nil for rules that
+-- do not care. seen (optional) keeps it to one look at the world per kind.
+function AutoRules.PlaceKey(list, seen)
+    local parts
+    for _, kind in ipairs(placeKinds) do
+        if usesPlace(list, kind) then
+            seen = seen or {}
+            if seen[kind] == nil then seen[kind] = tostring(placeOf[kind]()) end
+            parts = parts or {}
+            parts[#parts + 1] = kind .. "=" .. seen[kind]
+        end
     end
-end)
+    return parts and concat(parts, "\n")
+end
+
+-- a set that uses such a rule is rebuilt when its place changed: walking between two zones
+-- of one expansion leaves an expansion set alone
+local builtFor = setmetatable({}, { __mode = "k" })
+local function placeChanged()
+    local seen = {}
+    for _, set in ipairs(ns.Sets:List()) do
+        local key = AutoRules.PlaceKey(set.settings.filter, seen)
+        if key and key ~= builtFor[set] then
+            builtFor[set] = key
+            set:FiltersChanged()
+        end
+    end
+end
+ns.Events.Register(AutoRules, "ZONE_CHANGED_NEW_AREA", placeChanged)
+ns.Events.Register(AutoRules, "PLAYER_ENTERING_WORLD", placeChanged)

@@ -226,17 +226,19 @@ local function count(r)
     return #found, sample
 end
 
--- recipe key -> { n, sample }: the gallery asks about each recipe several times per
+-- recipe key -> { n, sample, place }: the gallery asks about each recipe several times per
 -- drawing, and every answer goes over all pets. Kept until the pets change (a new
--- favourite or level comes with PetsChanged too).
+-- favourite or level comes with PetsChanged too), or for a card about where you are,
+-- until you are somewhere else.
 local counts = {}
 
 function R.Count(r)
     if not r.key then return count(r) end
     local c = counts[r.key]
-    if not c then
+    local place = ns.AutoRules.PlaceKey(r.rules)
+    if not c or c.place ~= place then
         local n, sample = count(r)
-        c = { n = n, sample = sample }
+        c = { n = n, sample = sample, place = place }
         counts[r.key] = c
     end
     return c.n, c.sample

@@ -1076,6 +1076,22 @@ describe("UI smoke", function()
         W.advance(1)
         assert.is_false(ns.UI.PetsTabPage.emptyBanner:IsShown())    -- rule-only pets count as in the set
     end)
+    it("an open template page follows you into another zone", function()
+        W.world.sources[1] = "Pet Battle: Durotar"
+        ns.PetCache:Rescan()
+        ns.UI.Main:Show()
+        ns.UI.RecipeGallery:Show()
+        local function zoneCard()        -- the stub makes new rows on each refresh: the last one is shown
+            local last
+            for _, c in ipairs(ns.UI.RecipeGallery._cards) do if c.recipe.key == "zone" then last = c end end
+            return last
+        end
+        assert.is_false(zoneCard().create:IsEnabled())
+        W.world.zone = "Durotar"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        W.advance(1)
+        assert.is_true(zoneCard().create:IsEnabled())
+    end)
     it("a recipe without pets is greyed and cannot be created", function()
         ns.UI.Main:Show()
         ns.UI.RecipeGallery:Show()

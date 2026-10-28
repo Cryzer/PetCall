@@ -17,6 +17,15 @@ describe("Recipes", function()
         R = ns.Recipes
     end)
     local function byKey(key) for _, r in ipairs(R.List()) do if r.key == key then return r end end end
+    it("the zone card counts the zone you are in now, without waiting for the pets to change", function()
+        W.world.sources[1] = "Pet Battle: Durotar"
+        ns.PetCache:Rescan()
+        local zone = byKey("zone")
+        local before = (R.Count(zone))
+        W.world.zone = "Durotar"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        assert.equal(before + 1, (R.Count(zone)))
+    end)
 
     it("lists fixed recipes and one card per holiday with pets", function()
         assert.is_not_nil(byKey("swimming"))

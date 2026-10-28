@@ -349,3 +349,5 @@ ns:RegisterCallback(G, "WindowHidden", function() G:Hide() end)
 -- one or two columns follow the window width once a resize settles
 local refreshSoon = ns.Debounce(0.12, function() G:Refresh() end)
 ns:RegisterCallback(G, "WindowResized", refreshSoon)
+-- the cards about where you are count again in a new zone
+ns.Events.Register(G, "ZONE_CHANGED_NEW_AREA", function() if G:IsShown() then refreshSoon() end end)
