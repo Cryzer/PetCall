@@ -268,13 +268,17 @@ end
 function Ready:PLAYER_ENTERING_WORLD()
     local _, instanceType = IsInInstance()
     self:SetReady("in_pve", not (IsInGroup() and (instanceType == "party" or instanceType == "raid" or instanceType == "scenario")))
-    if not self.near_pew_handle then
-        self:SetReady("near_pew", true)
-        self.near_pew_handle = ns:After(6 + (ns.db.profile.waitTimer or 1), function()
-            Ready:SetReady("near_pew", false)
-            Ready.near_pew_handle = nil
-        end)
-    end
+    self:OpenZoningWindow()
+end
+
+-- "Only Summon After Zoning": for a few seconds after a loading screen or a new zone
+function Ready:OpenZoningWindow()
+    if self.near_pew_handle then return end
+    self:SetReady("near_pew", true)
+    self.near_pew_handle = ns:After(6 + (ns.db.profile.waitTimer or 1), function()
+        Ready:SetReady("near_pew", false)
+        Ready.near_pew_handle = nil
+    end)
 end
 
 function Ready:COMPANION_UPDATE(_, ctype)
@@ -296,7 +300,10 @@ function Ready:PLAYER_REGEN_ENABLED()
     self:SetReady("combat", true)
     self:CheckAuras()       -- aura updates during combat may have been unreadable
 end
-function Ready:ZONE_CHANGED_NEW_AREA() self:SetReady("in_battleground", not ns.InBattlegroundOrArena()) end
+function Ready:ZONE_CHANGED_NEW_AREA()
+    self:SetReady("in_battleground", not ns.InBattlegroundOrArena())
+    self:OpenZoningWindow()
+end
 function Ready:UNIT_ENTERED_VEHICLE() self:SetReady("vehicle", false) end
 function Ready:UNIT_EXITED_VEHICLE() self:SetReady("vehicle", true) end
 

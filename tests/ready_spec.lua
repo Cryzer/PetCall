@@ -40,6 +40,24 @@ describe("Ready", function()
         assert.equal("In combat", ns.Ready:GetBlockers()[1].label)
     end)
 
+    it("only after zoning: walking into a new zone counts, like a loading screen", function()
+        ns.db.profile.nearPEWOnly = true
+        ns.Ready:UpdateChecks()
+        W.advance(20)                            -- the login's window has closed
+        summons = 0
+        ns.Ready:QueueResummon()
+        W.advance(5)
+        assert.equal(0, summons, "outside the window nothing comes")
+        W.world.zone = "Westfall"
+        W.fire("ZONE_CHANGED_NEW_AREA")          -- Elwynn Forest to Westfall: no loading screen
+        W.advance(ns.db.profile.waitTimer + 1)
+        assert.is_true(summons >= 1)
+        W.advance(20)
+        summons = 0
+        ns.Ready:QueueResummon()
+        W.advance(5)
+        assert.equal(0, summons, "and the window closes again")
+    end)
     it("summons after the wait timer when nothing blocks", function()
         W.fire("PLAYER_REGEN_ENABLED")
         W.advance(ns.db.profile.waitTimer + 1)
