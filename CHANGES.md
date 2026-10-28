@@ -19,6 +19,7 @@
 
 ### Fixed
 
+- Only Summon After Zoning now also counts walking into a new zone, as its description says, not only loading screens. Before, walking from Elwynn Forest into Westfall left you without a pet, even with Auto Switch when changing maps on.
 - No text is cut short any more, in any language: tabs fit their labels, and the set header, set cards, pet tiles, template cards, the Out now card and the status bar wrap long text and grow to hold it.
 - + New and Import sit right under the set list, with Out now below them. + New opens one box for a name or a template.
 - The + New box, import and export stand out from the window on the dark looks.
