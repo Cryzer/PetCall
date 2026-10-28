@@ -141,6 +141,24 @@ describe("Recipes", function()
         assert.is_true(set:Contains("rock"))
         assert.is_false(set:Contains("fish"))
     end)
+    it("every expansion card has a picture of its own, the BfA one by faction", function()
+        local d, seen = ns.ExpansionData, {}
+        for e = 0, 11 do
+            for i, x in ipairs(d.expansions) do
+                if x == e then W.world.pets["e" .. e] = { species = d.starts[i], name = "E" .. e } break end
+            end
+        end
+        ns.PetCache:Rescan()
+        R.ForgetCounts()
+        for e = 0, 11 do
+            local r = byKey("expansion:" .. e)
+            assert.is_not_nil(r, e)
+            assert.is_nil(r.icon:find("Token_Boost"), e .. ": " .. r.icon)
+            assert.is_nil(seen[r.icon], e .. " shares " .. r.icon)
+            seen[r.icon] = true
+        end
+        assert.is_true(byKey("expansion:7").icon:find("KulTiras") ~= nil, "Alliance: Boralus")
+    end)
     it("a no-pet recipe is usable without pets and makes a set that summons none", function()
         local r = byKey("quietpvp")
         assert.is_true((R.Usable(r)))

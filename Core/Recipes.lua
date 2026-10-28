@@ -174,17 +174,24 @@ local function sourceRecipe(i)
         conditions = {}, rules = { { "source", NORMAL, sources = { i } } }, lowest = true })
 end
 
--- the game's own expansion emblems; boost tokens carry the newer ones' logos
+-- a picture of each expansion: the game's own expansion icons, then the newer ones'
+-- capitals as their teleport spells show them (Battle for Azeroth's by faction); a later
+-- expansion than these gets the plain WoW token until it has one
 local EXPANSION_ICONS = {
     [0] = "ExpansionIcon_Classic", [1] = "ExpansionIcon_BurningCrusade", [2] = "ExpansionIcon_WrathoftheLichKing",
     [3] = "ExpansionIcon_Cataclysm", [4] = "ExpansionIcon_MistsofPandaria", [5] = "ExpansionIcon_Draenor",
-    [7] = "INV_Misc_Token_Boost_BfA", [8] = "INV_Misc_Token_Boost_Shadowlands", [9] = "INV_Misc_Token_Boost_Dragonflight",
+    [6] = "Spell_Arcane_TeleportDalaranBrokenIsles", [8] = "Spell_Arcane_TeleportOribos",
+    [9] = "Spell_Arcane_TeleportValdrakken", [10] = "INV_Spell_Arcane_TelepotDornogal", [11] = "INV_12_Mage_Teleport",
 }
+local function expansionIcon(i)
+    if i == 7 then return UnitFactionGroup("player") == "Horde" and "Spell_Arcane_PortalZandalar" or "Spell_Arcane_PortalKulTiras" end
+    return EXPANSION_ICONS[i] or "INV_Misc_Token_Boost_Generic"
+end
 
 -- one set per expansion, used everywhere just above the Default set
 local function expansionRecipe(i)
     local name = ns.Expansions.Name(i)
-    return finish({ key = "expansion:" .. i, category = "expansions", icon = I .. (EXPANSION_ICONS[i] or "INV_Misc_Token_Boost_Generic"),
+    return finish({ key = "expansion:" .. i, category = "expansions", icon = I .. expansionIcon(i),
         title = format(L["%s pets"], name), hint = format(L["Everywhere, before the Default set. Expansion: %s."], name),
         conditions = {}, rules = { { "expansion", NORMAL, expansions = { i } } }, lowest = true })
 end

@@ -75,7 +75,7 @@ read_globals = {
     "HasFullControl", "InCombatLockdown", "IsFalling", "IsFlying",
     "IsInGroup", "IsInInstance", "IsResting", "IsStealthed",
     "IsControlKeyDown", "IsMounted", "IsSwimming", "IsSubmerged", "IsIndoors", "IsOutdoors", "GetShapeshiftFormID",
-    "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitInVehicle",
+    "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitFactionGroup", "UnitInVehicle",
     "UnitIsDeadOrGhost", "UnitIsAFK", "SendChatMessage",
     "SecureCmdOptionParse", "PlaySound", "PlaySoundFile", "HelpPlate", "HelpPlateTooltip", "MAIN_HELP_BUTTON_TOOLTIP",
     "ReloadUI",
