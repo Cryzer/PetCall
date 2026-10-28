@@ -1,25 +1,36 @@
 local _, ns = ...
 
-local C_PetJournal, ipairs, format, strlower, sort, wipe = C_PetJournal, ipairs, format, strlower, table.sort, wipe
+local C_PetJournal, ipairs, pairs, format, strlower, sort, wipe = C_PetJournal, ipairs, pairs, format, strlower, table.sort, wipe
 
 local PetCache = ns:NewModule("PetCache")
 ns.PetCache = PetCache
 
 local ids, infos, loaded = {}, {}, false
 
-local function readInfo(petID)
+-- the pet as the journal shows it now; the old table when nothing about it changed
+local function readInfo(petID, old)
     local speciesID, customName, level, _, _, displayID, isFavorite, name, icon, petType, creatureID =
         C_PetJournal.GetPetInfoByPetID(petID)
     if not speciesID then return nil end
     local _, _, _, _, quality = C_PetJournal.GetPetStats(petID)
+    level, name, quality = level or 1, name or "?", quality or 2
+    displayID = displayID ~= 0 and displayID or nil
+    isFavorite = isFavorite and true or false
+    -- read once per scan: every draw table asks about every pet
+    local summonable = C_PetJournal.PetIsSummonable(petID) and true or false
+    if old and old.speciesID == speciesID and old.customName == customName and old.level == level
+        and old.name == name and old.icon == icon and old.petType == petType and old.creatureID == creatureID
+        and old.displayID == displayID and old.isFavorite == isFavorite and old.quality == quality
+        and old.summonable == summonable then
+        return old
+    end
     return {
-        petID = petID, speciesID = speciesID, customName = customName, level = level or 1,
-        name = name or "?", icon = icon, petType = petType, creatureID = creatureID,
+        petID = petID, speciesID = speciesID, customName = customName, level = level,
+        name = name, icon = icon, petType = petType, creatureID = creatureID,
         -- this pet's own look: species with several looks (Trading Post pets) have no
         -- textures on the species-wide display and render white
-        displayID = displayID ~= 0 and displayID or nil,
-        isFavorite = isFavorite and true or false, quality = quality or 2,
-        sortKey = format("%s\0%s\0%03d", strlower(name or ""), strlower(customName or ""), level or 0),
+        displayID = displayID, isFavorite = isFavorite, quality = quality, summonable = summonable,
+        sortKey = format("%s\0%s\0%03d", strlower(name), strlower(customName or ""), level),
     }
 end
 
@@ -51,25 +62,26 @@ local function groupCopies()
     end
 end
 
+-- The game sends PET_JOURNAL_LIST_UPDATE for a summon, a journal search and more:
+-- PetsChanged (and every draw table, count and list built on it) only follows a real change.
 function PetCache:Rescan()
     local owned = C_PetJournal.GetOwnedPetIDs()
     if not owned then return end
-    local old = {}
-    for _, id in ipairs(ids) do old[id] = true end
-    wipe(ids)
-    wipe(infos)
-    local listChanged = false
+    local old = infos
+    local newIDs, newInfos = {}, {}
+    local listChanged, changed = false, not loaded
     for _, id in ipairs(owned) do
         if not C_PetJournal.PetNeedsFanfare(id) then
-            local info = readInfo(id)
+            local info = readInfo(id, old[id])
             if info then
-                ids[#ids + 1], infos[id] = id, info
-                if not old[id] then listChanged = true end
-                old[id] = nil
+                newIDs[#newIDs + 1], newInfos[id] = id, info
+                if not old[id] then listChanged = true elseif info ~= old[id] then changed = true end
             end
         end
     end
-    if next(old) then listChanged = true end
+    if #newIDs ~= #ids then listChanged = true end
+    if not (listChanged or changed) then return end
+    ids, infos = newIDs, newInfos
     sort(ids, function(a, b)
         local ka, kb = infos[a].sortKey, infos[b].sortKey
         if ka == kb then return a < b end

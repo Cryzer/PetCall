@@ -35,9 +35,35 @@ describe("PetCache", function()
         W.fire("PET_JOURNAL_LIST_UPDATE")
         W.advance(1)
         assert.same({ true }, events)
+        W.world.pets.c.level = 2
         W.fire("PET_JOURNAL_LIST_UPDATE")
         W.advance(1)
         assert.same({ true, false }, events)
+    end)
+    it("a journal update that changes nothing sends no PetsChanged and keeps the pets' tables", function()
+        local n = 0
+        ns:RegisterCallback({}, "PetsChanged", function() n = n + 1 end)
+        local a = ns.PetCache:GetInfo("a")
+        W.fire("PET_JOURNAL_LIST_UPDATE")       -- the game sends it on a summon, a journal search...
+        W.advance(1)
+        assert.equal(0, n)
+        assert.equal(a, ns.PetCache:GetInfo("a"))
+    end)
+    it("a new favourite, level, name or a pet that can no longer be summoned is a change", function()
+        local events = {}
+        ns:RegisterCallback({}, "PetsChanged", function(_, changed) events[#events + 1] = changed end)
+        W.world.favorites.a = true
+        ns.PetCache:Rescan()
+        assert.is_true(ns.PetCache:GetInfo("a").isFavorite)
+        W.world.pets.a.level = 6
+        ns.PetCache:Rescan()
+        W.world.pets.a.custom = "Squeak"
+        ns.PetCache:Rescan()
+        assert.is_true(ns.PetCache:GetInfo("a").summonable)
+        W.world.pets.a.unsummonable = true
+        ns.PetCache:Rescan()
+        assert.is_false(ns.PetCache:GetInfo("a").summonable)
+        assert.same({ false, false, false, false }, events)
     end)
     it("groups copies of the same pet and picks the favorite or best copy as primary", function()
         W.world.pets.c1 = { species = 50, name = "Bouncer", level = 3 }

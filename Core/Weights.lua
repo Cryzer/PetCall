@@ -1,7 +1,7 @@
 local _, ns = ...
 
 local L = ns.L
-local C_PetJournal, rawget, abs = C_PetJournal, rawget, math.abs
+local rawget, abs = rawget, math.abs
 
 local Weights = {}
 ns.Weights = Weights
@@ -69,7 +69,7 @@ function Weights.Build(settings, out)
     for _, petID in ns.PetCache:IteratePetIDs() do
         -- a pet the game will not summon gets no tickets from anywhere: drawing it would
         -- summon nothing (1.x let rules give it tickets)
-        local summonable = C_PetJournal.PetIsSummonable(petID)
+        local summonable = ns.PetCache:GetInfo(petID).summonable
         if hasFilters then
             for _, entry in ipairs(filters) do
                 if ns.AutoRules.Match(entry, petID) then

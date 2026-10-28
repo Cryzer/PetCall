@@ -95,4 +95,11 @@ describe("Weights", function()
         end
         assert.equal(others, tbl.total)
     end)
+    it("asks the game whether a pet can be summoned once per journal scan, not once per draw", function()
+        local calls, summonable = 0, C_PetJournal.PetIsSummonable
+        C_PetJournal.PetIsSummonable = function(id) calls = calls + 1 return summonable(id) end
+        for _ = 1, 5 do ns.Weights.Build({ pets = {}, defaultValue = 1, filter = {} }) end
+        C_PetJournal.PetIsSummonable = summonable
+        assert.equal(0, calls)
+    end)
 end)
