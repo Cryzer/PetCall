@@ -26,11 +26,16 @@ describe("Expansions", function()
         assert.equal(13, #ns.Expansions.All())
         assert.equal(0, ns.Expansions.All()[1])
     end)
+    it("in a pre-patch the client's next expansion counts, though the server still runs the old one", function()
+        W.world.expansionLevel, W.world.clientExpansionLevel = 11, 12
+        assert.equal(12, ns.Expansions.Newest())
+        assert.equal(12, ns.Expansions.Of(ns.ExpansionData.maxSpecies + 1))
+    end)
     it("without the client's expansion level the data's newest is used", function()
-        local f = GetServerExpansionLevel
-        GetServerExpansionLevel = nil
+        local server, client = GetServerExpansionLevel, GetClientDisplayExpansionLevel
+        GetServerExpansionLevel, GetClientDisplayExpansionLevel = nil, nil
         assert.equal(11, ns.Expansions.Newest())
-        GetServerExpansionLevel = f
+        GetServerExpansionLevel, GetClientDisplayExpansionLevel = server, client
     end)
     it("never older than the data, whatever the client says", function()
         W.world.expansionLevel = 3

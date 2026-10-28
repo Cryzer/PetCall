@@ -131,6 +131,7 @@ function W.reset()
     GetCurrentRegion = function() return 3 end
     GetZoneText = function() return w.zone end
     GetServerExpansionLevel = function() return w.expansionLevel or 11 end
+    GetClientDisplayExpansionLevel = function() return w.clientExpansionLevel or w.expansionLevel or 11 end
     for i, name in ipairs({ "Classic", "The Burning Crusade", "Wrath of the Lich King", "Cataclysm",
         "Mists of Pandaria", "Warlords of Draenor", "Legion", "Battle for Azeroth", "Shadowlands",
         "Dragonflight", "The War Within", "Midnight" }) do

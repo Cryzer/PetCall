@@ -11,11 +11,14 @@ local data = ns.ExpansionData
 local dataNewest = 0
 for _, e in ipairs(data.expansions) do if e > dataNewest then dataNewest = e end end
 
--- the newest expansion the client knows, never older than the data
+-- the newest expansion the client knows, never older than the data: in a pre-patch the
+-- server still runs the old one while the client already holds the next one's pets
+local function level(get)
+    local n = get and get()
+    return type(n) == "number" and n or -1
+end
 function Expansions.Newest()
-    local level = GetServerExpansionLevel and GetServerExpansionLevel()
-    if type(level) == "number" and level > dataNewest then return level end
-    return dataNewest
+    return math.max(dataNewest, level(GetServerExpansionLevel), level(GetClientDisplayExpansionLevel))
 end
 
 -- a species newer than the data came with the newest expansion
