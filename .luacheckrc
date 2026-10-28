@@ -102,7 +102,9 @@ read_globals = {
     "CLASS", "SPECIALIZATION", "ITEMS",
 }
 
-files["tests/"] = { std = "+busted", globals = { "PetCall3DB", "PetLeash3DB", "PetCall", "assert", "issecretvalue" }, allow_defined_top = true }
+files["tests/"] = { std = "+busted", globals = { "PetCall3DB", "PetLeash3DB", "PetCall", "assert", "issecretvalue",
+    -- game functions a test swaps for its own
+    "C_Housing", "C_Map", "C_PetJournal", "GetClientDisplayExpansionLevel", "GetServerExpansionLevel", "GetZoneText", "ReloadUI" }, allow_defined_top = true }
 -- the stub exists to define WoW globals
 files["tests/wowstub.lua"] = { ignore = { "1" } }
 files["tests/uistub.lua"] = { ignore = { "1" } }
