@@ -1,7 +1,7 @@
 local _, ns = ...
 
 local L = ns.L
-local ipairs, pairs, type, format, sort, unpack = ipairs, pairs, type, format, table.sort, unpack
+local ipairs, pairs, type, format, tinsert, unpack = ipairs, pairs, type, format, table.insert, unpack
 local R = {}
 ns.Recipes = R
 
@@ -216,17 +216,25 @@ local function count(r)
         local primary = ns.PetCache:GetCopies(tbl[i + 1])[1]
         sums[primary] = (sums[primary] or 0) + tbl[i]
     end
-    local found = {}
-    for id, w in pairs(sums) do found[#found + 1] = { id = id, w = w } end
-    sort(found, function(a, b)
-        if a.w ~= b.w then return a.w > b.w end
-        local ka, kb = ns.PetCache:GetSortKey(a.id), ns.PetCache:GetSortKey(b.id)
+    -- the four likeliest, then by name: kept in order while going over the tiles once
+    -- (a card shows four of maybe a thousand)
+    local n, sample = 0, {}
+    local function before(a, b)
+        if sums[a] ~= sums[b] then return sums[a] > sums[b] end
+        local ka, kb = ns.PetCache:GetSortKey(a), ns.PetCache:GetSortKey(b)
         if ka ~= kb then return ka < kb end
-        return a.id < b.id
-    end)
-    local sample = {}
-    for i = 1, math.min(4, #found) do sample[i] = found[i].id end
-    return #found, sample
+        return a < b
+    end
+    for id in pairs(sums) do
+        n = n + 1
+        local at = #sample + 1
+        while at > 1 and before(id, sample[at - 1]) do at = at - 1 end
+        if at <= 4 then
+            tinsert(sample, at, id)
+            sample[5] = nil
+        end
+    end
+    return n, sample
 end
 
 -- recipe key -> { n, sample, place }: the gallery asks about each recipe several times per

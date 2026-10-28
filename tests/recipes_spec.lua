@@ -85,6 +85,18 @@ describe("Recipes", function()
         for _, id in ipairs(sample) do assert.is_true(ns.PetCache:IsPrimary(id)) end
     end)
 
+    it("a card shows the four likeliest pets, then by name, whatever their journal order", function()
+        W.world.pets = {}
+        for i, name in ipairs({ "Fig", "Bee", "Eel", "Cat", "Ant", "Dog" }) do
+            W.world.pets["z" .. i] = { species = 100 + i, name = name, level = 1 }
+        end
+        W.world.pets.z1.level = 25
+        ns.PetCache:Rescan()
+        local r = { rules = { { "level", 8, operator = ">=", level = "25" } }, defaultValue = 1 }
+        local n, sample = R.Count(r)
+        assert.equal(6, n)
+        assert.same({ "z1", "z5", "z2", "z4" }, sample)   -- Fig often, then Ant, Bee, Cat
+    end)
     it("every recipe has conditions or puts its set at the bottom", function()
         local open
         for _, r in ipairs(R.List()) do

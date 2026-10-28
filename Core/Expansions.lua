@@ -22,7 +22,10 @@ function Expansions.Newest()
 end
 
 -- a species newer than the data came with the newest expansion
+local ofSpecies = {}  -- speciesID -> expansion, found once: every expansion card asks about every pet
 function Expansions.Of(speciesID)
+    local e = ofSpecies[speciesID]
+    if e then return e end
     if speciesID > data.maxSpecies then return Expansions.Newest() end
     local starts = data.starts
     local lo, hi, found = 1, #starts, 1
@@ -30,7 +33,9 @@ function Expansions.Of(speciesID)
         local mid = math.floor((lo + hi) / 2)
         if starts[mid] <= speciesID then found, lo = mid, mid + 1 else hi = mid - 1 end
     end
-    return data.expansions[found]
+    e = data.expansions[found]
+    ofSpecies[speciesID] = e
+    return e
 end
 
 -- the expansion of each map (uiMapID), from Core/ZoneExpansionData.lua
