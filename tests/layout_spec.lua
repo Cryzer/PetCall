@@ -133,6 +133,25 @@ describe("Layout", function()
         assert.same({}, Layout.Check(U, ns.UI.PetsTabPage.grid))
     end)
 
+    it("a template card with a long hint wraps it and makes its row taller", function()
+        local ns, U = Layout.load({ pseudo = true })
+        U.W.login()
+        ns.UI.Main:Show()
+        Layout.SetWindowSize(ns, U, 640, 440)
+        ns.UI.RecipeGallery:Show()
+        Layout.Settle(U)
+        local tall, short = 0, math.huge
+        for _, c in ipairs(ns.UI.RecipeGallery._cards) do
+            if c:IsVisible() then
+                local h = c:GetHeight()
+                tall, short = math.max(tall, h), math.min(short, h)
+            end
+        end
+        assert.is_true(tall > short, "rows differ: " .. short .. " / " .. tall)
+        assert.is_true(short >= 70, "never below the old height: " .. short)
+        assert.same({}, Layout.Check(U, ns.UI.RecipeGallery:GetFrame()))
+    end)
+
     it("the How often scale and its name fit in a longer language", function()
         local ns, U = Layout.load({ pseudo = true })
         U.W.world.pets = { a = { species = 1, name = "A" } }

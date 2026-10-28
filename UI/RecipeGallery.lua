@@ -9,9 +9,11 @@ ns.UI.RecipeGallery = G
 -- "+ New > From a recipe...": a page of ready-made sets that takes the place of the
 -- set header, tabs and pages; the sets panel and the status bar stay. Cards come in
 -- sections, two per row when the window is wide enough. Group buttons, a search and
--- "Only with pets" narrow the list down.
+-- "Only with pets" narrow the list down. A card grows to hold its title and hint, and a
+-- row is as tall as its taller card.
 
 local ROW_H, HEADER_H, TWO_COLUMNS_FROM = 76, 28, 860
+local CARD_PAD, TEXT_X, PETS_H, ROW_GAP = 8, 62, 20, 6
 local PET_ICONS = 5
 local CHIP_H, CHIPS_TOP = 22, 66
 -- sections by when a set is used; each belongs to one group button
@@ -43,6 +45,7 @@ G.SECTIONS, G.GROUPS = SECTIONS, GROUPS
 local view = { group = "all", search = "", withPets = false }
 G._view = view
 local gallery, scrollBox, chips, cards = nil, nil, {}, {}
+local measure, createW = nil, 0     -- hidden text the cards are measured with; the Create/Open width
 G._cards, G._chips = cards, chips
 
 
@@ -80,6 +83,7 @@ local function initCard(card, recipe)
     end
     card.count:ClearAllPoints()
     if last then card.count:SetPoint("LEFT", last, "RIGHT", 6, 0) else card.count:SetPoint("LEFT", card.pets[1], "LEFT", 0, 0) end
+    card.count:SetPoint("RIGHT", card.create, "LEFT", -8, 0)
     card.existing = ns.Recipes.Existing(recipe)
     local ok, reason = ns.Recipes.Usable(recipe)
     if card.existing then
@@ -125,14 +129,13 @@ local function createCard(parent)
     c.icon:SetPoint("LEFT", 8, 0)
     c.create = ns.Widgets.Button(c, L["Create"], function() openOrCreate(c) end)
     c.create:SetPoint("RIGHT", -8, 0)
+    c.create:SetWidth(createW)
     c.title = ns.Widgets.Label(c, "", "GameFontNormalLarge")
-    c.title:SetPoint("TOPLEFT", c.icon, "TOPRIGHT", 10, 2)
+    c.title:SetPoint("TOPLEFT", TEXT_X, -CARD_PAD)
     c.title:SetPoint("RIGHT", c.create, "LEFT", -8, 0)
-    c.title:SetWordWrap(false)
     c.hint = ns.Widgets.Label(c, "", "GameFontHighlightSmall")
     c.hint:SetPoint("TOPLEFT", c.title, "BOTTOMLEFT", 0, -3)
     c.hint:SetPoint("RIGHT", c.create, "LEFT", -8, 0)
-    c.hint:SetWordWrap(false)
     c.pets = {}
     for i = 1, PET_ICONS do
         local t = c:CreateTexture(nil, "ARTWORK")
@@ -141,8 +144,10 @@ local function createCard(parent)
         c.pets[i] = t
     end
     c.count = ns.Widgets.Label(c, "", "GameFontNormalSmall")
+    c.count:SetWordWrap(false)
     c.reason = ns.Widgets.Label(c, "", "GameFontDisableSmall")
-    c.reason:SetPoint("TOPLEFT", c.hint, "BOTTOMLEFT", 0, -8)
+    c.reason:SetPoint("TOPLEFT", c.hint, "BOTTOMLEFT", 0, -5)
+    c.reason:SetPoint("RIGHT", c.create, "LEFT", -8, 0)
     c:EnableMouse(true)
     ns.Widgets.Tooltip(c, function() return c.recipe.title end, function() return cardTooltip(c) end)
     cards[#cards + 1] = c
@@ -150,6 +155,26 @@ local function createCard(parent)
 end
 
 local function columns() return gallery:GetWidth() >= TWO_COLUMNS_FROM and 2 or 1 end
+
+local function textHeight(fs) return math.ceil(tonumber(fs:GetStringHeight()) or 0) end
+
+-- how tall a card must be for its title, its hint and the line of pets or the reason
+-- under them, at the width the text gets in a card of cardW
+local function cardHeight(r, cardW)
+    local w = math.max(1, cardW - TEXT_X - 8 - createW - 8)
+    measure.title:SetWidth(w)
+    measure.title:SetText(r.title)
+    measure.hint:SetWidth(w)
+    measure.hint:SetText(r.hint or "")
+    local foot = PETS_H
+    local _, reason = ns.Recipes.Usable(r)
+    if reason and not ns.Recipes.Existing(r) then
+        measure.reason:SetWidth(w)
+        measure.reason:SetText(reason)
+        foot = math.max(foot, textHeight(measure.reason))
+    end
+    return math.max(ROW_H - ROW_GAP, 2 * CARD_PAD + textHeight(measure.title) + 3 + textHeight(measure.hint) + 5 + foot)
+end
 
 local function initRow(frame, data)
     if data.header then
@@ -170,7 +195,7 @@ local function initRow(frame, data)
             frame.cards[i] = c
             c:ClearAllPoints()
             c:SetPoint("TOP", 0, 0)
-            c:SetPoint("BOTTOM", 0, 6)
+            c:SetPoint("BOTTOM", 0, ROW_GAP)
             if n == 1 and data.cols == 1 then
                 c:SetPoint("LEFT", 0, 0) c:SetPoint("RIGHT", 0, 0)
             elseif i == 1 then
@@ -200,6 +225,8 @@ end
 -- inside a section: new sets you can make, then the ones you have, then grey ones
 local function elements()
     local cols, out = columns(), {}
+    local listW = tonumber(scrollBox:GetWidth()) or 0
+    local cardW = cols == 2 and (listW - 6) / 2 or listW
     local bySection = {}
     for _, r in ipairs(ns.Recipes.List()) do
         bySection[r.category] = bySection[r.category] or { new = {}, have = {}, rest = {} }
@@ -217,7 +244,10 @@ local function elements()
         if #list > 0 then
             out[#out + 1] = { header = s.label }
             for i = 1, #list, cols do
-                out[#out + 1] = { items = { list[i], cols == 2 and list[i + 1] or nil }, cols = cols }
+                local items = { list[i], cols == 2 and list[i + 1] or nil }
+                local h = cardHeight(items[1], cardW)
+                if items[2] then h = math.max(h, cardHeight(items[2], cardW)) end
+                out[#out + 1] = { items = items, cols = cols, h = h + ROW_GAP }
             end
         end
     end
@@ -250,6 +280,18 @@ local function build()
     gallery:SetPoint("BOTTOMRIGHT", f.content, "BOTTOMRIGHT", 0, 0)
     local title = ns.Widgets.Label(gallery, L["New set from a template"], "GameFontNormalHuge")
     title:SetPoint("TOPLEFT", 10, -8)
+    measure = CreateFrame("Frame", nil, gallery)
+    measure:Hide()
+    measure.title = measure:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    measure.hint = measure:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    measure.reason = measure:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    -- every card's button is as wide as the wider of its two labels, so the text beside it
+    -- has the room it was measured for
+    local probe = ns.Widgets.Button(measure, L["Open"], function() end)
+    createW = probe:GetWidth()
+    probe:SetText(L["Create"])
+    ns.Widgets.FitButton(probe)
+    createW = math.max(createW, probe:GetWidth())
     local back = ns.Widgets.Button(gallery, L["Back"], function() G:Hide() end)
     back:SetPoint("TOPRIGHT", -8, -8)
     local search = ns.Widgets.Search(gallery, function(text) view.search = text G:Refresh() end)
@@ -272,7 +314,7 @@ local function build()
     bar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 6, 0)
     bar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 6, 0)
     local view = CreateScrollBoxListLinearView()
-    view:SetElementExtentCalculator(function(_, data) return data.header and HEADER_H or ROW_H end)
+    view:SetElementExtentCalculator(function(_, data) return data.header and HEADER_H or data.h end)
     view:SetElementInitializer("Frame", initRow)
     ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, bar, view)
     ns.Skin:Apply("ScrollBar", bar)
