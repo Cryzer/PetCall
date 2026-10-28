@@ -175,7 +175,7 @@ function Preview:Attach(parent)
     panel.scale:Layout()
     Preview.NameWeight()
 
-    -- chance: a bar measured against the most likely pet of the set, and the percentage
+    -- chance: a bar filled as far as the percentage next to it says
     panel.chanceLabel = ns.Widgets.Label(panel, L["Chance in this set"], "GameFontNormalSmall")
     panel.chanceBar = CreateFrame("StatusBar", nil, panel)
     panel.chanceBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
@@ -195,7 +195,6 @@ function Preview:Attach(parent)
     panel.reason:SetPoint("RIGHT", -6, 0)
     panel.reason:SetWordWrap(false)
     panel.reason:SetTextColor(1, 0.5, 0.25)
-    ns.Widgets.Tooltip(panel.chanceBar, L["Chance in this set"], L["The bar compares this pet with the most likely pet of the set."])
 
     panel.summon = ns.Widgets.Button(panel, L["Summon"], function()
         if shownID then ns:SummonPet(shownID) end
@@ -290,12 +289,12 @@ function Preview:ShowPet(petID, forSet)
         Preview.NameWeight()
         -- every copy of the pet is a separate ticket in the draw
         local tbl = set:GetWeightTable()
-        local sums, top = set:GetTileSums()
+        local sums = set:GetTileSums()
         local mine = sums[copies[1]] or 0
         local chance = (tbl.total or 0) > 0 and mine / tbl.total or 0
         local reason
         for _, id in ipairs(copies) do reason = reason or set:Unavailable(id) end
-        panel.chanceBar:SetValue(top > 0 and mine / top or 0)
+        panel.chanceBar:SetValue(chance)
         panel.chance:SetText(format("%.1f%%", chance * 100))
         panel.reason:SetText(reason or "")
     end

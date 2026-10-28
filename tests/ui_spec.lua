@@ -839,9 +839,11 @@ describe("UI smoke", function()
         assert.equal("How often: |cffffffffOften|r", panel.weight:GetText())
         panel.scale._scripts.OnMouseWheel(panel.scale, 1)    -- the wheel moves one step
         assert.equal(64, set:GetPetWeight("a"))
-        assert.equal(1, panel.chanceBar._value)          -- the most likely pet fills the bar
+        -- the bar fills as far as the percentage says, also for the most likely pet
+        assert.is_true(panel.chanceBar._value > 0 and panel.chanceBar._value < 1)
+        assert.equal(format("%.1f%%", panel.chanceBar._value * 100), panel.chance:GetText())
         ns.UI.Preview:SetSelected("b")
-        assert.is_true(panel.chanceBar._value < 1)
+        assert.equal(format("%.1f%%", panel.chanceBar._value * 100), panel.chance:GetText())
         -- a rule's level shows in the rule's colour; a choice by hand says so and gives the rule back
         set.settings.filter = { { "favorites", 8 } }
         W.world.favorites.b = true
