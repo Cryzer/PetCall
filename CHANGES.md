@@ -1,7 +1,7 @@
 
 # Changelog
 
-## v2.2.0 (unreleased)
+## v2.2.0 (2026-10-29)
 
 ### New
 
