@@ -1296,12 +1296,21 @@ describe("UI smoke", function()
         viewer.actor._onSized()
         assert.is_true(cam.zoom > first, cam.zoom)
         viewer.actor.GetScale = function() return 1 end
-        -- without the actor's word: the same shape two frames in a row
+        -- the model is in a few frames before its size is set: it waits for the actor's word
         ns.UI.Preview:SetSelected("a")
         ns.UI.Preview:SetSelected("big")
         cam.zoom = 3
-        assert.equal(0, viewer.actor._alpha)
         local model = viewer.frame
+        model._scripts.OnUpdate(model, 0.01)
+        model._scripts.OnUpdate(model, 0.01)
+        assert.equal(0, viewer.actor._alpha, "the same shape twice, but the size is not set yet")
+        viewer.actor._onSized()
+        assert.equal(1, viewer.actor._alpha)
+        -- an actor that cannot say: the same shape two frames in a row
+        rawset(viewer.actor, "SetOnSizeChangedCallback", false)
+        ns.UI.Preview:SetSelected("a")
+        ns.UI.Preview:SetSelected("big")
+        cam.zoom = 3
         model._scripts.OnUpdate(model, 0.01)
         assert.equal(0, viewer.actor._alpha, "one shape seen: maybe still loading")
         model._scripts.OnUpdate(model, 0.01)

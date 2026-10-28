@@ -181,11 +181,14 @@ function ns.UI.NewModelViewer(parent, opts)
 
     -- The journal's camera is too close for some pets and the model would show there
     -- first, so it stays hidden until it is fitted. The actor says when it has set the
-    -- model's size; every frame the shape is also looked at, and fitted once it comes
-    -- the same twice in a row. A model that does not load in time shows unfitted.
+    -- model's size, and only then is the size right: a few frames earlier the model is in
+    -- with the scale of the pet before (Newsy at 5.76 instead of 1.34, four times too
+    -- big). An actor that cannot say it is looked at every frame instead, and fitted once
+    -- its shape comes the same twice in a row. A model that does not load in time shows
+    -- unfitted.
     function v:FitPending()
         local seen = shape(self.actor)
-        if seen and seen == self.lastShape then self:Settle() end
+        if not self.sizeSaid and seen and seen == self.lastShape then self:Settle() end
         self.lastShape = seen
         if self.fitUntil and GetTime() > self.fitUntil then self:Reveal("shown unfitted") end
     end
@@ -217,7 +220,8 @@ function ns.UI.NewModelViewer(parent, opts)
                 self.trace, self.fitShape, self.lastShape = {}, nil, nil
                 self.fitUntil = GetTime() + FIT_WAIT
                 local token = self.loadedAt
-                if self.actor.SetOnSizeChangedCallback then
+                self.sizeSaid = self.actor.SetOnSizeChangedCallback and true or false
+                if self.sizeSaid then
                     self.actor:SetOnSizeChangedCallback(function()
                         if v.loadedAt ~= token then return end
                         v:Note("size set")
