@@ -16,6 +16,7 @@ ns.UI = ns.UI or {}
 
 local SCENE_TEMPLATE = "WrappedAndUnwrappedModelScene"
 local HOLD, EASE = 0.8, 1.0
+local FIT_WAIT = 1.2      -- seconds a model may take to load before it shows unfitted
 local FILL = 0.8          -- part of the frame a fitted model may take
 -- A fit further than this times the journal's distance means the model's box is
 -- mostly empty space (Murkastrasza wants about 7x: a box ten times the pet, centred
@@ -143,16 +144,31 @@ function ns.UI.NewModelViewer(parent, opts)
         return true
     end
 
-    -- the model loads in the background: measure it once it is there (actor objects
-    -- have no load script to hook), for about a second at most
-    function v:FitWhenLoaded(token, tries)
-        if self.loadedAt ~= token then return end           -- another pet was loaded since
-        if self:Fit() then
+    local function box(actor)
+        if actor.IsLoaded and not actor:IsLoaded() then return nil end
+        local x1, y1, z1, x2, y2, z2 = actor:GetActiveBoundingBox()
+        if not (x1 and x2) or x2 - x1 <= 0 then return nil end
+        return format("%.2f x %.2f x %.2f", x2 - x1, y2 - y1, z2 - z1)
+    end
+
+    -- The model loads in the background and actor objects have no load script to hook, so
+    -- every frame until it is fitted: the journal's camera is too close for some pets and
+    -- the model would show there first, so it stays hidden until the same box comes twice
+    -- in a row and is fitted, a second or so at most
+    function v:FitPending()
+        local seen = box(self.actor)
+        if seen and seen == self.lastBox and self:Fit() then
+            self:Reveal()
+            local token = self.loadedAt
             ns:After(0.5, function() v:Recheck(token) end)
             return
         end
-        if tries >= 12 then return end
-        ns:After(0.1, function() v:FitWhenLoaded(token, tries + 1) end)
+        self.lastBox = seen
+        if GetTime() > self.fitUntil then self:Reveal() end
+    end
+    function v:Reveal()
+        self.fitUntil, self.lastBox = nil, nil
+        self.actor:SetAlpha(1)
     end
 
     -- a model can report a box while it is still loading, then another one: measure
@@ -190,10 +206,9 @@ function ns.UI.NewModelViewer(parent, opts)
         end
         self:FaceFront()
         self.baseZoom, self.oddBox, self.want, self.standIn, self.fitBox = nil, nil, nil, nil, nil
-        -- a model already in memory may be ready before the hook fires
-        if useScene then
-            local token = self.loadedAt
-            ns:After(0.05, function() v:FitWhenLoaded(token, 0) end)
+        if useScene and self.actor then
+            self.actor:SetAlpha(0)
+            self.fitUntil, self.lastBox = GetTime() + FIT_WAIT, nil
         end
     end
 
@@ -225,6 +240,7 @@ function ns.UI.NewModelViewer(parent, opts)
     end
 
     v.frame:HookScript("OnUpdate", function(_, elapsed)
+        if v.fitUntil then v:FitPending() end
         local dx = dragDelta()
         if dx then
             v.angle = v.angle + dx * 0.02

@@ -1282,7 +1282,13 @@ describe("UI smoke", function()
         ns.UI.Preview:SetSelected("big")
         viewer.actor.GetScale = function() return 1 end
         viewer.actor.GetActiveBoundingBox = function() return -1, -1, 0, 1, 1, 1.5 end    -- a big pet
-        viewer:Fit()
+        -- hidden until fitted: the journal's camera would show it too close first
+        assert.equal(0, viewer.actor._alpha)
+        local model = viewer.frame
+        model._scripts.OnUpdate(model, 0.01)
+        assert.equal(0, viewer.actor._alpha, "one box seen: maybe still loading")
+        model._scripts.OnUpdate(model, 0.01)
+        assert.equal(1, viewer.actor._alpha, "the same box twice: fitted and shown")
         assert.is_true(cam.zoom > 3 and cam.zoom <= 12)              -- moved back, within the limit
         assert.is_true(cam.max >= cam.zoom)
         cam.zoom = 50
@@ -1317,7 +1323,6 @@ describe("UI smoke", function()
         viewer:Fit()
         assert.equal(3, cam.zoom)
         assert.is_true(viewer.oddBox)
-        local model = viewer.frame
         for _ = 1, 30 do W.advance(0.1) model._scripts.OnUpdate(model, 0.1) end
         assert.equal(0, viewer:GetYaw())                             -- no idle turn
         local before = #W.world.printed

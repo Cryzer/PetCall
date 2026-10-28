@@ -138,7 +138,7 @@ function Universal:GetObjectType() return self._type or "Frame" end
 -- an actor is not a frame: no scripts (SetScript/HookScript), only what ModelSceneActor has
 local ACTOR_METHODS = { "SetModelByCreatureDisplayID", "SetAnimationBlendOperation", "ClearModel", "GetModelFileID",
     "SetYaw", "GetYaw", "GetActiveBoundingBox", "GetScale", "SetScale", "GetPosition", "SetPosition", "IsLoaded",
-    "SetAnimation", "Show", "Hide", "IsShown" }
+    "SetAnimation", "Show", "Hide", "IsShown", "SetAlpha" }
 local function strictActor()
     local inner = universal()
     local a = {}
@@ -149,6 +149,7 @@ local function strictActor()
     a.IsLoaded = function() return true end
     a.GetPosition = function() return 0, 0, 0 end
     a.GetScale = function() return 1 end
+    a.SetAlpha = function(self, v) self._alpha = v end
     a.GetActiveBoundingBox = function() return -0.5, -0.5, 0, 0.5, 0.5, 1 end
     return setmetatable(a, { __index = function(_, k) error("ModelSceneActor has no method " .. tostring(k), 2) end })
 end
