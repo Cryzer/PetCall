@@ -26,7 +26,8 @@ jobs:
             printf '%s\n' '-- Auto-generated from CHANGES.md at release time.'
             printf '%s\n' 'local _, ns = ...'
             printf '%s\n' 'ns.releaseNotes = {'
-            grep '^- ' /tmp/vc.md | sed 's/^- //' | while IFS= read -r line; do
+            # the game shows plain text: no markdown bold, and no notes meant for translators
+            awk '/^### /{skip=($0=="### For translators")} !skip && /^- /' /tmp/vc.md | sed 's/^- //; s/\*\*//g' | while IFS= read -r line; do
               escaped=$(printf '%s' "$line" | sed 's/\\/\\\\/g; s/"/\\"/g')
               printf '    "%s",\n' "$escaped"
             done
