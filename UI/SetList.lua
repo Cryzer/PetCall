@@ -144,11 +144,12 @@ local function sizeCards(width)
     local total = 0
     for _, r in ipairs(rows) do
         if r:IsShown() then
-            r.name:SetWidth(width)
-            r.state:SetWidth(width)
-            -- a state too long for one line breaks at its dot, not inside "539 pets"
+            ns.Widgets.BalanceText(r.name, width)
+            -- a state too long for one line breaks at its dot, not inside "539 pets",
+            -- and with its lines even rather than one word left on the last
             r.state:SetText(r.stateText)
             if ns.Widgets.TextWidth(r.state) > width then r.state:SetText((r.stateText:gsub(" · ", "\n"))) end
+            ns.Widgets.BalanceText(r.state, width)
             r.cardH = math.max(CARD_H, 2 * CARD_PAD + textHeight(r.name) + 2 + textHeight(r.state))
             total = total + r.cardH + GAP
         end

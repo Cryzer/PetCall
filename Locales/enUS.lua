@@ -295,6 +295,7 @@ L["Pets you haven't set by hand:"] = true
 L["Reset all weights"] = true
 L["via a rule"] = true
 L["How often"] = true
+L["How often: %s"] = true
 L["Chance in this set"] = true
 L["The bar compares this pet with the most likely pet of the set."] = true
 L["%d pets"] = true

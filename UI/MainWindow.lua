@@ -153,7 +153,7 @@ function Main:Build()
     frame.status = CreateFrame("Frame", nil, frame)
     frame.status:SetPoint("BOTTOMLEFT", 8, 6)
     frame.status:SetPoint("BOTTOMRIGHT", -24, 6)
-    frame.status:SetHeight(22)
+    frame.status:SetHeight(22)       -- until the status bar fits its sentence (UI/StatusBar.lua)
 
     -- a menu measuring itself while the tabs are built makes the window lay out early
     frame:SetScript("OnSizeChanged", function(_, w, h)

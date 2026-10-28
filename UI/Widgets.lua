@@ -26,6 +26,21 @@ function Widgets.TextWidth(fs)
     return math.ceil(tonumber(w) or 0)
 end
 
+-- Wraps fs within width with its lines about even ("No pets to / choose from", not
+-- "No pets to choose / from"): the narrowest width that keeps the same number of lines.
+function Widgets.BalanceText(fs, width)
+    fs:SetWidth(width)
+    local height = tonumber(fs:GetStringHeight()) or 0
+    local lo, hi = math.ceil(Widgets.TextWidth(fs) / 2), width
+    if lo >= hi then return end
+    while hi - lo > 2 do
+        local mid = math.floor((lo + hi) / 2)
+        fs:SetWidth(mid)
+        if (tonumber(fs:GetStringHeight()) or 0) > height then lo = mid else hi = mid end
+    end
+    fs:SetWidth(hi)
+end
+
 -- a button, dropdown or chip as wide as its text, plus extra for an arrow or a ×; the
 -- templates keep their label as .Text (a dropdown's is not its button font string)
 function Widgets.FitButton(b, extra)
@@ -210,6 +225,82 @@ function Widgets.Popover(parent)
     f:Hide()
     if ns.Skin:Look() ~= "blizzard" then ns.Skin:Apply("Panel", f) end
     Widgets.Raise(f)
+    return f
+end
+
+-- An ordered choice as a row of rising bars, like signal strength: the first step is
+-- "off" (a no sign), the others fill up to the picked one. Only one name is shown at a
+-- time, by the owner, so the row is as wide in every language: onHover(step or nil)
+-- tells it which step the cursor is on. The mouse wheel moves one step.
+-- steps = { {value =, label =} }; SetIndex(i) shows the picked step.
+local SCALE_H, SCALE_GAP = 16, 3
+function Widgets.StepScale(parent, steps, onPick, onHover)
+    local f = CreateFrame("Frame", nil, parent)
+    f:SetHeight(SCALE_H)
+    f.steps = {}
+    local function pick(i) if steps[i] then onPick(steps[i].value) end end
+    for i, step in ipairs(steps) do
+        local b = CreateFrame("Button", nil, f)
+        b.step = step
+        b.fill = b:CreateTexture(nil, "ARTWORK")
+        if i == 1 then
+            b.fill:SetTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
+            b.fill:SetSize(SCALE_H - 2, SCALE_H - 2)
+            b.fill:SetPoint("CENTER")
+        else
+            b.fill:SetPoint("BOTTOMLEFT")
+            b.fill:SetPoint("BOTTOMRIGHT")
+            b.fill:SetHeight(math.floor(4 + (i - 2) * (SCALE_H - 4) / math.max(1, #steps - 2)))
+        end
+        b:SetScript("OnClick", function() pick(i) end)
+        b:SetScript("OnEnter", function()
+            f.hover = i
+            f:Paint()
+            if onHover then onHover(step) end
+        end)
+        b:SetScript("OnLeave", function()
+            f.hover = nil
+            f:Paint()
+            if onHover then onHover(nil) end
+        end)
+        f.steps[i] = b
+    end
+    f:EnableMouseWheel(true)
+    f:SetScript("OnMouseWheel", function(_, delta)
+        local i = math.max(1, math.min(#steps, (f.index or 1) + delta))
+        if i ~= f.index then pick(i) end
+    end)
+    function f:Layout()
+        local w = tonumber(self:GetWidth()) or 0
+        local seg = math.floor((w - SCALE_GAP * (#steps - 1)) / #steps)
+        for i, b in ipairs(self.steps) do
+            b:ClearAllPoints()
+            b:SetSize(seg, SCALE_H)
+            b:SetPoint("BOTTOMLEFT", (i - 1) * (seg + SCALE_GAP), 0)
+        end
+    end
+    f:SetScript("OnSizeChanged", function() f:Layout() end)
+    -- the step under the cursor shows what a click would give, faintly
+    function f:Paint()
+        local shown, faint = self.hover or self.index, self.hover ~= nil and self.hover ~= self.index
+        local r, g, b = ns.Skin:Accent()
+        for i, btn in ipairs(self.steps) do
+            local lit = shown ~= nil and (i == 1 and shown == 1 or i > 1 and shown > 1 and i <= shown)
+            if i == 1 then
+                btn.fill:SetDesaturated(not lit)
+                btn.fill:SetAlpha(lit and (faint and 0.6 or 1) or 0.35)
+            elseif lit then
+                btn.fill:SetColorTexture(r, g, b, faint and 0.5 or 1)
+            else
+                btn.fill:SetColorTexture(1, 1, 1, 0.15)
+            end
+        end
+    end
+    function f:SetIndex(i)
+        self.index = i
+        self:Paint()
+    end
+    f:Paint()
     return f
 end
 

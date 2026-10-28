@@ -6,6 +6,18 @@ local Bar = {}
 ns.UI.StatusBar = Bar
 
 local bar
+local BAR_H = 22
+
+-- The sentence wraps when the window is narrow; the bar, and the window's inset above
+-- it, grow to hold it.
+local function fit()
+    if not bar then return end
+    local h = math.max(BAR_H, math.ceil(tonumber(bar.left:GetStringHeight()) or 0) + 6)
+    if h == tonumber(bar:GetHeight()) then return end
+    bar:SetHeight(h)
+    local frame = ns.UI.Main:GetFrame()
+    frame.Inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, h + 10)
+end
 
 -- one sentence: which pet is out and from which set, then whether PetCall can act
 function Bar:Refresh()
@@ -41,6 +53,7 @@ function Bar:Refresh()
         bar.left:SetText(now .. "  ·  " .. state)
     end
     bar.blockers = blockers
+    fit()
     if ns.UI.SetList then ns.UI.SetList:RefreshNow(blockers) end
     bar.auto:SetChecked(ns:IsAutoSummon())
 end
@@ -59,7 +72,7 @@ ns:RegisterCallback(Bar, "WindowBuilt", function(_, frame)
     bar.left = ns.Widgets.Label(bar, "", "GameFontHighlightSmall")
     bar.left:SetPoint("LEFT", bar.icon, "RIGHT", 6, 0)
     bar.left:SetPoint("RIGHT", bar.another, "LEFT", -8, 0)
-    bar.left:SetWordWrap(false)
+    bar.left:SetWordWrap(true)
     local hit = CreateFrame("Frame", nil, bar)
     hit:SetAllPoints(bar.left)
     hit:EnableMouse(true)
@@ -71,6 +84,7 @@ ns:RegisterCallback(Bar, "WindowBuilt", function(_, frame)
     end)
     bar:SetScript("OnShow", function() Bar:Refresh() end)
 end)
+ns:RegisterCallback(Bar, "WindowResized", fit)
 
 local refresh = ns.Debounce(0.1, function() Bar:Refresh() end)
 for _, cb in ipairs({ "ReadyChanged", "CurrentSetChanged", "PetsChanged", "AutoSummonChanged", "SummonedPetChanged", "WindowShown" }) do

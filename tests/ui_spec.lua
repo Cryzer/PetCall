@@ -810,7 +810,7 @@ describe("UI smoke", function()
         assert.is_true(tiles.c.sub:GetText():find("x2") ~= nil)
         assert.is_nil(tiles.b.sub:GetText():find("Level"))
     end)
-    it("the preview sets how often with named buttons and shows the chance as a bar", function()
+    it("the preview sets how often on a scale of steps and shows the chance as a bar", function()
         W.world.pets.a2 = { species = 1, name = "A", level = 25 }
         W.world.pets.b = { species = 2, name = "B" }
         ns.PetCache:Rescan()
@@ -820,13 +820,20 @@ describe("UI smoke", function()
         local set = ns.Sets:Get("$Default")
         ns.UI.Preview:SetSelected("a2")
         local panel = ns.UI.Preview:GetPanel()
-        assert.equal(6, #panel.levels)
-        assert.equal("Often", panel.levels[5]:GetText())
-        panel.levels[5]:Click()
+        local steps = panel.scale.steps
+        assert.equal(6, #steps)
+        assert.equal("How often: |cffffffffNormal|r", panel.weight:GetText())
+        steps[5]._scripts.OnEnter(steps[5])                  -- the step under the cursor names itself
+        assert.equal("How often: |cffaaaaaaOften|r", panel.weight:GetText())
+        steps[5]:Click()
+        steps[5]._scripts.OnLeave(steps[5])
         assert.equal(8, set:GetPetWeight("a"))
         assert.equal(8, set:GetPetWeight("a2"))
         ns.UI.Preview:Refresh()
-        assert.is_true(panel.levels[5].picked)
+        assert.equal(5, panel.scale.index)
+        assert.equal("How often: |cffffffffOften|r", panel.weight:GetText())
+        panel.scale._scripts.OnMouseWheel(panel.scale, 1)    -- the wheel moves one step
+        assert.equal(64, set:GetPetWeight("a"))
         assert.equal(1, panel.chanceBar._value)          -- the most likely pet fills the bar
         ns.UI.Preview:SetSelected("b")
         assert.is_true(panel.chanceBar._value < 1)
@@ -1385,17 +1392,15 @@ describe("UI smoke", function()
         assert.is_true(panel.model:IsShown())
         assert.is_true(panel.chanceBar:IsShown())
         -- the controls stand on the bottom edge: no text above can push them into Summon
-        for _, btn in ipairs(panel.levels) do
-            assert.is_true(btn._points.BOTTOMLEFT.rel == panel)
-            assert.is_true(btn._points.BOTTOMLEFT.y >= 30 + 8)
-        end
+        assert.is_true(panel.scale._points.BOTTOMLEFT.rel == panel)
+        assert.is_true(panel.scale._points.BOTTOMLEFT.y >= 30 + 8)
         assert.is_true(panel.weight._points.BOTTOMLEFT.rel == panel)
         -- the source lines end above "How often"
-        assert.is_true(panel.source._points.BOTTOMRIGHT.y > panel.weight._points.BOTTOMLEFT.y)
-        -- without the chance bar the buttons move down to the Summon button
-        local high = panel.levels[4]._points.BOTTOMLEFT.y
+        assert.is_true(panel.source._points.BOTTOMRIGHT.rel == panel.weight)
+        -- without the chance bar the scale moves down to the Summon button
+        local high = panel.scale._points.BOTTOMLEFT.y
         panel._scripts.OnSizeChanged(panel, 240, 220)
-        assert.is_true(panel.levels[4]._points.BOTTOMLEFT.y < high)
+        assert.is_true(panel.scale._points.BOTTOMLEFT.y < high)
     end)
     it("the preview's source text loses Blizzard's blank lines and trailing breaks", function()
         local clean = ns.UI.Preview.CleanSource

@@ -15,12 +15,21 @@ local hovering         -- true while SetHover draws: the model waits for the cur
 -- When room runs short the parts go in this order: the source lines (still in the
 -- tooltip), the chance bar, then the model. Name, How often and Summon always stay.
 -- (each budget keeps an 8 px gap above the Summon button)
-local FULL, NO_SOURCE, NO_CHANCE = 248, 202, 148
+local FULL, NO_SOURCE, NO_CHANCE = 222, 176, 122
 -- The controls stand on the Summon button, counted up from the panel's bottom edge, so
 -- no text above them can push them out of the frame. The source lines get the room
 -- between the name and "How often" and are cut there (the whole text is in the tooltip).
-local SUMMON_TOP, CHANCE_BOTTOM, LEVELS_BOTTOM, LEVELS_LOW = 30, 38, 92, 38
-local LEVEL_H, LEVEL_GAP = 20, 2
+local SUMMON_TOP, CHANCE_BOTTOM, SCALE_BOTTOM, SCALE_LOW = 30, 38, 92, 38
+local PANEL_W = 240
+local SCALE_W = PANEL_W - 14      -- the How often scale and its name
+
+-- "How often: Often" for the picked step, or for the step under the cursor
+function Preview.NameWeight(hovered)
+    local step = hovered or ns.Weights.LEVELS[panel.scale.index or 0]
+    if not step then panel.weight:SetText(L["How often"]) return end
+    local color = hovered and hovered ~= ns.Weights.LEVELS[panel.scale.index or 0] and "|cffaaaaaa" or "|cffffffff"
+    panel.weight:SetText(format(L["How often: %s"], color .. step.label .. "|r"))
+end
 
 -- Blizzard's source text: "|n" line breaks, sometimes blank lines and trailing breaks
 function Preview.CleanSource(text)
@@ -32,16 +41,13 @@ end
 
 -- How often and the chance bar, counted up from the bottom edge
 local function placeControls(withChance)
-    local bottom = withChance and LEVELS_BOTTOM or LEVELS_LOW
-    for i, btn in ipairs(panel.levels) do
-        local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
-        btn:ClearAllPoints()
-        btn:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8 + col * 76, bottom + (1 - row) * (LEVEL_H + LEVEL_GAP))
-    end
-    local levelsTop = bottom + 2 * LEVEL_H + LEVEL_GAP
+    local bottom = withChance and SCALE_BOTTOM or SCALE_LOW
+    panel.scale:ClearAllPoints()
+    panel.scale:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, bottom)
     panel.weight:ClearAllPoints()
-    panel.weight:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, levelsTop + 4)
-    panel.source:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -6, levelsTop + 4 + 12 + 8)
+    panel.weight:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 8, bottom + panel.scale:GetHeight() + 4)
+    -- the source lines end above the scale's name, however many lines that name takes
+    panel.source:SetPoint("BOTTOMRIGHT", panel.weight, "TOPRIGHT", 0, 8)
 end
 
 -- -> model height (0 = no model), show source, show chance
@@ -73,7 +79,7 @@ end
 
 function Preview:Attach(parent)
     panel = CreateFrame("Frame", nil, parent)
-    panel:SetWidth(240)
+    panel:SetWidth(PANEL_W)
     ns.Skin:Apply("Panel", panel, { inset = true })
 
     viewer = ns.UI.NewModelViewer(panel, { mouse = true })
@@ -122,20 +128,17 @@ function Preview:Attach(parent)
     ns.Widgets.Tooltip(sourceHit, function() return panel.name:GetText() end,
         function() return panel.source:GetText() end)
 
-    -- how often: six named steps in two rows instead of an unlabelled slider
-    panel.weight = ns.Widgets.Label(panel, L["How often"], "GameFontNormalSmall")
-    panel.levels = {}
-    for i, lvl in ipairs(ns.Weights.LEVELS) do
-        local btn = ns.Widgets.Button(panel, lvl.label, function()
-            if shownID and set then set:SetPetWeights(ns.PetCache:GetCopies(shownID), lvl.value) end
-        end)
-        btn:SetNormalFontObject("GameFontNormalSmall")
-        btn:SetHighlightFontObject("GameFontHighlightSmall")
-        btn:SetHeight(LEVEL_H)
-        btn.value = lvl.value
-        btn:SetWidth(76)
-        panel.levels[i] = btn
-    end
+    -- how often: one row of rising steps, named above it; the step under the cursor
+    -- names itself there before it is clicked
+    panel.weight = ns.Widgets.Label(panel, "", "GameFontNormalSmall")
+    panel.weight:SetWidth(SCALE_W)
+    panel.weight:SetWordWrap(true)
+    panel.scale = ns.Widgets.StepScale(panel, ns.Weights.LEVELS, function(value)
+        if shownID and set then set:SetPetWeights(ns.PetCache:GetCopies(shownID), value) end
+    end, function(step) Preview.NameWeight(step) end)
+    panel.scale:SetWidth(SCALE_W)
+    panel.scale:Layout()
+    Preview.NameWeight()
 
     -- chance: a bar measured against the most likely pet of the set, and the percentage
     panel.chanceLabel = ns.Widgets.Label(panel, L["Chance in this set"], "GameFontNormalSmall")
@@ -214,6 +217,8 @@ function Preview:ShowPet(petID, forSet)
         panel.name:SetText(L["No pet selected"])
         panel.sub:SetText("") panel.source:SetText("") panel.chance:SetText("") panel.reason:SetText("")
         panel.chanceBar:SetValue(0)
+        panel.scale:SetIndex(nil)
+        Preview.NameWeight()
         viewer:Clear()
         viewer.creatureID = nil      -- forget it, or the same pet would not be loaded again
         return
@@ -236,9 +241,10 @@ function Preview:ShowPet(petID, forSet)
     panel.source:SetText(Preview.CleanSource(source))
     if set then
         local current = ns.Weights.Nearest(set:GetPetWeight(petID))
-        for _, btn in ipairs(panel.levels) do
-            ns.Widgets.SetPicked(btn, btn.value == current)
+        for i, lvl in ipairs(ns.Weights.LEVELS) do
+            if lvl.value == current then panel.scale:SetIndex(i) end
         end
+        Preview.NameWeight()
         -- every copy of the pet is a separate ticket in the draw
         local tbl = set:GetWeightTable()
         local sums, top = set:GetTileSums()
