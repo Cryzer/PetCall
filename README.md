@@ -32,10 +32,10 @@ You decide what fits by making **sets** of pets and telling each set **when** to
 - Conditions for where you are (a zone, a city, a continent, a dungeon, a raid, a delve, your house), what you are doing (swimming, AFK, in a form, riding a chosen mount), who you play with, your character, the time of day and holidays.
 - Conditions read like sentences: *Activity is Swimming*, *Place type is not City*. A live dot shows what is true right now.
 - "Or" groups for a set that should also be used somewhere else.
-- 29 ready-made templates, plus one for each pet family, pet source and expansion, one for your class and one for each holiday.
+- 30 ready-made templates, plus one for each pet family, pet source and expansion, one for your class and one for each holiday.
 
 **Pets the way you like them**
-- Tick the pets a set picks from, or let rules do it: favorites, a pet type, a level, rare quality, where a pet comes from, the expansion it came with, or pets native to where you are. Pets you collect later follow the rules too.
+- Tick the pets a set picks from, or let rules do it: favorites, a pet type, a level, rare quality, where a pet comes from, the expansion it came with, or pets native to where you are or from the expansion of the land you are in. Pets you collect later follow the rules too.
 - Decide how often each pet comes out, from *Never* to *Very often*.
 - A 3D preview with the exact chance the pet comes out next.
 
@@ -105,7 +105,7 @@ Now a dragonkin pet runs next to you whenever you ride one of those drakes.
 ### Pets tab
 
 - **Search** by name. Show **All** pets, only those **In this set** or only those **Left out**. The star shows only your favorites.
-- **Filter**: pet type, source, the expansion a pet came with, level, rarity or the zone you are in, and sorting by name, level, rarity or chance. The line under the toolbar names each filter (click one to remove it). **How often for N shown** gives every pet shown a setting of its own.
+- **Filter**: pet type, source, the expansion a pet came with, level, rarity, the zone you are in or its expansion, and sorting by name, level, rarity or chance. The line under the toolbar names each filter (click one to remove it). **How often for N shown** gives every pet shown a setting of its own.
 - **Make a rule** keeps the filters as a rule: those pets, and pets you collect later that match, come out as often as you pick. The **Rules** button opens a rule on the list, where it reads as a sentence; change its filters or how often, then **Save rule**. A pet two rules pick comes out as often as the stronger one says.
 - **Tick** a pet to put it in the set. Untick a pet a rule picks to leave it out anyway; tick it again to give it back to the rule. A pet's own setting always wins over its rules. **Right-click** to set how often it comes out, summon it, make it a favorite or open it in the Pet Journal.
 - **Preview** on the right: the pet you point at or click, its source, level and copies, **How often** on a slider (blue when a rule sets it; **Use the rule** gives a pet set by hand back to it), its **chance in this set**, a **Summon** button and a favorite star.
@@ -152,7 +152,7 @@ Click **+ New → From a template…**. Templates are grouped by when they are u
 
 | Group | Templates |
 |---|---|
-| Everyday | Favorites first · Pets from this zone · Rare parade · Battle-ready team · Walk the little ones |
+| Everyday | Favorites first · Pets from this zone · Pets from this expansion · Rare parade · Battle-ready team · Walk the little ones |
 | Cities and home | Where people can see you · Evening in town · Trading Post finds · At my house · Visiting friends |
 | World and instances | Flyers in the open world · Dungeons and raids · Delve crew · Scenario sidekicks · Quiet raid nights · Quiet in PvP |
 | On the move | Water pets while swimming · Riding escort · Pack of the wild · Indoor company · Favorites while AFK |

@@ -17,6 +17,32 @@ describe("Recipes", function()
         R = ns.Recipes
     end)
     local function byKey(key) for _, r in ipairs(R.List()) do if r.key == key then return r end end end
+    it("pets from this expansion: an everyday card after the zone one, a set at the bottom", function()
+        local list, at = R.List(), {}
+        for i, r in ipairs(list) do at[r.key] = i end
+        assert.equal(at.zone + 1, at.here)
+        local here = list[at.here]
+        assert.equal("everyday", here.category)
+        assert.equal("Pets from this expansion", here.title)
+        W.world.mapID = ns.ZoneExpansionData[ns.Expansions.Of(1)][1]   -- where Fish came from
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        assert.is_true((R.Count(here)) >= 1)
+        local set = R.Create(here)
+        assert.same({ { "expansionHere", ns.Weights.NORMAL } }, set.settings.filter)
+        assert.equal(0, set.settings.defaultValue)
+        local sets = ns.Sets:List()
+        assert.equal(set, sets[#sets - 1], "just above the Default set")
+    end)
+    it("the expansion card counts the expansion you are in now", function()
+        local here = byKey("here")
+        local owned = { [ns.Expansions.Of(1)] = true, [ns.Expansions.Of(2)] = true, [ns.Expansions.Of(3)] = true }
+        local none
+        for e = 0, 11 do if not owned[e] then none = e break end end
+        W.world.mapID = ns.ZoneExpansionData[ns.Expansions.Of(1)][1]
+        assert.is_true((R.Count(here)) >= 1)
+        W.world.mapID = ns.ZoneExpansionData[none][1]
+        assert.equal(0, (R.Count(here)), "no pet from there")
+    end)
     it("the zone card counts the zone you are in now, without waiting for the pets to change", function()
         W.world.sources[1] = "Pet Battle: Durotar"
         ns.PetCache:Rescan()

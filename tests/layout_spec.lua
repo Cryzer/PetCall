@@ -174,6 +174,25 @@ describe("Layout", function()
         end
     end)
 
+    it("the expansion-you-are-in template fits its card at every width", function()
+        local ns, U = Layout.load({ pseudo = true })
+        U.W.world.pets = { w = { species = 39, name = "W" } }      -- Classic
+        U.W.world.mapID = 84                                          -- Stormwind City
+        U.W.login()
+        ns.UI.Main:Show()
+        for _, size in ipairs({ { 640, 440 }, { 1100, 700 } }) do
+            Layout.SetWindowSize(ns, U, size[1], size[2])
+            ns.UI.RecipeGallery:Show()
+            Layout.Settle(U)
+            local card
+            for _, c in ipairs(ns.UI.RecipeGallery._cards) do
+                if c.recipe and c.recipe.key == "here" and c:IsVisible() then card = c end
+            end
+            assert.is_not_nil(card, "a Pets from this expansion card")
+            assert.same({}, Layout.Check(U, ns.UI.RecipeGallery:GetFrame()))
+        end
+    end)
+
     it("set settings rows stack by what they hold, and labels and controls share a column", function()
         local ns, U = Layout.load({ pseudo = true })
         U.W.login()

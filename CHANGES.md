@@ -7,7 +7,7 @@
 
 - Rules from filters: filter the pet list by type, source, level, rarity or the zone you are in, then click Make a rule. The rule says how often those pets come out, and pets you collect later that match follow it too. A rule reads as a sentence ("pets Beast or Aquatic and Rare or better come out Very often") and opens on the list from the Rules button or a pet's right-click menu; change it by changing its filters.
 - Leave out one pet a rule picks: untick it. Tick it again, or click Use the rule in the preview or the pet's menu, and the rule decides again. The tile says "by hand" and an open rule counts the pets you set by hand.
-- Pets by expansion: the Filter menu narrows the list to the expansions pets came with, whatever their source (a Pandaria shop pet is a Mists of Pandaria pet), rules can pick pets that way, and the templates have one set per expansion you have pets from.
+- Pets by expansion: the Filter menu narrows the list to the expansions pets came with, whatever their source (a Pandaria shop pet is a Mists of Pandaria pet), rules can pick pets that way, and the templates have one set per expansion you have pets from. **Pets from this expansion** draws from the expansion of the land you are in (Uldum counts as Cataclysm, Dornogal as The War Within) and follows you from one expansion's lands to the next.
 - How often is a slider in the preview, a notch for every step from Never to Very often. Drag it, click its arrows or turn the mouse wheel. A blue slider means a rule sets it.
 
 ### Changed
