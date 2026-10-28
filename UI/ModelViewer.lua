@@ -141,6 +141,8 @@ function ns.UI.NewModelViewer(parent, opts)
                 cam:SetMaxZoomDistance(want)
             end
             cam:SetZoomDistance(want)
+            -- the camera glides to a new distance; the pet would show close up on the way
+            if cam.SnapToTargetInterpolationZoom then cam:SnapToTargetInterpolationZoom() end
         end
         return true
     end
@@ -180,7 +182,10 @@ function ns.UI.NewModelViewer(parent, opts)
         local x1, y1, z1, x2, y2, z2 = self.actor:GetActiveBoundingBox()
         if not x1 or format("%.2f x %.2f x %.2f", x2 - x1, y2 - y1, z2 - z1) == seen then return end
         local cam = self.frame:GetActiveCamera()
-        if cam and self.baseZoom then cam:SetZoomDistance(self.baseZoom) end
+        if cam and self.baseZoom then
+            cam:SetZoomDistance(self.baseZoom)
+            if cam.SnapToTargetInterpolationZoom then cam:SnapToTargetInterpolationZoom() end
+        end
         self.oddBox, self.standIn, self.want = nil, nil, nil
         self:Fit()
     end

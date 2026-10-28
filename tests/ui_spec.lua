@@ -1276,6 +1276,7 @@ describe("UI smoke", function()
         function cam:SetZoomDistance(d) self.zoom = d end
         function cam:GetMaxZoomDistance() return self.max end
         function cam:SetMaxZoomDistance(d) self.max = d end
+        function cam:SnapToTargetInterpolationZoom() self.snapped = self.zoom end
         viewer.frame.GetActiveCamera = function() return cam end
         viewer.frame.GetWidth = function() return 230 end
         viewer.frame.GetHeight = function() return 300 end
@@ -1290,6 +1291,7 @@ describe("UI smoke", function()
         model._scripts.OnUpdate(model, 0.01)
         assert.equal(1, viewer.actor._alpha, "the same box twice: fitted and shown")
         assert.is_true(cam.zoom > 3 and cam.zoom <= 12)              -- moved back, within the limit
+        assert.equal(cam.zoom, cam.snapped, "there at once, not gliding back from close up")
         assert.is_true(cam.max >= cam.zoom)
         cam.zoom = 50
         viewer:Fit()
