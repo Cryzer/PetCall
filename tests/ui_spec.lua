@@ -1285,14 +1285,28 @@ describe("UI smoke", function()
         viewer.actor.GetActiveBoundingBox = function() return -1, -1, 0, 1, 1, 1.5 end    -- a big pet
         -- hidden until fitted: the journal's camera would show it too close first
         assert.equal(0, viewer.actor._alpha)
-        local model = viewer.frame
-        model._scripts.OnUpdate(model, 0.01)
-        assert.equal(0, viewer.actor._alpha, "one box seen: maybe still loading")
-        model._scripts.OnUpdate(model, 0.01)
-        assert.equal(1, viewer.actor._alpha, "the same box twice: fitted and shown")
+        viewer.actor._onSized()                                      -- the actor has set its size
+        assert.equal(1, viewer.actor._alpha, "fitted and shown")
         assert.is_true(cam.zoom > 3 and cam.zoom <= 12)              -- moved back, within the limit
         assert.equal(cam.zoom, cam.snapped, "there at once, not gliding back from close up")
         assert.is_true(cam.max >= cam.zoom)
+        -- the actor sets a bigger scale a frame later: fitted again from the journal's framing
+        local first = cam.zoom
+        viewer.actor.GetScale = function() return 2 end
+        viewer.actor._onSized()
+        assert.is_true(cam.zoom > first, cam.zoom)
+        viewer.actor.GetScale = function() return 1 end
+        -- without the actor's word: the same shape two frames in a row
+        ns.UI.Preview:SetSelected("a")
+        ns.UI.Preview:SetSelected("big")
+        cam.zoom = 3
+        assert.equal(0, viewer.actor._alpha)
+        local model = viewer.frame
+        model._scripts.OnUpdate(model, 0.01)
+        assert.equal(0, viewer.actor._alpha, "one shape seen: maybe still loading")
+        model._scripts.OnUpdate(model, 0.01)
+        assert.equal(1, viewer.actor._alpha, "the same shape twice: fitted and shown")
+        assert.equal(first, cam.zoom)
         cam.zoom = 50
         viewer:Fit()
         assert.equal(50, cam.zoom)                                   -- never pulled closer
@@ -1312,9 +1326,9 @@ describe("UI smoke", function()
         assert.is_true(viewer.standIn)
         assert.is_true(not viewer.oddBox)
         -- the box changes after the first fit (still loading): back to the journal, fit again
-        viewer.standIn, viewer.fitBox, viewer.baseZoom = nil, "1.00 x 1.00 x 3.00", 14
+        viewer.standIn, viewer.fitShape, viewer.baseZoom = nil, "1.00 x 1.00 x 3.00, scale 2.55", 14
         cam.zoom = 40
-        viewer:Recheck(viewer.loadedAt)
+        viewer:Settle()
         assert.equal(14, cam.zoom)
         assert.is_true(viewer.standIn)
         viewer.actor.GetScale = function() return 1 end

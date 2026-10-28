@@ -77,6 +77,7 @@ function ns.UI.DumpModel()
     end
     ns:Printf("fitted to box %s, wants %.2f%s", last.fitBox or "?", last.want or -1, last.oddBox and " (odd box: journal framing kept)"
         or last.standIn and " (stand-in box: journal framing kept)" or "")
+    for _, step in ipairs(last.trace or {}) do ns:Print(step) end
 end
 
 function ns.UI.NewModelViewer(parent, opts)
@@ -147,47 +148,51 @@ function ns.UI.NewModelViewer(parent, opts)
         return true
     end
 
-    local function box(actor)
+    -- what a fit depends on: the box, and the scale the actor sets once the model is in
+    local function shape(actor)
         if actor.IsLoaded and not actor:IsLoaded() then return nil end
         local x1, y1, z1, x2, y2, z2 = actor:GetActiveBoundingBox()
         if not (x1 and x2) or x2 - x1 <= 0 then return nil end
-        return format("%.2f x %.2f x %.2f", x2 - x1, y2 - y1, z2 - z1)
+        return format("%.2f x %.2f x %.2f, scale %.2f", x2 - x1, y2 - y1, z2 - z1, actor:GetScale() or 1)
     end
 
-    -- The model loads in the background and actor objects have no load script to hook, so
-    -- every frame until it is fitted: the journal's camera is too close for some pets and
-    -- the model would show there first, so it stays hidden until the same box comes twice
-    -- in a row and is fitted, a second or so at most
-    function v:FitPending()
-        local seen = box(self.actor)
-        if seen and seen == self.lastBox and self:Fit() then
-            self:Reveal()
-            local token = self.loadedAt
-            ns:After(0.5, function() v:Recheck(token) end)
-            return
-        end
-        self.lastBox = seen
-        if GetTime() > self.fitUntil then self:Reveal() end
-    end
-    function v:Reveal()
-        self.fitUntil, self.lastBox = nil, nil
-        self.actor:SetAlpha(1)
+    -- the last load step by step, for /pcall model
+    function v:Note(what)
+        self.trace[#self.trace + 1] = format("%4d ms %s", (GetTime() - self.loadedAt) * 1000, what)
     end
 
-    -- a model can report a box while it is still loading, then another one: measure
-    -- once more, and if the box changed, go back to the journal's framing and fit again
-    function v:Recheck(token)
-        if self.loadedAt ~= token or not self.actor then return end
-        local seen = self.fitBox
-        local x1, y1, z1, x2, y2, z2 = self.actor:GetActiveBoundingBox()
-        if not x1 or format("%.2f x %.2f x %.2f", x2 - x1, y2 - y1, z2 - z1) == seen then return end
-        local cam = self.frame:GetActiveCamera()
+    -- Fits the model to what it measures now, and fits it again from the journal's framing
+    -- when that changed since (a model can report a box while it is still loading, and
+    -- the actor sets its scale a frame after the model is in). The first fit shows it.
+    function v:Settle()
+        local seen = self.actor and shape(self.actor)
+        if not seen or seen == self.fitShape then return end
+        local cam = self.fitShape and self.frame:GetActiveCamera()
         if cam and self.baseZoom then
             cam:SetZoomDistance(self.baseZoom)
             if cam.SnapToTargetInterpolationZoom then cam:SnapToTargetInterpolationZoom() end
+            self.oddBox, self.standIn, self.want = nil, nil, nil
         end
-        self.oddBox, self.standIn, self.want = nil, nil, nil
-        self:Fit()
+        if not self:Fit() then return end
+        self.fitShape = seen
+        self:Note(format("fitted to %s, camera %.2f", seen, tonumber(self.frame:GetActiveCamera():GetZoomDistance()) or 0))
+        if self.fitUntil then self:Reveal("shown") end
+    end
+
+    -- The journal's camera is too close for some pets and the model would show there
+    -- first, so it stays hidden until it is fitted. The actor says when it has set the
+    -- model's size; every frame the shape is also looked at, and fitted once it comes
+    -- the same twice in a row. A model that does not load in time shows unfitted.
+    function v:FitPending()
+        local seen = shape(self.actor)
+        if seen and seen == self.lastShape then self:Settle() end
+        self.lastShape = seen
+        if self.fitUntil and GetTime() > self.fitUntil then self:Reveal("shown unfitted") end
+    end
+    function v:Reveal(what)
+        self.fitUntil, self.lastShape = nil, nil
+        self.actor:SetAlpha(self.alpha or 1)
+        self:Note(what)
     end
 
     function v:FaceFront()
@@ -198,11 +203,27 @@ function ns.UI.NewModelViewer(parent, opts)
     function v:Load(info)
         local displayID = info.displayID or select(12, C_PetJournal.GetPetInfoBySpeciesID(info.speciesID))
         self.info, self.displayID, self.loadedAt = info, displayID, GetTime()
+        self.baseZoom, self.oddBox, self.want, self.standIn, self.fitBox = nil, nil, nil, nil, nil
         if useScene then
             local sceneID = C_PetJournal.GetPetModelSceneInfoBySpeciesID(info.speciesID)
             self.frame:TransitionToModelSceneID(sceneID, CAMERA_TRANSITION_TYPE_IMMEDIATE, CAMERA_MODIFICATION_TYPE_DISCARD, true)
             self.actor = self.frame:GetActorByTag("unwrapped")
             if self.actor then
+                -- the scene may give the actor an alpha of its own: shown again with that
+                -- (never 0: that is this viewer's own hiding, from a load cut short)
+                local alpha = self.actor.GetAlpha and self.actor:GetAlpha() or 1
+                self.alpha = alpha > 0 and alpha or 1
+                self.actor:SetAlpha(0)
+                self.trace, self.fitShape, self.lastShape = {}, nil, nil
+                self.fitUntil = GetTime() + FIT_WAIT
+                local token = self.loadedAt
+                if self.actor.SetOnSizeChangedCallback then
+                    self.actor:SetOnSizeChangedCallback(function()
+                        if v.loadedAt ~= token then return end
+                        v:Note("size set")
+                        v:Settle()
+                    end)
+                end
                 self.actor:SetModelByCreatureDisplayID(displayID, true)
                 if Enum.ModelBlendOperation then self.actor:SetAnimationBlendOperation(Enum.ModelBlendOperation.None) end
             end
@@ -211,10 +232,10 @@ function ns.UI.NewModelViewer(parent, opts)
             if displayID and displayID > 0 then self.frame:SetDisplayInfo(displayID) else self.frame:SetCreature(info.creatureID) end
         end
         self:FaceFront()
-        self.baseZoom, self.oddBox, self.want, self.standIn, self.fitBox = nil, nil, nil, nil, nil
+        -- once more a little later, for a box that changes after it was fitted
         if useScene and self.actor then
-            self.actor:SetAlpha(0)
-            self.fitUntil, self.lastBox = GetTime() + FIT_WAIT, nil
+            local token = self.loadedAt
+            ns:After(0.5, function() if v.loadedAt == token then v:Settle() end end)
         end
     end
 
