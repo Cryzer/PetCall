@@ -21,6 +21,7 @@
 - No text is cut short any more, in any language: tabs fit their labels, and the set header, set cards, pet tiles, template cards, the Out now card and the status bar wrap long text and grow to hold it.
 - + New and Import sit right under the set list, with Out now below them. + New opens one box for a name or a template.
 - The + New box, import and export stand out from the window on the dark looks.
+- The pet in the preview stays in one place as you go from pet to pet, however many lines of text are under it.
 
 ### For translators
 

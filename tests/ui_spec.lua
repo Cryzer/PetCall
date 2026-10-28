@@ -1446,7 +1446,12 @@ describe("UI smoke", function()
         local mh, top = Box(600)
         assert.equal(ns.UI.Preview.MODEL_MAX_H, mh)
         assert.equal(math.floor((600 - mh) / 2), top)
-        assert.same({ 200, 0 }, { Box(200) })
+        assert.same({ 200, 0, 0 }, { Box(200) })
+        -- less text than the steady slot is counted for: the model keeps its size and place
+        assert.same({ Box(400) }, { Box(460, 400) })
+        -- more: it keeps its size and moves up into the gap above, then gets smaller
+        assert.same({ 260, 50, 0 }, { Box(310, 400) })
+        assert.same({ 250, 0, 0 }, { Box(250, 400) })
         ns.UI.Main:Show()
         ns.UI.Main:SelectTab("pets")
         local panel = ns.UI.Preview:GetPanel()

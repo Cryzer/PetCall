@@ -198,9 +198,10 @@ describe("Layout", function()
         assert.same({}, Layout.Check(U, panel))
     end)
 
-    it("the preview shows a long source whole and gives the model less room for it", function()
+    it("the preview model stays put whatever the text under it; a long source shows whole", function()
         local ns, U = Layout.load({ pseudo = true })
-        U.W.world.pets = { a = { species = 1, name = "A" }, b = { species = 2, name = "B" } }
+        U.W.world.pets = { a = { species = 1, name = "A" }, b = { species = 2, name = "B" }, c = { species = 3, name = "C" } }
+        U.W.world.sources[3] = "Quest: Augmenting a Dragon"
         U.W.world.sources[1] = "Vendor: Quackenbush|nZone: Deeprun Tram|nCost: 500|TInterface\\MoneyFrame\\UI-GoldIcon:0|t"
         U.W.world.sources[2] = U.W.world.sources[1] .. "|nZone: Elwynn Forest, Westfall, Duskwood, Redridge Mountains, Stranglethorn Vale"
         U.W.login()
@@ -208,16 +209,17 @@ describe("Layout", function()
         ns.UI.Main:SelectTab("pets")
         Layout.SetWindowSize(ns, U, 940, 640)
         local panel = ns.UI.Preview:GetPanel()
-        local heights = {}
-        for _, id in ipairs({ "a", "b" }) do
+        local heights, tops = {}, {}
+        for _, id in ipairs({ "a", "b", "c" }) do
             ns.UI.Preview:SetSelected(id)
             Layout.Settle(U)
             assert.is_true(panel.source:IsShown(), id)
             assert.is_true(Layout.Rect(panel.source).b >= Layout.Rect(panel.weightRow).t, "the source ends above How often")
             assert.same({}, Layout.Check(U, panel))
-            heights[id] = panel.model:GetHeight()
+            heights[id], tops[id] = panel.model:GetHeight(), Layout.Rect(panel.model).t
         end
-        assert.is_true(heights.b < heights.a, "more lines, a smaller model")
+        assert.same({ heights.c, tops.c }, { heights.a, tops.a }, "one source line or three: the same model")
+        assert.is_true(heights.b < heights.a or tops.b > tops.a, "more lines than that: the model makes room")
     end)
 
     it("wrapped text keeps its lines even instead of leaving one word on the last", function()

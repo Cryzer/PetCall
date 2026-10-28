@@ -20,6 +20,9 @@ local CHANCE_BOTTOM, SCALE_BOTTOM, SCALE_LOW = 38, 92, 38
 local MODEL_MIN, MODEL_MIN_NO_SOURCE, MODEL_MIN_NO_CHANCE = 110, 80, 60
 local TEXT_GAP = 4 + 10 + 2 + 8   -- above the model, model to name, name to sub, last text to How often
 local SOURCE_GAP = 4
+-- the model's place is worked out for this much text (a two-line name, the line under it,
+-- three source lines), so it stays put from pet to pet; only more text than that moves it
+local STEADY_TEXT, STEADY_SOURCE = 44, 36
 local PANEL_W = 240
 local SCALE_W = PANEL_W - 14      -- the How often scale and its name
 local NAME_LINE_H = 12
@@ -88,10 +91,15 @@ end
 local MODEL_MAX_H = 260
 Preview.MODEL_MAX_H = MODEL_MAX_H
 
--- -> model height, gap above it
-function Preview.ModelBox(slot)
-    local mh = math.min(slot, MODEL_MAX_H)
-    return mh, math.floor((slot - mh) / 2)
+-- -> model height, gap above it, gap below it. steady: the slot for STEADY_TEXT, which
+-- sets the model's size and place while the pet's own text leaves room for them
+function Preview.ModelBox(slot, steady)
+    steady = steady and steady > 0 and steady or slot
+    local mh = math.min(steady, MODEL_MAX_H)
+    local gap = math.floor((steady - mh) / 2)
+    mh = math.min(mh, slot)
+    local top = math.min(gap, slot - mh)
+    return mh, top, math.min(gap, slot - mh - top)
 end
 
 -- the pet under the cursor wins; off the tiles the panel shows the selected pet, else
@@ -116,14 +124,14 @@ function Preview:Attach(parent)
         local text = (tonumber(panel.name:GetStringHeight()) or 0) + (tonumber(panel.sub:GetStringHeight()) or 0)
         local source = panel.source:GetText() ~= "" and tonumber(panel.source:GetStringHeight()) or 0
         local slot, withSource, withChance = Preview.Layout(h, text, source, controlsHeight)
-        local mh, gap = Preview.ModelBox(slot)
+        local mh, gap, below = Preview.ModelBox(slot, (Preview.Layout(h, STEADY_TEXT, STEADY_SOURCE, controlsHeight)))
         model:SetShown(mh > 0)
         model:ClearAllPoints()
         model:SetPoint("TOPLEFT", 4, -4 - gap)
         model:SetPoint("TOPRIGHT", -4, -4 - gap)
         model:SetHeight(math.max(1, mh))
         panel.name:ClearAllPoints()
-        if mh > 0 then panel.name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 4, -10 - gap)
+        if mh > 0 then panel.name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 4, -10 - below)
         else panel.name:SetPoint("TOPLEFT", 8, -10) end
         panel.name:SetPoint("RIGHT", -6, 0)
         panel.source:SetShown(withSource)
