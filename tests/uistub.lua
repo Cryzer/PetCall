@@ -212,6 +212,10 @@ function U.install()
             f.Inset._shown, f.CloseButton._shown = true, true
             f.Inset._parent, f.CloseButton._parent = f, f
         end
+        if template == "MinimalSliderWithSteppersTemplate" then
+            f.Slider = universal()
+            f.Slider._shown, f.Slider._parent, f.Slider._type = true, f, "Slider"
+        end
         if name then rawset(_G, name, f) end
         W.track(f)
         return f

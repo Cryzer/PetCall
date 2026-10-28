@@ -7,7 +7,7 @@
 
 - Rules from filters: filter the pet list by type, source, level, rarity or the zone you are in, then click Make a rule. The rule says how often those pets come out, and pets you collect later that match follow it too. A rule reads as a sentence ("pets Beast or Aquatic and Rare or better come out Very often") and opens on the list from the Rules button or a pet's right-click menu; change it by changing its filters.
 - Leave out one pet a rule picks: untick it. Tick it again, or click Use the rule in the preview or the pet's menu, and the rule decides again. The tile says "by hand" and an open rule counts the pets you set by hand.
-- How often is a row of rising steps in the preview, from a no sign for Never to Very often. The step under the cursor names itself, and blue steps come from a rule.
+- How often is a slider in the preview, a notch for every step from Never to Very often. Drag it, click its arrows or turn the mouse wheel. A blue slider means a rule sets it.
 
 ### Changed
 

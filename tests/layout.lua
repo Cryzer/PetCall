@@ -255,6 +255,11 @@ local function install(U)
             f.CloseButton._points = { TOPRIGHT = { rel = f, relPoint = "TOPRIGHT", x = 0, y = 0 } }
             f.CloseButton._w, f.CloseButton._h = 24, 24
         end
+        if template == "MinimalSliderWithSteppersTemplate" then
+            -- the track between the two stepper arrows
+            f.Slider._points = { TOPLEFT = { rel = f, relPoint = "TOPLEFT", x = 19, y = 0 },
+                BOTTOMRIGHT = { rel = f, relPoint = "BOTTOMRIGHT", x = -19, y = 0 } }
+        end
         return f
     end
 end

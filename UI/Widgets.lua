@@ -230,80 +230,83 @@ function Widgets.Popover(parent)
     return f
 end
 
--- An ordered choice as a row of rising bars, like signal strength: the first step is
--- "off" (a no sign), the others fill up to the picked one. Only one name is shown at a
--- time, by the owner, so the row is as wide in every language: onHover(step or nil)
--- tells it which step the cursor is on. The mouse wheel moves one step.
--- steps = { {value =, label =} }; SetIndex(i) shows the picked step.
-local SCALE_H, SCALE_GAP = 16, 3
-function Widgets.StepScale(parent, steps, onPick, onHover)
-    local f = CreateFrame("Frame", nil, parent)
-    f:SetHeight(SCALE_H)
-    f.steps = {}
-    local function pick(i) if steps[i] then onPick(steps[i].value) end end
-    for i, step in ipairs(steps) do
-        local b = CreateFrame("Button", nil, f)
-        b.step = step
-        b.fill = b:CreateTexture(nil, "ARTWORK")
-        if i == 1 then
-            b.fill:SetTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
-            b.fill:SetSize(SCALE_H - 2, SCALE_H - 2)
-            b.fill:SetPoint("CENTER")
-        else
-            b.fill:SetPoint("BOTTOMLEFT")
-            b.fill:SetPoint("BOTTOMRIGHT")
-            b.fill:SetHeight(math.floor(4 + (i - 2) * (SCALE_H - 4) / math.max(1, #steps - 2)))
+-- An ordered choice on Blizzard's slider with steppers, a notch for every step: drag it,
+-- click an arrow or turn the mouse wheel to move one step. The name of the step is shown
+-- by the owner, once, so the slider is as wide in every language.
+-- steps = { {value =, label =} }; onPick(value) for a step the player moved to;
+-- SetIndex(i) shows the picked step, nil none (then the slider cannot be moved).
+-- The dark looks draw their own track: a thin line filled up to the thumb.
+local SLIDER_H, THUMB_W, NOTCH_H = 20, 8, 5
+function Widgets.StepSlider(parent, steps, onPick)
+    local f = CreateFrame("Frame", nil, parent, "MinimalSliderWithSteppersTemplate")
+    f:SetHeight(SLIDER_H)
+    f:Init(1, 1, #steps, #steps - 1, {})
+    local bar = f.Slider
+    local thumb = bar:GetThumbTexture()
+    local flat = ns.Skin:Look() ~= "blizzard"
+    if flat then
+        for _, region in ipairs({ bar:GetRegions() }) do
+            if region ~= thumb and region.GetObjectType and region:GetObjectType() == "Texture" then region:SetAlpha(0) end
         end
-        b:SetScript("OnClick", function() pick(i) end)
-        b:SetScript("OnEnter", function()
-            f.hover = i
-            f:Paint()
-            if onHover then onHover(step) end
-        end)
-        b:SetScript("OnLeave", function()
-            f.hover = nil
-            f:Paint()
-            if onHover then onHover(nil) end
-        end)
-        f.steps[i] = b
+        thumb:SetSize(THUMB_W, SLIDER_H - 6)
+        thumb:SetColorTexture(0.9, 0.9, 0.9, 1)
+        f.track = bar:CreateTexture(nil, "BACKGROUND")
+        f.track:SetPoint("LEFT")
+        f.track:SetPoint("RIGHT")
+        f.track:SetHeight(2)
+        f.track:SetColorTexture(1, 1, 1, 0.15)
+        f.fill = bar:CreateTexture(nil, "ARTWORK", nil, -1)
+        f.fill:SetPoint("LEFT")
+        f.fill:SetPoint("RIGHT", thumb, "CENTER")
+        f.fill:SetHeight(2)
     end
+    f.notches = {}
+    for i = 1, #steps do
+        local n = bar:CreateTexture(nil, "BACKGROUND", nil, 1)
+        n:SetSize(1, NOTCH_H)
+        n:SetColorTexture(1, 1, 1, flat and 0.35 or 0.5)
+        f.notches[i] = n
+    end
+    -- the thumb's centre runs from half a thumb in at the left to half a thumb in at the right
+    function f:Layout()
+        local w, tw = tonumber(bar:GetWidth()) or 0, tonumber(thumb:GetWidth()) or 0
+        for i, n in ipairs(self.notches) do
+            n:ClearAllPoints()
+            n:SetPoint("TOP", bar, "BOTTOMLEFT", math.floor(tw / 2 + (i - 1) * (w - tw) / math.max(1, #steps - 1) + 0.5), 3)
+        end
+    end
+    bar:HookScript("OnSizeChanged", function() f:Layout() end)
+    f:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, v)
+        local i = math.floor(v + 0.5)
+        if f.setting or not f.index or i == f.index or not steps[i] then return end
+        f.index = i
+        onPick(steps[i].value)
+    end, f)
     f:EnableMouseWheel(true)
     f:SetScript("OnMouseWheel", function(_, delta)
-        local i = math.max(1, math.min(#steps, (f.index or 1) + delta))
-        if i ~= f.index then pick(i) end
+        if f.index then f:SetValue(math.max(1, math.min(#steps, f.index + delta))) end
     end)
-    function f:Layout()
-        local w = tonumber(self:GetWidth()) or 0
-        local seg = math.floor((w - SCALE_GAP * (#steps - 1)) / #steps)
-        for i, b in ipairs(self.steps) do
-            b:ClearAllPoints()
-            b:SetSize(seg, SCALE_H)
-            b:SetPoint("BOTTOMLEFT", (i - 1) * (seg + SCALE_GAP), 0)
-        end
-    end
-    f:SetScript("OnSizeChanged", function() f:Layout() end)
-    -- the step under the cursor shows what a click would give, faintly
     function f:Paint()
-        local shown, faint = self.hover or self.index, self.hover ~= nil and self.hover ~= self.index
         local r, g, b = ns.Skin:Accent()
         if self.color then r, g, b = unpack(self.color) end
-        for i, btn in ipairs(self.steps) do
-            local lit = shown ~= nil and (i == 1 and shown == 1 or i > 1 and shown > 1 and i <= shown)
-            if i == 1 then
-                btn.fill:SetDesaturated(not lit)
-                btn.fill:SetAlpha(lit and (faint and 0.6 or 1) or 0.35)
-            elseif lit then
-                btn.fill:SetColorTexture(r, g, b, faint and 0.5 or 1)
-            else
-                btn.fill:SetColorTexture(1, 1, 1, 0.15)
-            end
+        if self.fill then
+            self.fill:SetColorTexture(r, g, b, 1)
+            self.fill:SetShown(self.index ~= nil)
+        elseif self.color then
+            thumb:SetVertexColor(r, g, b)
+        else
+            thumb:SetVertexColor(1, 1, 1)
         end
     end
     function f:SetIndex(i)
         self.index = i
+        self.setting = true
+        if i then self:SetValue(i) end
+        self.setting = nil
+        self:SetEnabled(i ~= nil)
         self:Paint()
     end
-    -- { r, g, b } for the lit steps instead of the accent, or nil
+    -- { r, g, b } for the fill (on the stock look, the thumb) instead of the accent, or nil
     function f:SetColor(color)
         self.color = color
         self:Paint()

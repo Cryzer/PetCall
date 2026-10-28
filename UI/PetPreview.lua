@@ -24,20 +24,18 @@ local PANEL_W = 240
 local SCALE_W = PANEL_W - 14      -- the How often scale and its name
 local NAME_LINE_H = 12            -- the budgets count one line for that name
 
--- "How often: Often" for the picked step, or for the step under the cursor
--- and where the picked one comes from: "· from a rule", or "· by hand" when the pet's own
--- setting stands in for a rule, with the button that gives the rule's level back
+-- "How often: Often" for the picked step and where it comes from: "· from a rule", or
+-- "· by hand" when the pet's own setting stands in for a rule, with the button that gives
+-- the rule's level back
 local RULE_COLOR = { 0.4, 0.8, 1 }
-function Preview.NameWeight(hovered)
-    local picked = ns.Weights.LEVELS[panel.scale.index or 0]
-    local step = hovered or picked
+function Preview.NameWeight()
+    local step = ns.Weights.LEVELS[panel.scale.index or 0]
     local text = L["How often"]
     if step then
-        local color = hovered and hovered ~= picked and "|cffaaaaaa" or "|cffffffff"
-        text = format(L["How often: %s"], color .. step.label .. "|r")
-        if step == picked and panel.levelSource == "rule" then
+        text = format(L["How often: %s"], "|cffffffff" .. step.label .. "|r")
+        if panel.levelSource == "rule" then
             text = text .. " · |cff66ccff" .. L["from a rule"] .. "|r"
-        elseif step == picked and panel.useRule.ruleW then
+        elseif panel.useRule.ruleW then
             text = text .. " · |cff999999" .. L["by hand"] .. "|r"
         end
     end
@@ -152,8 +150,7 @@ function Preview:Attach(parent)
     ns.Widgets.Tooltip(sourceHit, function() return panel.name:GetText() end,
         function() return panel.source:GetText() end)
 
-    -- how often: one row of rising steps, named above it; the step under the cursor
-    -- names itself there before it is clicked
+    -- how often: a slider with a notch for every step, named above it
     panel.weightRow = CreateFrame("Frame", nil, panel)
     panel.weightRow:SetWidth(SCALE_W)
     panel.weight = ns.Widgets.Label(panel.weightRow, "", "GameFontNormalSmall")
@@ -168,11 +165,10 @@ function Preview:Attach(parent)
     panel.useRule:SetHighlightFontObject("GameFontHighlightSmall")
     panel.useRule:SetHeight(18)
     panel.useRule:Hide()
-    panel.scale = ns.Widgets.StepScale(panel, ns.Weights.LEVELS, function(value)
+    panel.scale = ns.Widgets.StepSlider(panel, ns.Weights.LEVELS, function(value)
         if shownID and set then set:SetPetWeights(ns.PetCache:GetCopies(shownID), value) end
-    end, function(step) Preview.NameWeight(step) end)
+    end)
     panel.scale:SetWidth(SCALE_W)
-    panel.scale:Layout()
     Preview.NameWeight()
 
     -- chance: a bar filled as far as the percentage next to it says

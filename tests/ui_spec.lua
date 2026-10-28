@@ -815,7 +815,7 @@ describe("UI smoke", function()
         assert.is_true(tiles.c.sub:GetText():find("x2") ~= nil)
         assert.is_nil(tiles.b.sub:GetText():find("Level"))
     end)
-    it("the preview sets how often on a scale of steps and shows the chance as a bar", function()
+    it("the preview sets how often on a slider of steps and shows the chance as a bar", function()
         W.world.pets.a2 = { species = 1, name = "A", level = 25 }
         W.world.pets.b = { species = 2, name = "B" }
         ns.PetCache:Rescan()
@@ -825,13 +825,10 @@ describe("UI smoke", function()
         local set = ns.Sets:Get("$Default")
         ns.UI.Preview:SetSelected("a2")
         local panel = ns.UI.Preview:GetPanel()
-        local steps = panel.scale.steps
-        assert.equal(6, #steps)
+        assert.equal(6, #panel.scale.notches)
         assert.equal("How often: |cffffffffNormal|r", panel.weight:GetText())
-        steps[5]._scripts.OnEnter(steps[5])                  -- the step under the cursor names itself
-        assert.equal("How often: |cffaaaaaaOften|r", panel.weight:GetText())
-        steps[5]:Click()
-        steps[5]._scripts.OnLeave(steps[5])
+        assert.is_true(panel.scale:IsEnabled())
+        panel.scale:SetValue(5)                               -- dragged there, or an arrow clicked
         assert.equal(8, set:GetPetWeight("a"))
         assert.equal(8, set:GetPetWeight("a2"))
         ns.UI.Preview:Refresh()
@@ -860,6 +857,9 @@ describe("UI smoke", function()
         assert.is_true(panel.useRule:IsShown())
         panel.useRule:Click()
         assert.is_false(set:HasManualWeight("b"))
+        ns.UI.Preview:SetSelected(nil)                        -- no pet: nothing to move
+        assert.is_false(panel.scale:IsEnabled())
+        assert.equal("How often", panel.weight:GetText())
         set.settings.filter = {}
         set:FiltersChanged()
     end)

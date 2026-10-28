@@ -108,7 +108,7 @@ Now a dragonkin pet runs next to you whenever you ride one of those drakes.
 - **Filter**: pet type, source, level, rarity or the zone you are in, and sorting by name, level, rarity or chance. The line under the toolbar names each filter (click one to remove it). **How often for N shown** gives every pet shown a setting of its own.
 - **Make a rule** keeps the filters as a rule: those pets, and pets you collect later that match, come out as often as you pick. The **Rules** button opens a rule on the list, where it reads as a sentence; change its filters or how often, then **Save rule**. A pet two rules pick comes out as often as the stronger one says.
 - **Tick** a pet to put it in the set. Untick a pet a rule picks to leave it out anyway; tick it again to give it back to the rule. A pet's own setting always wins over its rules. **Right-click** to set how often it comes out, summon it, make it a favorite or open it in the Pet Journal.
-- **Preview** on the right: the pet you point at or click, its source, level and copies, **How often** (blue steps come from a rule; **Use the rule** gives a pet set by hand back to it), its **chance in this set**, a **Summon** button and a favorite star.
+- **Preview** on the right: the pet you point at or click, its source, level and copies, **How often** on a slider (blue when a rule sets it; **Use the rule** gives a pet set by hand back to it), its **chance in this set**, a **Summon** button and a favorite star.
 
 ### When tab
 
