@@ -1,5 +1,5 @@
--- Layout testing on top of tests/uistub.lua: text sizes, frame geometry, a pseudo-locale
--- and a checker for text that does not fit and controls that overlap.
+-- Layout testing on top of tests/uistub.lua: text sizes, frame geometry, the addon's
+-- pseudo-locale (/pcall pseudo) and a checker for text that does not fit and controls that overlap.
 --
 --   local Layout = dofile("tests/layout.lua")
 --   local ns, U = Layout.load({ pseudo = true })     -- the whole UI, measured
@@ -58,46 +58,6 @@ function Layout.TextSize(text, font, width, wrap)
     return w, lines * LINE[kind]
 end
 
--- Pseudo-locale ------------------------------------------------------------------------
-
-local ACCENT = { a = "á", e = "é", i = "í", o = "ó", u = "ú", c = "ç", n = "ñ", s = "š", z = "ž", y = "ý",
-    A = "Á", E = "É", I = "Í", O = "Ó", U = "Ú", C = "Ç", N = "Ñ", S = "Š", Z = "Ž", Y = "Ý" }
--- escapes and format specifiers stay as they are
-local KEEP = { "|c%x%x%x%x%x%x%x%x", "|r", "|T.-|t", "|A.-|a", "|n", "%%[%-%d%.]*[sdif%%]", "\n" }
-
--- Lengthens a text the way translations do (short labels the most) and accents its
--- letters, so a layout made for English can be seen with longer words.
-function Layout.Pseudo(s)
-    if type(s) ~= "string" or s == "" then return s end
-    local out, pos, visible = {}, 1, 0
-    while pos <= #s do
-        local kept
-        for _, pat in ipairs(KEEP) do
-            local a, b = s:find("^" .. pat, pos)
-            if a then kept = s:sub(a, b) pos = b + 1 break end
-        end
-        if kept then
-            out[#out + 1] = kept
-        else
-            local c = s:sub(pos, pos)
-            local len = c:byte() >= 240 and 4 or c:byte() >= 224 and 3 or c:byte() >= 192 and 2 or 1
-            c = s:sub(pos, pos + len - 1)
-            out[#out + 1] = ACCENT[c] or c
-            pos = pos + len
-            visible = visible + 1
-        end
-    end
-    local factor = visible <= 10 and 2 or visible <= 20 and 1.8 or visible <= 40 and 1.5 or 1.3
-    local pad = math.max(0, math.ceil(visible * (factor - 1)) - 2)
-    return "[" .. table.concat(out) .. string.rep("·", pad) .. "]"
-end
-
--- every string of ns.L, and every key without a string, comes out lengthened
-local function pseudoLocale(ns)
-    local L = ns.L
-    for k, v in pairs(L) do rawset(L, k, Layout.Pseudo(v)) end
-    setmetatable(L, { __index = function(t, k) local v = Layout.Pseudo(k) rawset(t, k, v) return v end })
-end
 
 -- Geometry -----------------------------------------------------------------------------
 
@@ -281,13 +241,16 @@ local function install(U)
     end
 end
 
--- The whole UI with measured text; opts.pseudo lengthens every string first.
+-- The whole UI with measured text; opts.pseudo turns on /pcall pseudo, saved as the game
+-- would have it before the addon loads.
 function Layout.load(opts)
     opts = opts or {}
     local U = dofile("tests/uistub.lua")
     local ns = U.load({
-        prepare = install,
-        afterFile = function(path, addon) if opts.pseudo and path == "Locales/enUS.lua" then pseudoLocale(addon) end end,
+        prepare = function(stub)
+            install(stub)
+            if opts.pseudo then PetCall3DB = { global = { pseudo = true } } end
+        end,
     })
     return ns, U
 end

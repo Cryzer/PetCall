@@ -24,6 +24,11 @@ local list = {
     end },
     { "holidays", nil, function() ns.Conditions.DumpHolidays() end },
     { "model", nil, function() if ns.UI.DumpModel then ns.UI.DumpModel() end end },
+    -- longer test texts in the whole window, for checking the layout; takes a reload
+    { "pseudo", nil, function()
+        ns.db.global.pseudo = not ns.db.global.pseudo or nil
+        ReloadUI()
+    end },
     { "help", L["List commands"], function()
         for _, line in ipairs(Commands:HelpLines()) do ns:Print(line) end
     end },

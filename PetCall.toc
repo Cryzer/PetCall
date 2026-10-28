@@ -8,6 +8,7 @@
 ## X-Wago-ID: b6XegOKp
 ## Category: Collections
 ## SavedVariables: PetCall3DB
+## LoadSavedVariablesFirst: 1
 ## OptionalDeps: EllesmereUI
 ## IconTexture: Interface\AddOns\PetCall\Media\icon
 ## AddonCompartmentFunc: PetCall_OnAddonCompartmentClick

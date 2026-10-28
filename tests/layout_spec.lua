@@ -4,11 +4,13 @@ local Layout = dofile("tests/layout.lua")
 
 describe("Layout", function()
     it("the pseudo-locale lengthens text and keeps escapes and format specifiers", function()
-        local p = Layout.Pseudo("Often")
+        local ns = Layout.load()
+        local Pseudo = ns.Pseudo
+        local p = Pseudo("Often")
         assert.is_true(#p > #"Often" * 2, p)
-        local f = Layout.Pseudo("%d in this set · %d left out")
+        local f = Pseudo("%d in this set · %d left out")
         assert.is_true(string.format(f, 3, 4):find("3") ~= nil and string.format(f, 3, 4):find("4") ~= nil, f)
-        local c = Layout.Pseudo("|cffffd100Finding pets|r\nSearch by name.")
+        local c = Pseudo("|cffffd100Finding pets|r\nSearch by name.")
         assert.is_true(c:find("|cffffd100", 1, true) ~= nil and c:find("|r", 1, true) ~= nil and c:find("\n", 1, true) ~= nil)
     end)
 
