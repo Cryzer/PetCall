@@ -36,6 +36,7 @@ Locales\zhTW.lua
 Core\DB.lua
 Core\PetCache.lua
 Core\ExpansionData.lua
+Core\Expansions.lua
 Core\Weights.lua
 Core\AutoRules.lua
 Core\Conditions.lua

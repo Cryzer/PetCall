@@ -68,7 +68,7 @@ read_globals = {
     "ChatFontNormal", "SystemFont_Tiny",
 
     -- WoW API functions
-    "GetTime", "GetServerTime", "GetZoneText", "GetSubZoneText", "GetLocale",
+    "GetTime", "GetServerTime", "GetZoneText", "GetServerExpansionLevel", "GetSubZoneText", "GetLocale",
     "GetNumGroupMembers", "GetBuildInfo",
     "GetSpecialization", "GetSpecializationInfo",
     "GetBindingKey",

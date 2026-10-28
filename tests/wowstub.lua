@@ -130,6 +130,12 @@ function W.reset()
     UnitFactionGroup = function() return "Alliance" end
     GetCurrentRegion = function() return 3 end
     GetZoneText = function() return w.zone end
+    GetServerExpansionLevel = function() return w.expansionLevel or 11 end
+    for i, name in ipairs({ "Classic", "The Burning Crusade", "Wrath of the Lich King", "Cataclysm",
+        "Mists of Pandaria", "Warlords of Draenor", "Legion", "Battle for Azeroth", "Shadowlands",
+        "Dragonflight", "The War Within", "Midnight" }) do
+        _G["EXPANSION_NAME" .. (i - 1)] = name
+    end
     GetSubZoneText = function() return w.subzone end
     GetRealZoneText = function() return w.zone end
     IsResting = function() return w.resting end
