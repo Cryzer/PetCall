@@ -5,40 +5,36 @@
 
 ### New
 
-- Rules from filters: filter the pet list by type, source, level, rarity or the zone you are in, then click Make a rule. The rule says how often those pets come out, and pets you collect later that match follow it too. A rule reads as a sentence ("pets Beast or Aquatic and Rare or better come out Very often") and opens on the list from the Rules button or a pet's right-click menu; change it by changing its filters.
-- Leave out one pet a rule picks: untick it. Tick it again, or click Use the rule in the preview or the pet's menu, and the rule decides again. The tile says "by hand" and an open rule counts the pets you set by hand.
-- Pets by expansion: the Filter menu narrows the list to the expansions pets came with, whatever their source (a Pandaria shop pet is a Mists of Pandaria pet), rules can pick pets that way, and the templates have one set per expansion you have pets from. **Pets from this expansion** draws from the expansion of the land you are in (Uldum counts as Cataclysm, Dornogal as The War Within) and follows you from one expansion's lands to the next.
-- Six new templates: **Caught in the wild** (pets from wild pet battles, in the open world), **Hard-earned trophies** (achievement pets in cities), **Collector's shelf** (shop, promotion and trading card pets in cities and at friends' houses), **Workshop crew** (crafted and mechanical pets in cities), **Quiet in dungeons** (no pet) and **Daylight wanderers** (flyers and beasts from 10:00 to 18:00).
-- How often is a slider in the preview, a notch for every step from Never to Very often. Drag it, click its arrows or turn the mouse wheel. A blue slider means a rule sets it.
+- **Rules.** Filter the pet list by type, source, level, rarity, zone or expansion, then click Make a rule and pick how often those pets come out. Pets you collect later follow the rule too. The Rules button lists a set's rules, so you can open and change them.
+- **Leave one pet out of a rule:** untick it. Tick it again to give it back to the rule.
+- **Pets by expansion.** Filter the list by the expansion a pet came with. The new template Pets from this expansion picks pets from the expansion of the zone you are in.
+- **Six new templates:** Caught in the wild, Hard-earned trophies, Collector's shelf, Workshop crew, Quiet in dungeons and Daylight wanderers.
+- **How often is a slider** in the pet preview, from Never to Very often.
 
 ### Changed
 
-- Rules about where you are name the place: "From this expansion (Midnight)", "From this zone (Silvermoon City)".
-- A set without conditions says it is used everywhere, and one with rules about where you are says the set below it takes over where it has no pets. Before, "No conditions yet" sounded like something was missing.
-- Clicking the pet out now also scrolls the pet list to it, clearing a search or filters that hide it.
-- In a set of rules, a pet nothing picks is only greyed; "Left out" stays on pets you took out by hand.
-- The time-of-day templates follow one another round the clock without overlapping: Morning critters 06–10, Daylight wanderers 10–18, Elemental dusk 18–20, Night owls 20–02 and Witching hour 02–06. Before, dusk and night overlapped, the witching hour lay inside the night and nothing covered the day. Their descriptions now say the hours are server time. Sets you already made from them keep their hours.
-- A pet's own setting now wins over its rules, and a pet two rules pick comes out as often as the stronger rule says. Before, a pet's own weight and its rules' weights were added up. Sets without rules draw exactly as before; in sets with rules, pets that have both a setting of their own and a rule can come out more or less often than they used to.
-- Ticking a pet used to store "Normal" for it, which would now shut its rules out. Those stored settings that only repeat the set's level for other pets are removed once per set; settings you really chose, such as Often, stay.
-- The chance bar in the preview fills as far as the percentage next to it, instead of comparing the pet with the most likely one.
-- Wording follows How often everywhere: "How often for 12 shown", "Other pets" and "Undo all by hand" in the set settings.
-- Fewer stutters: the game tells addons about the pet journal on every summon and journal search, and PetCall now rebuilds its sets, counts and window only when a pet really changed. The templates count their cards a few at a time while the window is open, so they open at once (it took 100 ms), and ask the game about each pet once instead of once per card, and zone and expansion rules read where you are once per rebuild instead of once per pet.
+- Clicking the pet that is out jumps to it in the pet list.
+- Rules about where you are show the place, for example "From this zone (Silvermoon City)".
+- A pet's own setting now beats its rules, and a pet picked by two rules follows the stronger one. Before, they were added up, so in sets with rules some pets may come out more or less often than before.
+- The time-of-day templates cover the whole day without overlapping (server time): Morning critters 06–10, Daylight wanderers 10–18, Elemental dusk 18–20, Night owls 20–02, Witching hour 02–06. Sets you already made keep their hours.
+- Clearer wording: a set without conditions says it is used everywhere, "Left out" only marks pets you took out yourself, and the chance bar matches the percentage next to it.
+- Smoother: PetCall does less work in the background, and the templates open at once.
 
 ### Fixed
 
-- Only Summon After Zoning now also counts walking into a new zone, as its description says, not only loading screens. Before, walking from Elwynn Forest into Westfall left you without a pet, even with Auto Switch when changing maps on.
-- No text is cut short any more, in any language: tabs fit their labels, and the set header, set cards, pet tiles, template cards, the Out now card, the status bar and the hint in the mount preview wrap long text and grow to hold it.
-- + New and Import sit right under the set list, with Out now below them. + New opens one box for a name or a template.
-- The + New box, import and export stand out from the window on the dark looks.
-- The pet in the preview stays in one place as you go from pet to pet, however many lines of text are under it.
+- Only Summon After Zoning also works when you walk into a new zone, not only after a loading screen.
+- No text is cut off any more, in any language.
+- + New and Import sit right under the set list.
+- The + New, import and export windows are easier to see on the dark looks.
+- The pet preview no longer jumps when you move from pet to pet.
 
 ### Translations
 
-- Every text is translated into all ten languages: German, Spanish (both), French, Italian, Korean, Portuguese, Russian and Chinese (both). That includes the options from PetCall 1.x that never were, and the help now matches the window as it is.
+- Every text is translated into all ten languages, including the old 1.x options and the updated help.
 
 ### For translators
 
-- /pcall pseudo makes every text longer and accented, as translations do, and reloads the UI, to check that the window holds a longer language. Type it again to go back.
+- /pcall pseudo makes every text longer, as a translation would, to check that the window still fits. Type it again to turn it off.
 
 ## v2.1.1 (2026-10-18)
 
