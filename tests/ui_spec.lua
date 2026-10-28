@@ -1294,10 +1294,11 @@ describe("UI smoke", function()
         cam.zoom = 50
         viewer:Fit()
         assert.equal(50, cam.zoom)                                   -- never pulled closer
-        -- measured in game: Willie fits by moving back, Murkastrasza is an odd box
+        -- measured in game: Willie fits by moving back, Murkastrasza and Burdened Soul are odd boxes
         local Fit, MAX = ns.UI.FitDistance, ns.UI.FIT_MAX_BACK
         assert.is_true(Fit(4.38 * 7, 2.98 * 7, 2.09 * 7, 191 / 192) <= 26 * MAX)
         assert.is_true(Fit(15.63 * 3.45, 13.54 * 3.45, 16.27 * 3.45, 191 / 192) > 14 * MAX)
+        assert.is_true(Fit(1.19 * 3.5, 1.87 * 3.5, 4.24 * 3.5, 231 / 260, 0.373) > 14 * MAX)    -- its camera: 52.49 wanted
         -- a cube is a stand-in box (Will of Remornia): journal framing, still turning
         assert.is_true(ns.UI.IsStandInBox(7.99, 7.99, 7.99))
         assert.is_false(ns.UI.IsStandInBox(4.38, 2.98, 2.09))

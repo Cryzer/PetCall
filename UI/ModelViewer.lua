@@ -20,10 +20,11 @@ local FIT_WAIT = 1.2      -- seconds a model may take to load before it shows un
 local FILL = 0.8          -- part of the frame a fitted model may take
 -- A fit further than this times the journal's distance means the model's box is
 -- mostly empty space (Murkastrasza wants about 7x: a box ten times the pet, centred
--- far to the side). Such a model keeps the journal's framing and stands still facing
--- front: turning it would swing it around that far-away centre. Big but honest
--- models stay under it (Willie wants about 2.1x in the square menu preview).
-local MAX_BACK = 4
+-- far to the side; Burdened Soul about 3.75x: a box three times as tall as the soul).
+-- Such a model keeps the journal's framing and stands still facing front: turning it
+-- could swing it around a far-away centre. Big but honest models stay under it (Willie
+-- wants about 2.1x in the square menu preview).
+local MAX_BACK = 3
 ns.UI.FIT_MAX_BACK = MAX_BACK      -- for tests
 
 -- A box with three equal sides is a stand-in the client gives some models (Will of
