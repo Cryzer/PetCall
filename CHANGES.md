@@ -16,7 +16,7 @@
 - Ticking a pet used to store "Normal" for it, which would now shut its rules out. Those stored settings that only repeat the set's level for other pets are removed once per set; settings you really chose, such as Often, stay.
 - The chance bar in the preview fills as far as the percentage next to it, instead of comparing the pet with the most likely one.
 - Wording follows How often everywhere: "How often for 12 shown", "Other pets" and "Undo all by hand" in the set settings.
-- Fewer stutters: the game tells addons about the pet journal on every summon and journal search, and PetCall now rebuilds its sets, counts and window only when a pet really changed. Opening the templates asks the game about each pet once instead of once per card, and zone and expansion rules read where you are once per rebuild instead of once per pet.
+- Fewer stutters: the game tells addons about the pet journal on every summon and journal search, and PetCall now rebuilds its sets, counts and window only when a pet really changed. The templates count their cards a few at a time while the window is open, so they open at once (it took 100 ms), and ask the game about each pet once instead of once per card, and zone and expansion rules read where you are once per rebuild instead of once per pet.
 
 ### Fixed
 

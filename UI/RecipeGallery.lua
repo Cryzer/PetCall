@@ -350,5 +350,22 @@ ns:RegisterCallback(G, "WindowHidden", function() G:Hide() end)
 -- one or two columns follow the window width once a resize settles
 local refreshSoon = ns.Debounce(0.12, function() G:Refresh() end)
 ns:RegisterCallback(G, "WindowResized", refreshSoon)
+-- While the window is open the cards are counted a few per frame, about 3 ms each, from
+-- the frame after it opens: counted all at once, opening the templates took 100 ms.
+local counting      -- { list, at } while counting
+local function countStep()
+    counting.at = ns.Recipes.CountSome(counting.list, counting.at, 3)
+    if counting.at then ns:After(0, countStep) else counting = nil end
+end
+local function countSoon()
+    local idle = counting == nil
+    counting = { list = ns.Recipes.Candidates(), at = 1 }
+    if idle then ns:After(0, countStep) end
+end
+local function windowShown() local f = ns.UI.Main.GetFrameRaw() return f ~= nil and f:IsShown() end
+ns:RegisterCallback(G, "WindowShown", countSoon)
+ns:RegisterCallback(G, "PetsChanged", function() if windowShown() then countSoon() end end)
 -- the cards about where you are count again in a new zone
-ns.Events.Register(G, "ZONE_CHANGED_NEW_AREA", function() if G:IsShown() then refreshSoon() end end)
+ns.Events.Register(G, "ZONE_CHANGED_NEW_AREA", function()
+    if G:IsShown() then refreshSoon() elseif windowShown() then countSoon() end
+end)

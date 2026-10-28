@@ -1106,6 +1106,21 @@ describe("UI smoke", function()
         W.advance(1)
         assert.is_false(ns.UI.PetsTabPage.emptyBanner:IsShown())    -- rule-only pets count as in the set
     end)
+    it("with the window open the cards are counted in the background, so the templates open without counting", function()
+        local builds, build = 0, ns.Weights.Build
+        ns.Weights.Build = function(...) builds = builds + 1 return build(...) end
+        ns.UI.Main:Show()
+        assert.equal(0, builds, "not in the frame that opens the window")
+        W.advance(1)
+        assert.is_true(builds > 0)
+        W.world.favorites.a = true                 -- the pets change while the window is open
+        ns.PetCache:Rescan()
+        W.advance(1)
+        builds = 0
+        ns.UI.RecipeGallery:Show()
+        ns.Weights.Build = build
+        assert.equal(0, builds)
+    end)
     it("an open template page follows you into another zone", function()
         W.world.sources[1] = "Pet Battle: Durotar"
         ns.PetCache:Rescan()

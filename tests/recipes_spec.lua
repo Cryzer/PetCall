@@ -97,6 +97,26 @@ describe("Recipes", function()
         assert.equal(6, n)
         assert.same({ "z1", "z5", "z2", "z4" }, sample)   -- Fig often, then Ant, Bee, Cat
     end)
+    it("card counts can be worked out a few at a time, within a budget of milliseconds", function()
+        local builds, build = 0, ns.Weights.Build
+        ns.Weights.Build = function(...)
+            builds = builds + 1
+            W.world.ms = (W.world.ms or 0) + 3          -- each count takes 3 ms
+            return build(...)
+        end
+        R.ForgetCounts()
+        local list = R.Candidates()
+        local at = R.CountSome(list, 1, 5)
+        assert.is_true(at ~= nil, "more to do")
+        assert.equal(2, builds, "stops once 5 ms are spent")
+        while at do at = R.CountSome(list, at, 5) end
+        builds = 0
+        local listed = R.List()
+        for _, r in ipairs(listed) do R.Count(r) end
+        ns.Weights.Build = build
+        assert.equal(0, builds, "all counted already")
+        assert.is_true(#listed <= #list)
+    end)
     it("every recipe has conditions or puts its set at the bottom", function()
         local open
         for _, r in ipairs(R.List()) do

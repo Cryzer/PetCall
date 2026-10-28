@@ -264,29 +264,43 @@ function R.Usable(r)
     return true
 end
 
+-- every card there could be; the ones marked ifPets are shown only when you have pets for them
+-- (a weekly event or a family you have none of would only add grey cards)
+function R.Candidates()
+    local out = {}
+    local function add(r, ifPets)
+        if r then
+            r.ifPets = ifPets
+            out[#out + 1] = r
+        end
+    end
+    for _, r in ipairs(FIXED) do add(finish(r)) end
+    for t = 1, 10 do add(familyRecipe(t), true) end
+    local sources = C_PetJournal.GetNumPetSources and C_PetJournal.GetNumPetSources() or 0
+    for i = 1, sources do add(sourceRecipe(i), true) end
+    for _, i in ipairs(ns.Expansions.All()) do add(expansionRecipe(i), true) end
+    add(classRecipe())
+    for _, h in ipairs(ns.Conditions.KnownHolidays()) do add(holidayRecipe(h), true) end
+    return out
+end
+
 function R.List()
     local out = {}
-    for _, r in ipairs(FIXED) do out[#out + 1] = finish(r) end
-    for t = 1, 10 do
-        local r = familyRecipe(t)
-        if R.Count(r) > 0 then out[#out + 1] = r end
-    end
-    local sources = C_PetJournal.GetNumPetSources and C_PetJournal.GetNumPetSources() or 0
-    for i = 1, sources do
-        local r = sourceRecipe(i)
-        if r and R.Count(r) > 0 then out[#out + 1] = r end
-    end
-    for _, i in ipairs(ns.Expansions.All()) do
-        local r = expansionRecipe(i)
-        if R.Count(r) > 0 then out[#out + 1] = r end
-    end
-    local class = classRecipe()
-    if class then out[#out + 1] = class end
-    for _, h in ipairs(ns.Conditions.KnownHolidays()) do
-        local r = holidayRecipe(h)
-        if R.Count(r) > 0 then out[#out + 1] = r end   -- weekly events would only add grey cards
+    for _, r in ipairs(R.Candidates()) do
+        if not r.ifPets or R.Count(r) > 0 then out[#out + 1] = r end
     end
     return out
+end
+
+-- Counts list[from], list[from + 1]... until budgetMs have gone by; the next index, or nil
+-- when all are counted. Every card goes over all pets: counted a few per frame while the
+-- window is open, the templates then open at once.
+function R.CountSome(list, from, budgetMs)
+    local start = debugprofilestop()
+    for i = from, #list do
+        R.Count(list[i])
+        if debugprofilestop() - start >= budgetMs and i < #list then return i + 1 end
+    end
 end
 
 -- the set this recipe made earlier, found by its name
