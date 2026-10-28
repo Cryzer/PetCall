@@ -32,7 +32,7 @@ You decide what fits by making **sets** of pets and telling each set **when** to
 - Conditions for where you are (a zone, a city, a continent, a dungeon, a raid, a delve, your house), what you are doing (swimming, AFK, in a form, riding a chosen mount), who you play with, your character, the time of day and holidays.
 - Conditions read like sentences: *Activity is Swimming*, *Place type is not City*. A live dot shows what is true right now.
 - "Or" groups for a set that should also be used somewhere else.
-- 30 ready-made templates, plus one for each pet family, pet source and expansion, one for your class and one for each holiday.
+- 36 ready-made templates, plus one for each pet family, pet source and expansion, one for your class and one for each holiday.
 
 **Pets the way you like them**
 - Tick the pets a set picks from, or let rules do it: favorites, a pet type, a level, rare quality, where a pet comes from, the expansion it came with, or pets native to where you are or from the expansion of the land you are in. Pets you collect later follow the rules too.
@@ -153,15 +153,15 @@ Click **+ New → From a template…**. Templates are grouped by when they are u
 | Group | Templates |
 |---|---|
 | Everyday | Favorites first · Pets from this zone · Pets from this expansion · Rare parade · Battle-ready team · Walk the little ones |
-| Cities and home | Where people can see you · Evening in town · Trading Post finds · At my house · Visiting friends |
-| World and instances | Flyers in the open world · Dungeons and raids · Delve crew · Scenario sidekicks · Quiet raid nights · Quiet in PvP |
+| Cities and home | Where people can see you · Evening in town · Trading Post finds · Hard-earned trophies · Collector's shelf · Workshop crew · At my house · Visiting friends |
+| World and instances | Flyers in the open world · Caught in the wild · Dungeons and raids · Delve crew · Scenario sidekicks · Quiet raid nights · Quiet in dungeons · Quiet in PvP |
 | On the move | Water pets while swimming · Riding escort · Pack of the wild · Indoor company · Favorites while AFK |
-| Time of day | Morning critters · Elemental dusk · Night owls · Witching hour |
+| Time of day | Morning critters · Daylight wanderers · Elemental dusk · Night owls · Witching hour |
 | Company | Lone wanderer · Party mascots · Raid group zoo |
 | Collections | one per pet family (*Beast pets*, *Aquatic pets*…), one per source (*Pet Battle pets*, *Vendor pets*…) and one per expansion (*Legion pets*, *Dragonflight pets*…) |
 | Class and holidays | pets that suit your class · Festive mood · the event pets of each holiday you have pets for |
 
-*Quiet raid nights* and *Quiet in PvP* keep your pet away. *Riding escort* needs *Don't summon while mounted* turned off.
+*Quiet raid nights*, *Quiet in dungeons* and *Quiet in PvP* keep your pet away. *Riding escort* needs *Don't summon while mounted* turned off.
 
 ---
 

@@ -117,6 +117,38 @@ describe("Recipes", function()
         assert.equal(0, builds, "all counted already")
         assert.is_true(#listed <= #list)
     end)
+    it("the time-of-day templates cover the day once, and say it is the server's clock", function()
+        local owner = {}
+        for _, r in ipairs(R.List()) do
+            if r.category == "time" then
+                assert.is_true(r.hint:find("server time", 1, true) ~= nil, r.key)
+                local t = r.conditions[1]
+                for m = 0, 23 * 60, 60 do
+                    local inside = t.from <= t.to and (m >= t.from and m < t.to) or (t.from > t.to and (m >= t.from or m < t.to))
+                    if inside then
+                        assert.is_nil(owner[m], r.key .. " and " .. tostring(owner[m]) .. " at " .. m / 60)
+                        owner[m] = r.key
+                    end
+                end
+            end
+        end
+        for m = 0, 23 * 60, 60 do assert.is_not_nil(owner[m], "nothing at " .. m / 60) end
+    end)
+    it("new templates: quiet dungeons, wild-caught, trophies, the collector's shelf, the workshop", function()
+        local quiet = R.Create(byKey("quietdungeon"))
+        assert.is_true(quiet:IsNoPet())
+        assert.same({ "dungeon" }, quiet.settings.trigger[1].locs)
+        _G.BATTLE_PET_SOURCE_5 = "Pet Battle"
+        W.world.pets.wolf = { species = 50, name = "Wolf", type = 8 }
+        W.world.sources[50] = "Pet Battle: Elwynn Forest"
+        ns.PetCache:Rescan()
+        R.ForgetCounts()
+        assert.equal("world", byKey("wild").category)
+        assert.equal(1, (R.Count(byKey("wild"))))
+        _G.BATTLE_PET_SOURCE_5 = nil
+        for _, key in ipairs({ "trophies", "shelf", "workshop" }) do assert.equal("town", byKey(key).category, key) end
+        assert.equal("time", byKey("daylight").category)
+    end)
     it("every recipe has conditions or puts its set at the bottom", function()
         local open
         for _, r in ipairs(R.List()) do
