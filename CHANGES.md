@@ -24,7 +24,7 @@
 
 - Only Summon After Zoning also works when you walk into a new zone, not only after a loading screen.
 - No text is cut off any more, in any language.
-- + New and Import sit right under the set list.
+- The + New and Import buttons sit right under the set list.
 - The + New, import and export windows are easier to see on the dark looks.
 - The pet preview no longer jumps when you move from pet to pet.
 
