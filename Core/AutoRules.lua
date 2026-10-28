@@ -329,17 +329,14 @@ function AutoRules.PlaceKey(list, seen)
     return parts and concat(parts, "\n")
 end
 
--- a set that uses such a rule is rebuilt when its place changed: walking between two zones
--- of one expansion leaves an expansion set alone
-local builtFor = setmetatable({}, { __mode = "k" })
+-- a set that uses such a rule is rebuilt when its draw was made for another place: walking
+-- between two zones of one expansion leaves an expansion set alone. A set waiting for its
+-- rebuild will be made for the place it is in then.
 local function placeChanged()
     local seen = {}
     for _, set in ipairs(ns.Sets:List()) do
         local key = AutoRules.PlaceKey(set.settings.filter, seen)
-        if key and key ~= builtFor[set] then
-            builtFor[set] = key
-            set:FiltersChanged()
-        end
+        if key and not set.dirty and set.weights and set.weights.place ~= key then set:FiltersChanged() end
     end
 end
 ns.Events.Register(AutoRules, "ZONE_CHANGED_NEW_AREA", placeChanged)

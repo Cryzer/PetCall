@@ -72,6 +72,22 @@ describe("Expansions", function()
         W.world.home.any = true
         assert.equal(11, ns.Expansions.Here())
     end)
+    it("a map's parents are walked once, however many pets ask", function()
+        W.world.mapParents[99999] = 2339
+        W.world.mapID = 99999
+        local walks, getMapInfo = 0, C_Map.GetMapInfo
+        C_Map.GetMapInfo = function(id) walks = walks + 1 return getMapInfo(id) end
+        for _ = 1, 50 do assert.equal(10, ns.Expansions.Here()) end
+        C_Map.GetMapInfo = getMapInfo
+        assert.equal(1, walks)
+    end)
+    it("a client without the housing call is nowhere during a loading screen", function()
+        W.world.mapID = nil
+        local inside = C_Housing.IsInsideHouseOrPlot
+        C_Housing.IsInsideHouseOrPlot = nil
+        assert.is_nil(ns.Expansions.Here())
+        C_Housing.IsInsideHouseOrPlot = inside
+    end)
     it("names expansions as the game does, and an unknown one by its number", function()
         assert.equal("Legion", ns.Expansions.Name(6))
         assert.equal("12", ns.Expansions.Name(12))

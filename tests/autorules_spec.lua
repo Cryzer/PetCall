@@ -122,6 +122,22 @@ describe("AutoRules", function()
         W.fire("ZONE_CHANGED_NEW_AREA")
         assert.equal(2, rebuilt, "another expansion: rebuilt")
     end)
+    it("a set built during a loading screen is built again once the map is back", function()
+        local s = ns.Sets:Create("Here")
+        s.settings.defaultValue = 0
+        s.settings.filter = { { "expansionHere", 1 } }
+        W.world.mapID = ns.ZoneExpansionData[ns.Expansions.Of(ns.PetCache:GetSpeciesID("b"))][1]
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        s:FiltersChanged()
+        assert.is_true(s:Contains("b"))
+        local mapID = W.world.mapID
+        W.world.mapID = nil                    -- the pets change while the screen loads
+        s:FiltersChanged()
+        assert.is_false(s:Contains("b"))
+        W.world.mapID = mapID
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        assert.is_true(s:Contains("b"))
+    end)
     it("an empty set from this expansion yields to Default", function()
         local owned = {}
         for _, id in ns.PetCache:IteratePetIDs() do owned[ns.Expansions.Of(ns.PetCache:GetSpeciesID(id))] = true end

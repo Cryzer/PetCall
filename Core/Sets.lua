@@ -178,6 +178,8 @@ function SetMixin:GetWeightTable()
     if self.dirty or not self.weights then
         ownSettingsWin(self.settings)
         self.weights = ns.Weights.Build(self.settings, self.weights)
+        -- rules about where you are: the place this draw was made for
+        self.weights.place = ns.AutoRules.PlaceKey(self.settings.filter)
         self.dirty = false
     end
     return self.weights
