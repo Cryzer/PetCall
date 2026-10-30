@@ -97,7 +97,6 @@ function Universal:SetValue(v)
     self._value = v
     for _, c in ipairs(self._callbacks or {}) do c.fn(c.owner, v) end
 end
-function Universal:GetValue() return self._value or 0 end
 function Universal:SetTexture(t) self._texture = t end
 function Universal:SetColorTexture(r, g, b, a) self._color = { r, g, b, a } end
 function Universal:SetTexCoord(...) self._texCoord = { ... } end
@@ -245,10 +244,6 @@ function U.install()
             if k:match("^[A-Z]") then return universal() end
         end,
     })
-end
-
-function U.uninstall()
-    setmetatable(_G, nil)
 end
 
 -- Every UI file listed in PetCall.toc, in load order.

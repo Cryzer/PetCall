@@ -97,12 +97,6 @@ function W.reset()
         return c
     end
     securecallfunction = function(f, ...) return f(...) end
-    -- WoW's xpcall forwards extra args
-    local xp = xpcall
-    xpcall = function(f, h, ...)
-        local n, a = select("#", ...), { ... }
-        return xp(function() return f(unpack(a, 1, n)) end, h)
-    end
     geterrorhandler = function() return function(e) error(e, 0) end end
     -- a clock in milliseconds tests move by hand, and the call stack as the game writes it
     debugprofilestop = function() return w.ms or 0 end
@@ -135,12 +129,10 @@ function W.reset()
     GetGameTime = function() return w.gameHour, w.gameMinute end
     GetLocale = function() return w.locale end
     GetBuildInfo = function() return "12.1.5", "70100", "Oct 13 2026", 120105 end
-    IsLoggedIn = function() return true end
     UnitName = function() return w.playerName end
     GetRealmName = function() return w.realm end
     UnitClass = function() return w.className, w.class end
     UnitFactionGroup = function() return "Alliance" end
-    GetCurrentRegion = function() return 3 end
     GetZoneText = function() return w.zone end
     GetServerExpansionLevel = function() return w.expansionLevel or 11 end
     GetClientDisplayExpansionLevel = function() return w.clientExpansionLevel or w.expansionLevel or 11 end
@@ -150,7 +142,6 @@ function W.reset()
         _G["EXPANSION_NAME" .. (i - 1)] = name
     end
     GetSubZoneText = function() return w.subzone end
-    GetRealZoneText = function() return w.zone end
     IsResting = function() return w.resting end
     IsInInstance = function() return w.instanceType ~= "none", w.instanceType end
     IsInGroup = function() return w.inGroup or w.inRaid end
@@ -240,7 +231,6 @@ function W.reset()
             return 0, 0, 1
         end,
         SetPetLoadOutInfo = noop,
-        SetCustomName = noop,
         SetFavorite = function(id, v) w.favorites[id] = v == 1 end,
         GetNumPetTypes = function() return 10 end,
         -- name, icon, type, creatureID, source, description, isWild, canBattle, isTradeable, isUnique, obtainable, displayID
@@ -298,7 +288,6 @@ function W.reset()
         IsValidSourceFilter = function(i) return w.mountFilters.sources[i] ~= nil end,
         IsSourceChecked = function(i) return w.mountFilters.sources[i] end,
         SetSourceFilter = function(i, on) w.mountFilters.sources[i] = on end,
-        SetAllSourceFilters = function(on) for i in pairs(w.mountFilters.sources) do w.mountFilters.sources[i] = on end end,
         GetCollectedFilterSetting = function(i) return w.mountFilters.collected[i] end,
         SetCollectedFilterSetting = function(i, on) w.mountFilters.collected[i] = on end,
         SetSearch = function(text) w.mountFilters.search = text end,
@@ -340,7 +329,6 @@ function W.reset()
         end,
         GetTitleForQuestID = function(q) return "Quest" .. q end,
     }
-    C_Spell = { GetSpellInfo = function(id) return { name = "Spell" .. id } end }
     C_AddOns = { GetAddOnMetadata = function(_, k) return k == "Version" and "2.0.0-test" or nil end }
     C_EncodingUtil = {
         SerializeCBOR = function(v) W._cbor = W._cbor or {} W._cbor[#W._cbor + 1] = v return "CBOR" .. #W._cbor end,

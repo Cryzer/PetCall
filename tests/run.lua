@@ -25,6 +25,7 @@ local specs = {
     "tests/share_spec.lua",
     "tests/migrate_spec.lua",
     "tests/localekeys_spec.lua",
+    "tests/translations_spec.lua",
     "tests/commands_spec.lua",
     "tests/menu_spec.lua",
     "tests/glyphs_spec.lua",

@@ -368,4 +368,24 @@ describe("Gate", function()
         collectgarbage("restart")
         assert.is_true(grew < 1, "grew " .. grew .. " KB")
     end)
+
+    it("a zone change with every exception As usual refreshes no exception watcher", function()
+        local Watcher = getmetatable(ns.Conditions.NewWatcher({}, function() end)).__index
+        local refresh, refreshed = Watcher.Refresh, 0
+        Watcher.Refresh = function(self, ...)
+            refreshed = refreshed + 1
+            return refresh(self, ...)
+        end
+        byId("bg"):SetChoice("away")                     -- the count sees a watched exception
+        enter("pvp")
+        assert.is_true(refreshed > 0)
+        enter("none")
+        for _, exc in ipairs(ns.Exceptions:List()) do exc:SetChoice(false) end
+        refreshed = 0
+        enter("pvp")
+        enter("party")
+        W.advance(5)
+        Watcher.Refresh = refresh
+        assert.equal(0, refreshed)
+    end)
 end)

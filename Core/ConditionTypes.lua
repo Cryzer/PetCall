@@ -100,7 +100,7 @@ local function currentLoc(ctx)
 end
 
 C.RegisterType({
-    key = "specialLocation", label = L["Place type"], group = "where", hint = L["Cities, dungeons, raids, delves, battlegrounds or the open world."],
+    key = "specialLocation", label = L["Place type"], group = "where", hint = L["Cities, dungeons, raids, delves, battlegrounds, arenas or the open world."],
     fields = { { key = "locs", kind = "multiChoice", values = function(e)
         -- a condition that still has the old value lists it, so it can be unticked
         if not (e and contains(e.locs, LOC_PVP.value)) then return LOC_VALUES end

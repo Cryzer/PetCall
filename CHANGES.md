@@ -1,6 +1,46 @@
 
 # Changelog
 
+## Unreleased
+
+### New
+
+- **How PetCall acts.** A row above your sets opens one page for everything PetCall does by itself: Auto-summon, when a pet comes out, a new pet on a new map, what happens after a pet battle, the exceptions and pet-like items. The AddOns panel keeps only the look.
+- **Exceptions** keep the pet away in some places: Battlegrounds, Arenas, Dungeons, Raids, Scenarios and delves, While mounted, Stealth or invisibility and Outside cities. Each one is As usual, Leave the pet alone or Put the pet away. Add exception makes your own from the same conditions as sets.
+- **Also when solo** on Dungeons, Raids, and Scenarios and delves. Clear it and the exception fits only in a party or raid group.
+- **Because:** on the Out now card says why the pet is or isn't out, with a button to where you can change it.
+- **Use recommended settings** shows your settings beside the recommended ones first. Undo puts yours back.
+- Battleground and Arena are separate place types. A new Hidden condition covers stealth, invisibility, camouflage and feign death.
+- A welcome screen after the update shows what moved. /pcall welcome opens it again.
+
+### Changed
+
+- Key presses and commands pause Auto-summon instead of switching it off. Dismissing your pet, also outside PetCall, pauses it until you change zone; summoning one ends the pause. Only the check box turns it off.
+- Your own actions go past exceptions: a key press summons in a battleground too, and the chat says which exception it went past.
+- A pet that an exception, stealth, death or a pet battle took away comes back when that ends, also with Only after a loading screen.
+- Picking a pet in the grid, the preview or the menu waits for the game (combat, flying, sitting…) like every other summon.
+- A pet you picked yourself stays when a set starts. The set's timer and a new map still replace it.
+- The Quiet raid nights, Quiet in dungeons and Quiet in PvP templates are gone: the exceptions do their job. A set with "No pet while this set is used" becomes an exception, also when you import one.
+- Sets show "Like Default" with its value instead of "Like the settings". New pet every and Message on summon live on the Default set.
+- PetCall waits during a pet battle, notices /sit and /stand, and its own try while you sit shows no red error.
+- Your old settings move into the PetCall window once and keep doing what they did.
+
+### Fixed
+
+- Summon Another Pet and the other keys no longer wait on settings such as Only Summon After Zoning, mounted, cities or "Don't summon" in battlegrounds and dungeons.
+- A pet picked in the grid no longer skips the checks that Summon another waits for.
+- Only Summon After Zoning no longer holds back the switch timer and bringing your pet back after a pet battle.
+- Summon another with Auto-summon off no longer says it waits for Auto-summon and then summons anyway.
+- Only Enable in Cities promised to dismiss your pet outside cities but didn't. The Outside cities exception does what its choice says.
+- The dungeons and raids setting follows the place live, also when you join a group inside an instance, not only after a loading screen.
+- A set's own switch timer no longer stops outside cities without saying so: "only in cities" is now part of its New pet every.
+- A dismissal that falls in combat now happens after combat.
+- A pet you dismiss yourself outside PetCall no longer comes back after a few seconds.
+
+### Translations
+
+- Every new text is translated into all ten languages.
+
 ## v2.2.0 (2026-10-29)
 
 ### New

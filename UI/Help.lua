@@ -22,6 +22,7 @@ local TEXT = {
     when = L["HELP_WHEN"],
     settings = L["HELP_SETTINGS"],
     gallery = L["HELP_GALLERY"],
+    behaviour = L["HELP_BEHAVIOUR"],
     status = L["HELP_STATUS"],
     mountsWarning = L["HELP_MOUNTS_WARNING"],
     mountsToolbar = L["HELP_MOUNTS_TOOLBAR"],
@@ -75,9 +76,11 @@ function Help.Areas()
     local out = {}
     local add = collector(out)
     add("sets", box(f.left), "RIGHT")
-    local gallery = ns.UI.RecipeGallery
+    local gallery, behaviour = ns.UI.RecipeGallery, ns.UI.Behaviour
     if gallery and gallery:IsShown() then
         add("gallery", box(gallery:GetFrame()), "LEFT")
+    elseif behaviour and behaviour:IsShown() then
+        add("behaviour", box(behaviour:GetFrame()), "LEFT")
     else
         add("header", box(f.header), "DOWN")
         add("tabs", union(Main:GetTabButtons()), "DOWN")
@@ -198,3 +201,4 @@ end)
 ns:RegisterCallback(Help, "WindowHidden", function() Help:Hide(false) end)
 ns:RegisterCallback(Help, "WindowResized", function() Help:Hide(false) end)
 ns:RegisterCallback(Help, "SelectedSetChanged", function() if Help:IsShown() then Help:Show() end end)
+ns:RegisterCallback(Help, "BehaviourPageShown", function() if Help:IsShown() then Help:Show() end end)
