@@ -99,6 +99,56 @@ describe("Gate", function()
         assert.is_nil(W.world.summoned)
     end)
 
+    it("a combat-deferred dismissal is not repeated", function()
+        byId("bg"):SetChoice("away")
+        W.world.summoned = "a"
+        W.world.combat = true
+        W.fire("PLAYER_REGEN_DISABLED")
+        enter("pvp")
+        W.world.combat = false
+        W.fire("PLAYER_REGEN_ENABLED")
+        assert.is_nil(W.world.summoned)
+        W.advance(1)
+        ns:SummonPet("b")                                -- yours, inside the battleground
+        W.world.combat = true
+        W.fire("PLAYER_REGEN_DISABLED")
+        W.world.combat = false
+        W.fire("PLAYER_REGEN_ENABLED")
+        W.advance(1)
+        assert.equal("b", W.world.summoned)
+    end)
+
+    it("a dismiss cancels a summon still waiting for the game", function()
+        W.world.summoned = "a"
+        W.world.combat = true
+        W.fire("PLAYER_REGEN_DISABLED")
+        ns:SummonAnother()
+        ns:DismissPet(true)
+        assert.is_nil(ns.Ready.pending)
+        W.world.combat = false
+        W.fire("PLAYER_REGEN_ENABLED")
+        W.advance(5)
+        assert.is_nil(W.world.summoned)
+    end)
+
+    it("an own exception's name is read again only when it changes", function()
+        byId("mounted"):SetChoice(false)
+        local own = ns.Exceptions:Add({ { "activity", mounted = true } }, "alone")
+        mount(true)
+        local _, cause = G:Check("summon", "auto")
+        local label = cause.label
+        local calls, orig = 0, own.DisplayName
+        own.DisplayName = function(self) calls = calls + 1 return orig(self) end
+        W.fire("PLAYER_MOUNT_DISPLAY_CHANGED")
+        ns:Fire("ExceptionsChanged")
+        G:Check("summon", "auto")
+        assert.equal(0, calls)
+        own:SetConditionModel(own:GetConditionModel())
+        G:Check("summon", "auto")
+        assert.equal(1, calls)
+        assert.equal(label, cause.label)
+    end)
+
     it("an away exception does nothing while Auto-summon is off", function()
         byId("bg"):SetChoice("away")
         ns:SetAutoSummon(false)

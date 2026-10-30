@@ -12,7 +12,6 @@ ns.Gate = Gate
 local gameCauses = {}
 local AUTO_OFF = { level = "auto", key = "off", label = L["Auto-summon is off"] }
 local NO_PET_SET = { level = "exception", key = "noPetSet", label = L["This set keeps the pet away"] }
-local labelsChanged = 0     -- an own exception's name follows its conditions
 
 local function gameCause(key)
     local c = gameCauses[key]
@@ -29,7 +28,9 @@ local function exceptionCause(exc)
         c = { level = "exception", key = exc.id, exc = exc }
         exc.cause = c
     end
-    if c.seen ~= labelsChanged then c.label, c.seen = exc:DisplayName(), labelsChanged end
+    -- the name changes only with a new name or new conditions
+    local name, rev = exc.entry and exc.entry.name, exc.rev or 0
+    if not c.label or c.rev ~= rev or c.name ~= name then c.label, c.rev, c.name = exc:DisplayName(), rev, name end
     return c
 end
 
@@ -81,6 +82,5 @@ function Gate:OnInitialize()
     ns:RegisterCallback(self, "ExceptionStarted", function(_, exc)
         if exc:GetChoice() == "away" then Gate:PutAway() end
     end)
-    ns:RegisterCallback(self, "ExceptionsChanged", function() labelsChanged = labelsChanged + 1 end)
     ns:RegisterCallback(self, "SpecialItemsChanged", function() wipe(gameCauses) end)
 end

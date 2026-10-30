@@ -178,15 +178,15 @@ function Ready:_CheckSummon(waitFinished)
         -- after one, or once to bring back a pet that PetCall or the game took away
         if ns.db.profile.nearPEWOnly and not self.zoning and not self.comeback then return end
     end
-    local ok, cause = ns.Gate:Check(self.pending_action or "summon", source or "auto")
+    local ok, cause = ns.Gate:Check("summon", source or "auto")
     if not ok then
         -- only the game and exceptions keep an automatic request waiting
-        if source == "auto" and cause.level == "auto" then self.pending, self.pending_action = nil, nil end
+        if source == "auto" and cause.level == "auto" then self.pending = nil end
         return
     end
     if waitFinished then
         if self:LastCheck() then
-            self.pending, self.pending_action, self.comeback = nil, nil, nil
+            self.pending, self.comeback = nil, nil
             if self.wait_timer then self.wait_timer:Cancel() self.wait_timer = nil end
             self._last_summon_time = GetTime()
             ns.Summon:SummonRandom()
@@ -224,11 +224,12 @@ end
 -- action: "summon" or "switch"; source: "explicit" (you) or "auto" (PetCall). At most one
 -- request waits, and yours replaces PetCall's own.
 function Ready:Request(action, source)
-    if source == "explicit" or self.pending ~= "explicit" then
-        self.pending, self.pending_action = source, action
-    end
+    if source == "explicit" or self.pending ~= "explicit" then self.pending = source end
     self:_CheckSummon(source == "explicit")
 end
+
+-- you dismissed: a request still waiting would go against that
+function Ready:CancelRequest() self.pending = nil end
 
 -- a "no pet" set puts the pet away when it starts to be used, like an exception
 function Ready:CheckNoPetSet()
@@ -404,6 +405,6 @@ function Ready:DumpDebugState()
         ns:Printf("Pick cooldown: start %s, duration %s, now %.1f, blocked %s, summonable %s", tostring(start), tostring(duration),
             GetTime(), tostring(ns.PetCache:OnCooldown(pick)), tostring(C_PetJournal.PetIsSummonable(pick)))
     end
-    ns:Printf("Falling %s, full control %s, since last cast %.1f s, waiting %s, request %s %s", tostring(IsFalling()), tostring(HasFullControl()),
-        GetTime() - self.last_spell_sent, tostring(self.wait_timer ~= nil), tostring(self.pending_action), tostring(self.pending))
+    ns:Printf("Falling %s, full control %s, since last cast %.1f s, waiting %s, request %s", tostring(IsFalling()), tostring(HasFullControl()),
+        GetTime() - self.last_spell_sent, tostring(self.wait_timer ~= nil), tostring(self.pending))
 end

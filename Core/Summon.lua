@@ -102,9 +102,13 @@ function ns:ResummonPet(enable)
     if enable then ns:SetAutoSummon(true) end
     ns.Ready:Request("summon", "explicit")
 end
-function ns:DismissPet(disable) Summon:Dismiss(disable) end
+local function dismissExplicit(disable)
+    ns.Ready:CancelRequest()
+    Summon:Dismiss(disable)
+end
+function ns:DismissPet(disable) dismissExplicit(disable) end
 function ns:TogglePet()
-    if ns:GetCurrentPet() then Summon:Dismiss(true) else ns:ResummonPet(true) end
+    if ns:GetCurrentPet() then dismissExplicit(true) else ns:ResummonPet(true) end
 end
 function ns:OpenOptions() ns:OpenWindow() end
 
@@ -123,7 +127,7 @@ function ns:SummonAnother()
     end
     ns:ResummonPet(true)
 end
-function ns:Dismiss() Summon:Dismiss(true) end
+function ns:Dismiss() dismissExplicit(true) end
 function ns:Toggle() ns:TogglePet() end
 
 function Summon:OnInitialize()

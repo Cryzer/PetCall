@@ -103,6 +103,7 @@ end
 
 -- a change of settings, not of the world: the exception does not start from it
 function Exc:ConditionsChanged()
+    self.rev = (self.rev or 0) + 1      -- an unnamed exception's name follows its conditions
     if self.watcher then self.watcher:Rebuild() end
     self.fits = self.watcher ~= nil and self:ConditionsMet()
     if not self.fits then self.started = false end
