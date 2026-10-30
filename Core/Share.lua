@@ -116,7 +116,7 @@ function Share:Import(str, name)
     end
     local set = ns.Sets:Create(name)
     local st = set.settings
-    st.enabled = data.enabled ~= false
+    st.enabled = data.enabled ~= false and not data.noPet
     -- an exported default set has priority -1 and would never win as a normal set
     st.priority = (isNumber(data.priority) and data.priority > 0) and data.priority or 1
     st.defaultValue = (isNumber(data.defaultValue) and data.defaultValue >= 0) and data.defaultValue or 0

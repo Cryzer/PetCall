@@ -89,7 +89,7 @@ local function build()
             ns.UI.Main:Show()
             ns.UI.Main:SelectSet(result)
         end
-        if info.hasLuaCode then
+        if result and info.hasLuaCode then
             ns:Print(L["The imported set contains Lua code. It is disabled until you review it in the When tab."])
             ns.UI.Main:SelectTab("when")
         end
