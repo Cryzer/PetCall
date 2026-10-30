@@ -17,6 +17,14 @@ local function textHeight(fs) return math.ceil(tonumber(fs:GetStringHeight()) or
 
 local function hex(r, g, b) return format("|cff%02x%02x%02x", r * 255, g * 255, b * 255) end
 
+-- true when the rows read last hold a setting that Use recommended would change
+function C:HasChanges()
+    for _, row in ipairs(C._last or {}) do
+        if not row.same then return true end
+    end
+    return false
+end
+
 -- Build(parent) -> the table; table:Refresh() reads the rows again, table:Layout(width)
 -- places them and returns its height
 function C.Build(parent)
@@ -100,8 +108,7 @@ local function build()
     box.note = ns.Widgets.Label(box, L["Recommended changes only the rows above. Your sets, pets and own exceptions stay as they are."], "GameFontDisableSmall")
     box.note:SetWordWrap(true)
     box.use = ns.Widgets.Button(box, L["Use recommended"], function()
-        local changes = false
-        for _, row in ipairs(C._last or {}) do if not row.same then changes = true end end
+        local changes = C:HasChanges()
         if changes then ns.Recommended:Apply() end
         C:Close(changes)
     end)

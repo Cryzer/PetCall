@@ -121,12 +121,7 @@ local function build()
     dialog.foot = CreateFrame("Frame", nil, dialog.Inset)
     dialog.keep = ns.Widgets.Button(dialog.foot, L["Keep mine"], function() dialog:Hide() end)
     dialog.use = ns.Widgets.Button(dialog.foot, L["Use recommended"], function()
-        for _, row in ipairs(ns.UI.Comparison._last or {}) do
-            if not row.same then
-                ns.Recommended:Apply()
-                break
-            end
-        end
+        if ns.UI.Comparison:HasChanges() then ns.Recommended:Apply() end
         dialog:Hide()
     end)
     dialog.open = ns.Widgets.Button(dialog.foot, L["Open PetCall"], function()
@@ -148,8 +143,6 @@ function Welcome:Show(diagnostic)
     layout()
 end
 
-function Welcome:IsShown() return dialog ~= nil and dialog:IsShown() end
-
 local checked
 
 local function announceLater()
@@ -160,9 +153,14 @@ local function announceLater()
     end
 end
 
+local waiting
+
 local function showWhenFree()
     if InCombatLockdown() then
+        if waiting then return end
+        waiting = true
         Welcome:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+            waiting = nil
             Welcome:UnregisterEvent("PLAYER_REGEN_ENABLED")
             showWhenFree()
         end)
@@ -178,6 +176,10 @@ function Welcome:OnEnable()
         ns:After(2, function()
             if ns.db.global.welcomePending then showWhenFree() else announceLater() end
         end)
+    end)
+    -- a switch to a profile upgraded since; before the first check, login does this
+    ns:RegisterCallback(self, "ProfileChanged", function()
+        if checked and not ns.db.global.welcomePending then announceLater() end
     end)
 end
 
