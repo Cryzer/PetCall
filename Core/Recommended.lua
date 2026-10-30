@@ -22,7 +22,7 @@ local V = Recommended.VALUES
 
 local PROFILE_KEYS = { "nearPEWOnly", "waitTimer", "switchOnNewMap", "overrideSetLoadout" }
 local SOLO_ORDER = { "dungeon", "raid", "scenario" }
-local CHOICE_LABEL = { [false] = L["As usual"], alone = L["Leave the pet alone"], away = L["Put the pet away"] }
+local CHOICE_LABEL = ns.Exceptions.CHOICE_LABEL
 
 local function default() return ns.Sets:Get(ns.Sets.DEFAULT) end
 

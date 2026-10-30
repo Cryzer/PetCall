@@ -329,6 +329,7 @@ end
 
 function G:Show()
     if not gallery then build() end
+    if ns.UI.Behaviour then ns.UI.Behaviour:Hide() end
     ns.UI.Main:SetSetPagesShown(false)
     gallery:Show()
     layoutChips()

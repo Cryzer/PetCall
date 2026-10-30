@@ -10,6 +10,7 @@ ns.Exceptions = Exceptions
 local CHOICES = { false, "alone", "away" }
 local AWAY_ONLY = { false, "away" }
 local STRENGTH = { "away", "alone" }
+Exceptions.CHOICE_LABEL = { [false] = L["As usual"], alone = L["Leave the pet alone"], away = L["Put the pet away"] }
 local IN_GROUP = { "groupType", party = true, raid = true }
 
 -- fixed conditions; "solo" ones fit only in a group while "Also when solo" is cleared

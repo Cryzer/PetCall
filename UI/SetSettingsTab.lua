@@ -47,6 +47,74 @@ end
 -- a dropdown as wide as its longest choice
 local function fitDropdown(dd, labels) ns.Widgets.FitDropdown(dd, labels, 120) end
 
+local function radios(root, items, get, setter)
+    for _, it in ipairs(items) do
+        root:CreateRadio(it[2], function() return set and get() == it[1] end, function() setter(it[1]) end)
+    end
+end
+local function labels(items) local out = {} for i, it in ipairs(items) do out[i] = it[2] end return out end
+
+-- "Like Default: 30 minutes" with "Like Default:" muted; the value is Default's
+local function likeDefault(value)
+    local before, after = format(L["Like Default: %s"], "\001"):match("^(.-)\001(.*)$")
+    local function muted(t) return t ~= "" and ("|cff9d9d9d" .. t .. "|r") or "" end
+    return muted(before) .. value .. muted(after)
+end
+
+-- New pet every: Off, or N minutes, each also "only in cities"; a value set some other
+-- way is offered as it is. Choices are "like" or { minutes, cities } kept per value.
+local MINUTES = { 5, 10, 15, 30, 60 }
+local switchChoices = {}
+local function switchChoice(minutes, cities)
+    local key = minutes .. (cities and "c" or "")
+    switchChoices[key] = switchChoices[key] or { minutes = minutes, cities = cities }
+    return switchChoices[key]
+end
+local function switchText(minutes, cities)
+    if minutes <= 0 then return L["Off"] end
+    return format(cities and L["%d minutes, only in cities"] or L["%d minutes"], minutes)
+end
+
+local function switchValue()
+    if set.settings.switchMinutes == nil and not set:IsDefault() then return "like" end
+    local minutes, cities = set:GetSwitch()
+    return switchChoice(minutes, minutes > 0 and cities)
+end
+
+local function switchItems()
+    local items = {}
+    if not set:IsDefault() then
+        items[1] = { "like", likeDefault(switchText(ns.Sets:Get(ns.Sets.DEFAULT):GetSwitch())) }
+    end
+    items[#items + 1] = { switchChoice(0, false), L["Off"] }
+    local own, known = set.settings.switchMinutes, false
+    for _, m in ipairs(MINUTES) do
+        for _, cities in ipairs({ false, true }) do items[#items + 1] = { switchChoice(m, cities), switchText(m, cities) } end
+        if m == own then known = true end
+    end
+    if own and own > 0 and not known then
+        local cities = set.settings.switchCitiesOnly == true
+        items[#items + 1] = { switchChoice(own, cities), switchText(own, cities) }
+    end
+    return items
+end
+
+-- Message on summon: always or never; other sets can follow Default
+local function announceValue()
+    if set.settings.announce == nil and not set:IsDefault() then return "like" end
+    return set:GetAnnounce() and "on" or "off"
+end
+
+local function announceItems()
+    local items = {}
+    if not set:IsDefault() then
+        items[1] = { "like", likeDefault(ns.Sets:Get(ns.Sets.DEFAULT):GetAnnounce() and L["Always"] or L["Never"]) }
+    end
+    items[#items + 1] = { "on", L["Always"] }
+    items[#items + 1] = { "off", L["Never"] }
+    return items
+end
+
 local function textHeight(fs) return math.ceil(tonumber(fs:GetStringHeight()) or 0) end
 
 local function naturalWidth(items)
@@ -61,46 +129,55 @@ local function naturalWidth(items)
     return w
 end
 
+-- places one row from y down; returns the room it takes, the gap after it included
+local function layoutRow(sec, row, y, width, labelCol)
+    local top = y
+    local x, w = 0, width
+    local labelH = 0
+    if row.label then
+        row.label:SetWidth(labelCol - LABEL_GAP)
+        row.label:ClearAllPoints()
+        row.label:SetPoint("TOPLEFT", sec, "TOPLEFT", 0, -(y + 4))
+        labelH = textHeight(row.label) + 4
+        if naturalWidth(row.items) <= width - labelCol then
+            x, w = labelCol, width - labelCol
+        else
+            y = y + labelH + 4                   -- too wide beside the label: under it
+            labelH = 0
+        end
+    end
+    if row.check then
+        local text = row.check.text
+        text:SetWidth(0)
+        local tw = math.min(ns.Widgets.TextWidth(text), w - 32)
+        text:SetWidth(tw)
+        text:SetWordWrap(true)
+        row.check:SetWidth(24)
+    end
+    row.box:ClearAllPoints()
+    row.box:SetPoint("TOPLEFT", sec, "TOPLEFT", x, -y)
+    row.box:SetWidth(w)
+    local h = ns.Widgets.Flow(row.box, row.items, { width = w })
+    if row.check then h = math.max(h, textHeight(row.check.text)) end
+    if row.help and row.help:IsShown() then
+        local indent = row.indent or 0
+        row.help:SetWidth(w - indent)
+        row.help:ClearAllPoints()
+        row.help:SetPoint("TOPLEFT", row.box, "TOPLEFT", indent, -(h + 4))
+        h = h + 4 + textHeight(row.help)
+    end
+    return y - top + math.max(h, labelH) + ROW_GAP
+end
+
 local function layoutSection(sec, width, labelCol)
     sec:SetWidth(width)
     sec.rule:SetWidth(width - 4)
     local y = textHeight(sec.title) + 4 + 1 + 10
     for _, row in ipairs(sec.rows) do
-        local x, w = 0, width
-        local labelH = 0
-        if row.label then
-            row.label:SetWidth(labelCol - LABEL_GAP)
-            row.label:ClearAllPoints()
-            row.label:SetPoint("TOPLEFT", sec, "TOPLEFT", 0, -(y + 4))
-            labelH = textHeight(row.label) + 4
-            if naturalWidth(row.items) <= width - labelCol then
-                x, w = labelCol, width - labelCol
-            else
-                y = y + labelH + 4                   -- too wide beside the label: under it
-                labelH = 0
-            end
-        end
-        if row.check then
-            local text = row.check.text
-            text:SetWidth(0)
-            local tw = math.min(ns.Widgets.TextWidth(text), w - 32)
-            text:SetWidth(tw)
-            text:SetWordWrap(true)
-            row.check:SetWidth(24)
-        end
-        row.box:ClearAllPoints()
-        row.box:SetPoint("TOPLEFT", sec, "TOPLEFT", x, -y)
-        row.box:SetWidth(w)
-        local h = ns.Widgets.Flow(row.box, row.items, { width = w })
-        if row.check then h = math.max(h, textHeight(row.check.text)) end
-        if row.help and row.help:IsShown() then
-            local indent = row.indent or 0
-            row.help:SetWidth(w - indent)
-            row.help:ClearAllPoints()
-            row.help:SetPoint("TOPLEFT", row.box, "TOPLEFT", indent, -(h + 4))
-            h = h + 4 + textHeight(row.help)
-        end
-        y = y + math.max(h, labelH) + ROW_GAP
+        row.box:SetShown(not row.hidden)
+        if row.label then row.label:SetShown(not row.hidden) end
+        if row.help then row.help:SetShown(not row.hidden) end
+        if not row.hidden then y = y + layoutRow(sec, row, y, width, labelCol) end
     end
     sec:SetHeight(y - ROW_GAP + 4)
 end
@@ -113,7 +190,7 @@ local function layout()
     local longest = 0
     for _, sec in ipairs(page.sections) do
         for _, row in ipairs(sec.rows) do
-            if row.label then
+            if row.label and not row.hidden then
                 row.label:SetWidth(0)
                 longest = math.max(longest, ns.Widgets.TextWidth(row.label))
             end
@@ -142,7 +219,8 @@ function Tab:Refresh(newSet)
     set = newSet
     local default = set:IsDefault()
     page.defaultNote:SetShown(default)
-    page.behaviour:SetShown(not default)
+    -- Default holds the base values the other sets can follow; it has no state or order
+    for _, row in ipairs({ page.stateRow, page.orderRow, page.startsRow }) do row.hidden = default end
     page.nameSection:SetShown(not default)
     page.danger:SetShown(not default)
     local paused = set:IsPaused()
@@ -153,6 +231,8 @@ function Tab:Refresh(newSet)
     page.up:SetEnabled(rank > 1)
     page.down:SetEnabled(rank < n - 1)
     page.onActivate:GenerateMenu()
+    fitDropdown(page.switch, labels(switchItems()))
+    fitDropdown(page.announce, labels(announceItems()))
     page.switch:GenerateMenu()
     page.announce:GenerateMenu()
     page.defaultWeight:GenerateMenu()
@@ -195,41 +275,32 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
         if set:IsPaused() then set:Resume() return end
         MenuUtil.CreateContextMenu(self, function(_, root) ns.UI.SetList.PauseMenu(root, set) end)
     end)
-    addRow(b, { label = ns.Widgets.Label(b, L["State"]), items = { page.pauseState, page.pauseButton } })
+    page.stateRow = addRow(b, { label = ns.Widgets.Label(b, L["State"]), items = { page.pauseState, page.pauseButton } })
     -- place in the list: the first set that fits is used
     page.order = ns.Widgets.Label(b, "", "GameFontHighlight")
     page.up = ns.Widgets.Button(b, L["Move up"], function() ns.Sets:Move(set, -1) end)
     page.down = ns.Widgets.Button(b, L["Move down"], function() ns.Sets:Move(set, 1) end)
-    addRow(b, { label = ns.Widgets.Label(b, L["Order"]), items = { page.order, page.up, page.down },
+    page.orderRow = addRow(b, { label = ns.Widgets.Label(b, L["Order"]), items = { page.order, page.up, page.down },
         help = help(b, L["When several sets fit, the one higher in the list is used. The Default set is always last."]) })
-    local function radios(root, items, get, setter)
-        for _, it in ipairs(items) do
-            root:CreateRadio(it[2], function() return set and get() == it[1] end, function() setter(it[1]) end)
-        end
-    end
-    local function labels(items) local out = {} for i, it in ipairs(items) do out[i] = it[2] end return out end
     local starts = { { "keep", L["Keep the pet that is out"] }, { "fits", L["New pet, unless the one out fits"] },
         { "new", L["Always a new pet"] } }
     page.onActivate = ns.Widgets.Dropdown(b, 260, function(_, root)
         radios(root, starts, function() return set:GetOnActivate() end, function(v) set:SetOnActivate(v) end)
     end)
     fitDropdown(page.onActivate, labels(starts))
-    addRow(b, { label = ns.Widgets.Label(b, L["When this set starts"]), items = { page.onActivate } })
-    local switches = { { false, L["Like the settings"] } }
-    for _, m in ipairs({ 5, 10, 15, 30, 60 }) do switches[#switches + 1] = { m, format(L["%d minutes"], m) } end
+    page.startsRow = addRow(b, { label = ns.Widgets.Label(b, L["When this set starts"]), items = { page.onActivate } })
     page.switch = ns.Widgets.Dropdown(b, 260, function(_, root)
-        radios(root, switches, function() return set.settings.switchMinutes or false end, function(v) set:SetSwitch(v or nil) end)
+        radios(root, switchItems(), switchValue, function(v)
+            if v == "like" then set:SetSwitch(nil) else set:SetSwitch(v.minutes, v.cities) end
+        end)
     end)
-    fitDropdown(page.switch, labels(switches))
-    addRow(b, { label = ns.Widgets.Label(b, L["Switch pet every"]), items = { page.switch } })
-    local announces = { { "like", L["Like the settings"] }, { "on", L["Always"] }, { "off", L["Never"] } }
+    addRow(b, { label = ns.Widgets.Label(b, L["New pet every"]), items = { page.switch } })
     page.announce = ns.Widgets.Dropdown(b, 260, function(_, root)
-        radios(root, announces, function() return set.settings.announce or "like" end, function(v)
+        radios(root, announceItems(), announceValue, function(v)
             if v == "like" then set:SetAnnounce(nil) else set:SetAnnounce(v == "on") end
         end)
     end)
-    fitDropdown(page.announce, labels(announces))
-    addRow(b, { label = ns.Widgets.Label(b, L["Chat message on summon"]), items = { page.announce } })
+    addRow(b, { label = ns.Widgets.Label(b, L["Message on summon"]), items = { page.announce } })
     tinsert(page.sections, b)
 
     -- which pets and how often, for pets nobody set by hand

@@ -57,10 +57,12 @@ end
 local NEWS_SECONDS = 600
 local lastEvent, lastData = nil, { at = 0 }
 
--- data (optional): set, reason ("fits" | "always" | "not_in_set"), pick (a pet you chose), exc
+-- data (optional): set, reason ("fits" | "always" | "not_in_set"), pick (a pet you chose), exc;
+-- the pet out at the time is kept with it
 function Gate:Note(event, data)
     lastEvent = event
     lastData.at = GetTime()
+    lastData.pet = ns:GetCurrentPet()
     lastData.set = data and data.set
     lastData.reason = data and data.reason
     lastData.pick = data and data.pick
@@ -69,25 +71,36 @@ end
 
 function Gate:LastEvent() return lastEvent, lastData end
 
+-- A set start is about the pet out: the one it kept, or the new one that replaced the old.
+-- A pet out since then (yours, or another) makes it old news.
+local function setNews()
+    if lastEvent ~= "set_kept" and lastEvent ~= "set_replaced" then return false end
+    if GetTime() - lastData.at >= NEWS_SECONDS then return false end
+    local cur = ns:GetCurrentPet()
+    if lastEvent == "set_kept" then return cur ~= nil and cur == lastData.pet end
+    return cur ~= nil and cur ~= lastData.pet and cur ~= ns.Summon.manualPick
+end
+
 -- Why nothing happens, or what happens next, as one record: { kind = "game" | "off" | "paused" |
--- "exception" | "set" | "next" | "idle", label, exc, set, reason, pick, seconds, minutes }.
--- Allocates: call it from refreshes, not from event handlers.
+-- "exception" | "set" | "next" | "idle", label, exc, set, reason, pick, replaced, seconds, minutes,
+-- waiting (a request waits to run) }. Allocates: call it from refreshes, not from event handlers.
 function Gate:Explain()
+    local waiting = ns.Ready.pending ~= nil
     local ok, cause = self:Check("summon", "auto")
     if not ok then
         local kind = cause.level == "auto" and cause.key or cause.level
-        return { kind = kind, label = cause.label, exc = cause.exc }
+        return { kind = kind, label = cause.label, exc = cause.exc, waiting = waiting }
     end
     local set = ns.Sets:GetCurrent()
-    if (lastEvent == "set_kept" or lastEvent == "set_replaced") and GetTime() - lastData.at < NEWS_SECONDS then
+    if setNews() then
         return { kind = "set", set = lastData.set, reason = lastData.reason, pick = lastData.pick,
-            replaced = lastEvent == "set_replaced" }
+            replaced = lastEvent == "set_replaced", waiting = waiting }
     end
     local seconds = ns.SwitchTimer:Remaining()
     if seconds and set then
-        return { kind = "next", set = set, seconds = seconds, minutes = (set:GetSwitch()) }
+        return { kind = "next", set = set, seconds = seconds, minutes = (set:GetSwitch()), waiting = waiting }
     end
-    return { kind = "idle" }
+    return { kind = "idle", waiting = waiting }
 end
 
 local function awayInForce()

@@ -288,6 +288,47 @@ describe("Gate", function()
         assert.equal(byId("bg"), data.exc)
     end)
 
+    it("a set note stands only while the pet it was about is out", function()
+        local s = ns.Sets:Create("S")
+        s:SetPetWeight("a", 1)
+        s:SetPetWeight("b", 1)
+        s:SetOnActivate("fits")
+        W.world.summoned = "a"
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        ns.Summon:OnImmediateSet(s)
+        assert.equal("set", G:Explain().kind)
+        W.world.summoned = "b"
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        assert.is_true(G:Explain().kind ~= "set", "another pet came out since")
+    end)
+
+    it("a replaced pet is explained once the new one is out", function()
+        local s = ns.Sets:Create("S")
+        s:SetPetWeight("b", 1)
+        W.world.summoned = "a"
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        ns.Summon.manualPick = nil
+        ns.Summon:OnImmediateSet(s)
+        assert.is_true(G:Explain().kind ~= "set", "the old pet is still out")
+        assert.is_true(ns.Summon:SummonRandom())
+        W.advance(1)
+        assert.equal("b", W.world.summoned)
+        local why = G:Explain()
+        assert.equal("set", why.kind)
+        assert.is_true(why.replaced)
+        assert.equal("not_in_set", why.reason)
+    end)
+
+    it("says whether a request is waiting", function()
+        assert.is_false(G:Explain().waiting)
+        W.world.combat = true
+        W.fire("PLAYER_REGEN_DISABLED")
+        ns.Ready:Request("summon", "auto")
+        local why = G:Explain()
+        assert.equal("game", why.kind)
+        assert.is_true(why.waiting)
+    end)
+
     it("noting does not allocate", function()
         collectgarbage("stop")
         local before = collectgarbage("count")

@@ -9,10 +9,12 @@ local LDB = LibStub("LibDataBroker-1.1")
 local LDBIcon = LibStub("LibDBIcon-1.0")
 local ICON = "Interface\\AddOns\\PetCall\\Media\\icon"
 local obj
+local AUTO_TEXT = { on = "|cff40ff40" .. L["On"] .. "|r", off = "|cffff4040" .. L["Off"] .. "|r",
+    paused = "|cffffb040" .. L["Paused until you change zone"] .. "|r" }
 
 function Broker:FillTooltip(tt)
     tt:AddLine("PetCall")
-    tt:AddDoubleLine(L["Auto-summon"], ns:IsAutoSummon() and ("|cff40ff40" .. L["On"] .. "|r") or ("|cffff4040" .. L["Off"] .. "|r"))
+    tt:AddDoubleLine(L["Auto-summon"], AUTO_TEXT[ns:GetAutoState()])
     local set = ns.Sets:GetCurrent()
     tt:AddDoubleLine(L["Active set"], set and set:DisplayName() or NONE, nil, nil, nil, 1, 1, 1)
     local pet = ns:GetCurrentPet()
@@ -62,7 +64,7 @@ local function update()
     local pet = ns:GetCurrentPet()
     local info = pet and ns.PetCache:GetInfo(pet)
     obj.text = info and (info.customName or info.name) or "PetCall"
-    local on = ns:IsAutoSummon()
+    local on = ns:GetAutoState() == "on"
     obj.iconR, obj.iconG, obj.iconB = 1, on and 1 or 0.3, on and 1 or 0.3
 end
 

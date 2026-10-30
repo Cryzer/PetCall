@@ -39,7 +39,7 @@ read_globals = {
     "NONE", "DELETE",
     "IsInRaid",
     "ERR_MUST_BE_STANDING", "SPELL_FAILED_NOT_STANDING",
-    "GetCursorPosition", "ScrollBoxConstants", "NAME", "RARITY", "ToggleCollectionsJournal",
+    "GetCursorPosition", "GetCurrentKeyBoardFocus", "ScrollBoxConstants", "NAME", "RARITY", "ToggleCollectionsJournal",
     "ButtonFrameTemplate_HideButtonBar", "PanelTemplates_SetNumTabs", "PanelTemplates_SetTab", "PanelTemplates_TabResize",
     "GetScreenWidth", "GetScreenHeight", "MinimalSliderWithSteppersMixin", "SOUNDKIT", "EllesmereUI", "MenuUtil", "ScrollUtil",
     "CreateDataProvider", "CreateScrollBoxListLinearView", "Settings", "CreateSettingsListSectionHeaderInitializer",

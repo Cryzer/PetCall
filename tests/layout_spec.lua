@@ -281,6 +281,33 @@ describe("Layout", function()
         assert.is_true(heights.b < heights.a or tops.b > tops.a, "more lines than that: the model makes room")
     end)
 
+    it("How PetCall acts, the comparison, Like Default and Because fit, in both sizes and a longer language", function()
+        local Screens = dofile("tests/layout_screens.lua")
+        local names = { ["How PetCall acts, every exception set, one own exception open"] = true,
+            ["Comparison, every row different"] = true, ["Set settings with Like Default values"] = true,
+            ["Out now with an exception cause"] = true }
+        local seen = 0
+        for _, screen in ipairs(Screens.list) do
+            if names[screen.name] then
+                seen = seen + 1
+                for _, pseudo in ipairs({ false, true }) do
+                    for _, size in ipairs({ { 640, 440 }, { 940, 640 } }) do
+                        local ns, U = Layout.load({ pseudo = pseudo })
+                        Screens.World(U.W)
+                        U.W.login()
+                        screen.open(ns, U)
+                        Layout.SetWindowSize(ns, U, size[1], size[2])
+                        local problems, checked = Layout.Check(U, UIParent)
+                        local where = screen.name .. " " .. size[1] .. "x" .. size[2] .. (pseudo and " pseudo" or "")
+                        assert.same({}, problems, where)
+                        assert.is_true(checked > 40, where .. ": placed " .. checked)
+                    end
+                end
+            end
+        end
+        assert.equal(4, seen)
+    end)
+
     it("wrapped text keeps its lines even instead of leaving one word on the last", function()
         local ns, U = Layout.load()
         local box = CreateFrame("Frame", nil, UIParent)

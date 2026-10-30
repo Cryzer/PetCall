@@ -48,9 +48,10 @@ local function withHint(item, title, hint)
 end
 
 -- Edits the conditions of anything with the condition API: a set or an exception.
-function Editor.New(parent)
+-- opts.whole: the parent is made as tall as the conditions (GetHeight), so they do not scroll
+function Editor.New(parent, opts)
     local editor = {}
-    local target, model, content, scroll, shield
+    local target, model, content, shield
     local readOnly = false
     local frames = ns.Widgets.NewPool()   -- each redraw takes back the frames of the last one
     local dots, header = {}, nil                                  -- redrawn in place when condition states change
@@ -253,7 +254,11 @@ function Editor.New(parent)
 
     local function paintHeader()
         if not header then return end
-        header:SetText(format("%s   %s", #model.groups > 1 and L["Use this set when ANY of these groups is met:"] or L["Use this set when ALL conditions are met:"],
+        local any, all = L["Use this set when ANY of these groups is met:"], L["Use this set when ALL conditions are met:"]
+        if not target.name then
+            any, all = L["Use this exception when ANY of these groups is met:"], L["Use this exception when ALL conditions are met:"]
+        end
+        header:SetText(format("%s   %s", #model.groups > 1 and any or all,
             target:ConditionsMet() and (ns.Widgets.Dot("on") .. " |cff40ff40" .. L["active"] .. "|r")
                 or (ns.Widgets.Dot("off") .. " |cffcccccc" .. L["inactive"] .. "|r")))
     end
@@ -265,6 +270,7 @@ function Editor.New(parent)
         local hit = frames:Frame(row, "hit")
         hit:SetAllPoints(dot)
         hit:EnableMouse(true)
+        hit:SetFrameLevel(content:GetFrameLevel() + 60)     -- above the read-only shield: the tooltip still shows
         ns.Widgets.Tooltip(hit, function() return state(e) and state(e).value and L["Met right now"] or L["Not met right now"] end,
             function() return state(e) and state(e).reason end)
         return dot
@@ -362,8 +368,9 @@ function Editor.New(parent)
         local y = -8
         header = frames:Label(content, "", "GameFontNormal")
         header:SetPoint("TOPLEFT", 8, y)
+        header:SetPoint("RIGHT", content, "RIGHT", -8, 0)       -- a long header wraps
         paintHeader()
-        y = y - 24
+        y = y - math.max(24, math.ceil(tonumber(header:GetStringHeight()) or 0) + 10)
         if not hasConditions() then
             if target.ApplyTemplate then      -- templates and the "always active" note belong to sets
                 local note = frames:Label(content, "|cffffb040" .. L["Without conditions this set is always active."] .. "|r")
@@ -461,16 +468,30 @@ function Editor.New(parent)
         shield:EnableMouse(readOnly)
         shield:SetShown(readOnly)
         content:SetAlpha(readOnly and 0.7 or 1)
+        -- a box being typed in when the editor turns read-only would take keys still
+        local focus = readOnly and GetCurrentKeyBoardFocus()
+        local p = focus
+        while p and p ~= content do p = p:GetParent() end
+        if p then focus:ClearFocus() end
     end
 
-    scroll = CreateFrame("ScrollFrame", nil, parent, "ScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 0, -2)
-    scroll:SetPoint("BOTTOMRIGHT", -24, 2)
-    content = CreateFrame("Frame", nil, scroll)
-    content:SetSize(10, 10)
-    scroll:SetScrollChild(content)
-    scroll:SetScript("OnSizeChanged", function(self, w) content:SetWidth(w) end)
-    ns.Skin:Apply("ScrollBar", scroll.ScrollBar)
+    function editor:GetHeight() return tonumber(content:GetHeight()) or 0 end
+
+    if opts and opts.whole then
+        content = CreateFrame("Frame", nil, parent)
+        content:SetPoint("TOPLEFT", 0, -2)
+        content:SetPoint("RIGHT")
+        content:SetHeight(10)
+    else
+        local scroll = CreateFrame("ScrollFrame", nil, parent, "ScrollFrameTemplate")
+        scroll:SetPoint("TOPLEFT", 0, -2)
+        scroll:SetPoint("BOTTOMRIGHT", -24, 2)
+        content = CreateFrame("Frame", nil, scroll)
+        content:SetSize(10, 10)
+        scroll:SetScrollChild(content)
+        scroll:SetScript("OnSizeChanged", function(self, w) content:SetWidth(w) end)
+        ns.Skin:Apply("ScrollBar", scroll.ScrollBar)
+    end
     -- another tab, or the window closing: the mount picker has nothing to edit
     parent:HookScript("OnHide", function() ns.UI.MountPicker:Close() end)
 

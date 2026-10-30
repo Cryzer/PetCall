@@ -7,7 +7,7 @@ local SetList = {}
 ns.UI.SetList = SetList
 
 local COLLAPSE_BELOW = 700
-local panel, rail, rows, newBox, nowCard = nil, nil, {}, nil, nil
+local panel, rail, rows, newBox, nowCard, pinned = nil, nil, {}, nil, nil, nil
 local list, scroll = nil, 0      -- the clipped area the cards sit in, and how far it is scrolled
 SetList._rows = rows      -- for tests
 local RAIL_W, PANEL_W = 34, 190
@@ -50,7 +50,7 @@ local STEP = CARD_H + GAP     -- one turn of the mouse wheel
 local TEXT_X, TEXT_RIGHT = 44, 30      -- the text starts after the icon and leaves the pause button room
 local NOW_MIN_H, NOW_PAD, NOW_TEXT_X = 62, 8, 58
 local CAPTION_H = 22          -- "Out now" above its card
-local listTop, footH, nowH = 40, 30, NOW_MIN_H
+local listTop, footH, nowH, pinnedH = 40, 30, NOW_MIN_H, CARD_H
 local FALLBACK_ICON = "Interface\\Icons\\Tracking_WildPet"
 
 -- the pet a set is most likely to summon stands for the set
@@ -173,7 +173,7 @@ function SetList:Refresh()
         SetList.PaintPause(r)
         r.rank:SetText(set:IsDefault() and "" or i)
         r.stateText = stateLine(set)
-        r.selected:SetShown(selected == set)
+        r.selected:SetShown(selected == set and not ns.UI.Behaviour:IsShown())
         r.selected:SetVertexColor(ns.Skin:Accent())
         r:Show()
     end
@@ -235,23 +235,60 @@ local function panelWidth()
     return width > 0 and width or PANEL_W
 end
 
--- the Out now card as tall as its three lines need
+-- the Out now card as tall as its three lines and its button need
 local function sizeNowCard()
     local c = nowCard
     local width = panelWidth() - 8 - NOW_TEXT_X - 6
     for _, fs in ipairs({ c.name, c.from, c.state }) do fs:SetWidth(width) end
-    nowH = math.max(NOW_MIN_H, 2 * NOW_PAD + textHeight(c.name) + 3 + textHeight(c.from) + 3 + textHeight(c.state))
+    local text = NOW_PAD + textHeight(c.name) + 3 + textHeight(c.from) + 3 + textHeight(c.state)
+    nowH = math.max(NOW_MIN_H, text + NOW_PAD)
+    if c.action:IsShown() then
+        local top = math.max(text, NOW_PAD + 42) + 6
+        c.action:ClearAllPoints()
+        c.action:SetPoint("TOPLEFT", c, "TOPLEFT", 8, -top)
+        nowH = top + 22 + NOW_PAD
+    end
     c:SetHeight(nowH)
 end
 
--- Top to bottom: the title and its hint, the list, + New and Import (they act on the
+-- the pinned row above the sets: How PetCall acts, and in a word what is in force
+local function pinnedState()
+    local state = ns:GetAutoState()
+    if state == "off" then return "|cffff6040" .. L["Off"] .. "|r" end
+    if state == "paused" then return "|cffffb040" .. L["Paused"] .. "|r" end
+    local n = #ns.Exceptions:InForce()
+    if n == 1 then return "|cffffb040" .. L["1 exception in force"] .. "|r" end
+    if n > 1 then return "|cffffb040" .. format(L["%d exceptions in force"], n) .. "|r" end
+    return "|cff4cd964" .. L["Everything on"] .. "|r"
+end
+
+local function sizePinned()
+    local width = panelWidth() - 8 - TEXT_X - 6
+    pinned.name:SetWidth(width)
+    pinned.state:SetWidth(width)
+    pinnedH = math.max(CARD_H, 2 * CARD_PAD + textHeight(pinned.name) + 2 + textHeight(pinned.state))
+    pinned:SetHeight(pinnedH)
+end
+
+function SetList:PaintPinned()
+    if not pinned then return end
+    pinned.state:SetText(pinnedState())
+    pinned.selected:SetShown(ns.UI.Behaviour:IsShown())
+    pinned.selected:SetVertexColor(ns.Skin:Accent())
+end
+
+-- Top to bottom: How PetCall acts, the title and its hint, the list, + New and Import (they act on the
 -- list, so they sit right under it), then the Out now card at the very foot. The card
 -- goes when it would leave fewer than three cards of list.
 local function layoutPanel()
     if not nowCard then return end
     local width = panelWidth()
+    sizePinned()
+    local titleY = 4 + pinnedH + 8
+    panel.title:SetPoint("TOPLEFT", 6, -titleY)
+    panel.collapse:SetPoint("TOPRIGHT", -2, -(titleY - 4))
     panel.hint:SetWidth(width - 12)
-    listTop = 6 + textHeight(panel.title) + 3 + textHeight(panel.hint) + 6
+    listTop = titleY + textHeight(panel.title) + 3 + textHeight(panel.hint) + 6
     list:SetPoint("TOPLEFT", 0, -listTop)
     footH = 4 + ns.Widgets.Flow(panel.foot, { SetList._newButton, panel.import }, { width = width - 8, gap = 4 }) + 4
     sizeNowCard()
@@ -381,8 +418,47 @@ function SetList.StopDrag(r)
     SetList:Refresh()
 end
 
+-- The Because: sentence for Gate:Explain()'s record, and the one button that leads to
+-- where that cause is changed: "resume", "on", "exception", "set" or nil.
+function SetList.Because(why, pet)
+    local kind = why.kind
+    if kind == "game" then
+        -- with a pet out and nothing waiting, the game holds back only what may come later
+        if pet and not why.waiting then return "|cffffb040" .. format(L["Paused: %s"], why.label) .. "|r" end
+        return "|cffffb040" .. format(L["Because: %s."], why.label) .. "|r"
+    elseif kind == "paused" then
+        return "|cffffb040" .. L["Because: Auto-summon is paused until you change zone (you dismissed your pet)."] .. "|r", "resume"
+    elseif kind == "off" then
+        return "|cffffb040" .. L["Because: Auto-summon is off."] .. "|r", "on"
+    elseif kind == "exception" then
+        local text = why.exc:GetChoice() == "away" and L["Because: exception %s puts the pet away."]
+            or L["Because: exception %s leaves the pet alone."]
+        return "|cffffb040" .. format(text, why.label) .. "|r", "exception"
+    elseif kind == "set" then
+        local text
+        if why.replaced then
+            text = why.reason == "always" and L["Because: %s started and always brings a new pet."]
+                or L["Because: %s started and the pet out was not one of its pets."]
+        elseif why.pick and why.reason ~= "fits" then
+            text = L["Because: %s started and you picked the pet out yourself."]
+        else
+            text = L["Because: %s started and the pet out is one of its pets."]
+        end
+        return format(text, why.set:DisplayName()), "set"
+    elseif kind == "next" then
+        return format(L["Next new pet in %s (%s: every %d minutes)."], format(L["%d min"], math.ceil(why.seconds / 60)),
+            why.set:DisplayName(), why.minutes)
+    end
+    if pet then return "|cff4cd964" .. L["Ready"] .. "|r" end
+    if why.waiting then return L["Your pet comes out in a moment."] end
+    if ns.db.profile.nearPEWOnly then return L["Your pet comes out after the next loading screen."] end
+    return L["Your pet comes out when you stand still."]
+end
+
+local ACTION_TEXT = { resume = L["Resume"], on = L["Turn on"], exception = L["Change"], set = L["Change"] }
+
 -- the pet that is out right now, large, at the foot of the sets panel
-function SetList:RefreshNow(blockers)
+function SetList:RefreshNow(why)
     if not nowCard then return end
     local pet = ns:GetCurrentPet()
     local info = pet and ns.PetCache:GetInfo(pet)
@@ -405,11 +481,15 @@ function SetList:RefreshNow(blockers)
         nowCard.name:SetTextColor(0.6, 0.6, 0.6)
         nowCard.from:SetText(set and format(L["next from %s"], set:DisplayName()) or "")
     end
-    blockers = blockers or ns.Ready:GetBlockers()
-    if #blockers == 0 then
-        nowCard.state:SetText("|cff4cd964" .. L["Ready"] .. "|r")
-    else
-        nowCard.state:SetText("|cffffb040" .. format(L["Paused: %s"], blockers[1].label) .. "|r")
+    why = why or ns.Gate:Explain()
+    local text, action = SetList.Because(why, info and pet)
+    nowCard.state:SetText(text)
+    nowCard.why, nowCard.actionKind = why, action
+    nowCard.action:SetShown(action ~= nil)
+    if action then
+        nowCard.action:SetText(ACTION_TEXT[action])
+        ns.Widgets.FitButton(nowCard.action)
+        ns.Widgets.SetPicked(nowCard.action, true)
     end
     -- new text may need another height, and that changes the room for the list
     local was = nowH
@@ -446,9 +526,24 @@ local function buildNowCard()
         ns.UI.Preview:SetSelected(self.petID)
         ns.UI.PetsTab:ShowPet(self.petID)
     end)
+    -- one button, in the accent colour, for the cause: resume, turn on, or open where it is changed
+    c.action = ns.Widgets.Button(c, L["Change"], function()
+        local kind, why = c.actionKind, c.why
+        if kind == "resume" then
+            ns:ResumeAuto()
+        elseif kind == "on" then
+            ns:SetAutoSummon(true)
+        elseif kind == "exception" then
+            ns.UI.Behaviour:Show(why.exc.id)
+        elseif kind == "set" and not why.set.deleted then
+            ns.UI.Main:SelectSet(why.set.name)
+            ns.UI.Main:SelectTab("settings")
+        end
+    end)
+    c.action:Hide()
     ns.Widgets.Tooltip(c, function(self) return self.name:GetText() end, function(self)
-        local lines = { self.from:GetText(), self.state:GetText() }
-        if self.petID then lines[#lines + 1] = L["Click to show this pet in its set."] end
+        local lines = { self.from:GetText(), self.state:GetText(), "", ns.UI.StatusBar.CauseText() }
+        if self.petID then lines[#lines + 1] = "\n" .. L["Click to show this pet in its set."] end
         return table.concat(lines, "\n")
     end)
     return c
@@ -458,11 +553,34 @@ function SetList:GetRail() return rail end
 ns:RegisterCallback(SetList, "WindowBuilt", function(_, frame)
     panel = CreateFrame("Frame", nil, frame.left)
     panel:SetAllPoints()
+    pinned = CreateFrame("Button", nil, panel)
+    pinned:SetPoint("TOPLEFT", 4, -4)
+    pinned:SetPoint("RIGHT", -4, 0)
+    pinned:SetHeight(CARD_H)
+    pinned:SetHighlightAtlas("PetList-ButtonHighlight", "ADD")
+    pinned.bg = pinned:CreateTexture(nil, "BACKGROUND", nil, -2)
+    pinned.bg:SetAllPoints()
+    pinned.bg:SetAtlas("PetList-ButtonBackground")
+    pinned.selected = pinned:CreateTexture(nil, "BACKGROUND")
+    pinned.selected:SetAllPoints()
+    pinned.selected:SetAtlas("PetList-ButtonSelect")
+    pinned.icon = pinned:CreateTexture(nil, "ARTWORK")
+    pinned.icon:SetSize(32, 32)
+    pinned.icon:SetPoint("LEFT", 5, 0)
+    pinned.icon:SetTexture("Interface\\Icons\\Ability_Hunter_BeastCall")
+    pinned.name = ns.Widgets.Label(pinned, L["How PetCall acts"], "GameFontNormal")
+    pinned.name:SetPoint("TOPLEFT", TEXT_X, -CARD_PAD)
+    pinned.state = ns.Widgets.Label(pinned, "", "GameFontHighlightSmall")
+    pinned.state:SetPoint("TOPLEFT", pinned.name, "BOTTOMLEFT", 0, -2)
+    pinned:SetScript("OnClick", function() ns.UI.Behaviour:Show() end)
+    SetList._pinned = pinned
+    SetList:PaintPinned()
     panel.title = ns.Widgets.Label(panel, L["Sets"], "GameFontNormal")
     panel.title:SetPoint("TOPLEFT", 6, -6)
     panel.hint = ns.Widgets.Label(panel, L["The top one that fits is used. Drag to reorder."], "GameFontDisableSmall")
     panel.hint:SetPoint("TOPLEFT", panel.title, "BOTTOMLEFT", 0, -3)
     local collapse = CreateFrame("Button", nil, panel)
+    panel.collapse = collapse
     collapse:SetSize(20, 20)
     collapse:SetPoint("TOPRIGHT", -2, -2)
     collapse:SetNormalAtlas("common-icon-backarrow")
@@ -592,4 +710,10 @@ for _, cb in ipairs({ "SetsChanged", "CurrentSetChanged", "ConditionStateChanged
     ns:RegisterCallback(SetList, cb, refresh)
 end
 ns:RegisterCallback(SetList, "WindowResized", autoCollapse)
+local paintPinned = ns.Debounce(0.05, function() SetList:PaintPinned() end)
+for _, cb in ipairs({ "AutoSummonChanged", "ExceptionsChanged" }) do ns:RegisterCallback(SetList, cb, paintPinned) end
+ns:RegisterCallback(SetList, "BehaviourPageShown", function()
+    SetList:PaintPinned()
+    refresh()
+end)
 ns.Skin:OnLooksChanged(function() SetList:Refresh() end)

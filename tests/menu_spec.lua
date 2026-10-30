@@ -44,4 +44,39 @@ describe("Pet menu", function()
         for _, g in ipairs(groups) do labels[#labels + 1] = g.label .. ":" .. #g.ids end
         assert.same({ "# – L:4", "S:30", "T – Ý:4" }, labels)
     end)
+
+    it("the menu shows Auto-summon as paused", function()
+        local function recorder()
+            local r = { items = {} }
+            local function add(kind, text, a, b)
+                local item = recorder()
+                item.kind, item.text, item.a, item.b = kind, text, a, b
+                r.items[#r.items + 1] = item
+                return item
+            end
+            function r:CreateTitle(t) return add("title", t) end
+            function r:CreateDivider() return add("divider") end
+            function r:CreateButton(t, f) return add("button", t, f) end
+            function r:CreateCheckbox(t, get, set) return add("checkbox", t, get, set) end
+            function r:SetScrollMode() end
+            function r:SetOnEnter() end
+            function r:SetOnLeave() end
+            return r
+        end
+        local function autoItem()
+            local root = recorder()
+            Menu:Build(nil, root)
+            for _, item in ipairs(root.items) do
+                if item.kind == "checkbox" and item.text:find("Auto-summon", 1, true) then return item end
+            end
+        end
+        assert.equal("Auto-summon", autoItem().text)
+        ns:PauseAuto()
+        local item = autoItem()
+        assert.is_true(item.text:find("Paused", 1, true) ~= nil, item.text)
+        assert.is_true(item.a())
+        ns:SetAutoSummon(false)
+        assert.equal("Auto-summon", autoItem().text)
+        assert.is_false(autoItem().a())
+    end)
 end)

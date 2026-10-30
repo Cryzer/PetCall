@@ -67,6 +67,8 @@ UI\PetPreview.lua
 UI\PetsTab.lua
 UI\SetList.lua
 UI\RecipeGallery.lua
+UI\BehaviourPage.lua
+UI\Comparison.lua
 UI\StatusBar.lua
 UI\SetSettingsTab.lua
 UI\ConditionEditor.lua

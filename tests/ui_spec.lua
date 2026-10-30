@@ -864,12 +864,12 @@ describe("UI smoke", function()
         page.reset:Click()
         assert.equal("PETCALL_CONFIRM", W.world.popup)
         assert.is_nil(ns.UI.PetsTabPage.defaultWeight)
-        -- the page scrolls: its body is as tall as the Default set's two sections
+        -- the page scrolls: its body is as tall as the Default set's three sections
         local got
         page.body.SetHeight = function(_, h) got = h end
         for _, s in ipairs(page.sections) do s.GetHeight = function() return 40 end end
         ns:Fire("SetsChanged")
-        assert.equal(10 + 40 + 18 + 40 + 10, got)            -- the Default set: note and pets
+        assert.equal(10 + 40 + 18 + 40 + 18 + 40 + 10, got)  -- the Default set: note, behaviour and pets
     end)
     it("a set without conditions says it is used everywhere, and a place set that the set below takes over", function()
         local H = ns.UI.SetHeader
@@ -2016,5 +2016,211 @@ describe("UI smoke", function()
         assert.is_true(exc.trigger[2].negate)
         assert.equal("OR", exc.trigger[2][1])
         assert.equal(2, #exc.trigger[2].items)
+    end)
+
+    local function byId(id)
+        for _, exc in ipairs(ns.Exceptions:List()) do if exc.id == id then return exc end end
+    end
+    local function menuOf(dd)
+        local root = U.newMenu()
+        dd._setupMenu(dd, root)
+        return root
+    end
+    local function plain(text) return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
+
+    it("the pinned row opens How PetCall acts", function()
+        ns.UI.Main:Show()
+        local f = ns.UI.Main:GetFrame()
+        local pinned = ns.UI.SetList._pinned
+        assert.equal("How PetCall acts", pinned.name:GetText())
+        assert.equal("Everything on", plain(pinned.state:GetText()))
+        pinned:Click()
+        assert.is_true(ns.UI.Behaviour:IsShown())
+        assert.is_false(f.content:IsShown())
+        ns:PauseAuto()
+        W.advance(1)
+        assert.equal("Paused", plain(pinned.state:GetText()))
+        ns:ResumeAuto()
+        byId("bg"):SetChoice("away")
+        W.world.instanceType = "pvp"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        W.advance(1)
+        assert.equal("1 exception in force", plain(pinned.state:GetText()))
+        ns.UI.Main:SelectSet("$Default")
+        assert.is_false(ns.UI.Behaviour:IsShown())
+        assert.is_true(f.content:IsShown())
+    end)
+
+    it("Change on an exception cause opens the page at it", function()
+        W.world.summoned = "a"
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        ns.UI.Main:Show()
+        W.world.mounted = true
+        W.fire("PLAYER_MOUNT_DISPLAY_CHANGED")
+        ns.UI.StatusBar:Refresh()
+        local card = ns.UI.SetList._nowCard
+        assert.is_true(card.state:GetText():find("Because: exception While mounted", 1, true) ~= nil, card.state:GetText())
+        assert.is_true(card.action:IsShown())
+        assert.equal("Change", card.action:GetText())
+        card.action:Click()
+        assert.is_true(ns.UI.Behaviour:IsShown())
+        assert.equal("mounted", ns.UI.Behaviour:GetFocus())
+        local bar = ns.UI.Main:GetFrame().status
+        assert.is_true(bar.left:GetText():find("Paused: While mounted", 1, true) ~= nil, bar.left:GetText())
+    end)
+
+    it("Resume ends the pause", function()
+        ns.UI.Main:Show()
+        ns:PauseAuto()
+        ns.UI.StatusBar:Refresh()
+        local card = ns.UI.SetList._nowCard
+        assert.equal("Resume", card.action:GetText())
+        card.action:Click()
+        assert.equal("on", ns:GetAutoState())
+        ns:PauseAuto()
+        ns.UI.Behaviour:Show()
+        local page = ns.UI.Behaviour:GetFrame()
+        assert.is_true(page.resume:IsShown())
+        page.resume:Click()
+        assert.equal("on", ns:GetAutoState())
+        W.advance(1)
+        assert.is_false(page.resume:IsShown())
+        ns:SetAutoSummon(false)
+        ns.UI.StatusBar:Refresh()
+        assert.equal("Turn on", card.action:GetText())
+        card.action:Click()
+        assert.equal("on", ns:GetAutoState())
+    end)
+
+    it("an exception dropdown sets the choice", function()
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show()
+        local row = ns.UI.Behaviour._rows.bg
+        local menu = menuOf(row.choice)
+        assert.equal(3, #menu.items)
+        menu:Find("Put the pet away"):Click()
+        assert.equal("away", byId("bg"):GetChoice())
+        local hidden = menuOf(ns.UI.Behaviour._rows.hidden.choice)
+        assert.equal(2, #hidden.items, "Stealth or invisibility: As usual or Put the pet away")
+        local own = ns.Exceptions:Add({ { "zone", zoneName = "A" } }, "alone", nil, "Raid")
+        W.advance(1)
+        local r = ns.UI.Behaviour._rows[own.id]
+        assert.is_true(r.from:GetText():find("(was your set Raid)", 1, true) ~= nil, r.from:GetText())
+        r.toggle:Click()
+        assert.is_true(r.editorHost:IsShown())
+        assert.is_true(r.delete:IsShown())
+    end)
+
+    it("the solo box shows only on PvE rows that are not As usual", function()
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show()
+        local rows = ns.UI.Behaviour._rows
+        assert.is_false(rows.dungeon.solo:IsShown())
+        byId("dungeon"):SetChoice("away")
+        byId("bg"):SetChoice("away")
+        W.advance(1)
+        assert.is_true(rows.dungeon.solo:IsShown())
+        assert.is_true(rows.dungeon.solo:GetChecked())
+        assert.is_false(rows.bg.solo:IsShown())
+        assert.is_false(rows.mounted.solo:IsShown())
+        rows.dungeon.solo:SetChecked(false)
+        rows.dungeon.solo:Click()
+        assert.is_false(byId("dungeon"):GetSolo())
+    end)
+
+    it("the set timer dropdown shows Like Default with Default's value", function()
+        ns.Sets:Get("$Default"):SetSwitch(30)
+        local town = ns.Sets:Create("Town")
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Town")
+        ns.UI.Main:SelectTab("settings")
+        local page = ns.UI.SetSettingsPage
+        local menu = menuOf(page.switch)
+        assert.equal("Like Default: 30 minutes", plain(menu.items[1].text))
+        menu:Find("10 minutes, only in cities"):Click()
+        assert.same({ 10, true, false }, { town:GetSwitch() })
+        town.settings.switchMinutes = 7
+        assert.is_not_nil(menuOf(page.switch):Find("7 minutes"), "a value not in the list is shown")
+        assert.equal("Like Default: Always", plain(menuOf(page.announce).items[1].text))
+        ns.UI.Main:SelectSet("$Default")
+        ns.UI.Main:SelectTab("settings")
+        for _, item in ipairs(menuOf(page.switch).items) do assert.is_nil(item.text:find("Like Default"), item.text) end
+        for _, item in ipairs(menuOf(page.announce).items) do assert.is_nil(item.text:find("Like Default"), item.text) end
+    end)
+
+    it("Use recommended from the comparison applies and shows Undo", function()
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show()
+        local page = ns.UI.Behaviour:GetFrame()
+        page.recommend:Click()
+        local box = ns.UI.Comparison._box
+        assert.is_true(box:IsShown())
+        assert.is_true(#ns.UI.Comparison._last > 0)
+        box.use:Click()
+        assert.is_false(box:IsShown())
+        assert.is_true(ns.Recommended:CanUndo())
+        assert.equal("away", byId("bg"):GetChoice())
+        W.advance(1)
+        local bar = ns.UI.Main:GetFrame().status
+        assert.is_true(bar.undo:IsShown())
+        -- nothing left to change: Use recommended only closes
+        local applied = 0
+        local apply = ns.Recommended.Apply
+        ns.Recommended.Apply = function(...) applied = applied + 1 return apply(...) end
+        page.recommend:Click()
+        box.use:Click()
+        ns.Recommended.Apply = apply
+        assert.equal(0, applied)
+        bar.undo:Click()
+        assert.is_false(ns.Recommended:CanUndo())
+        assert.equal(false, byId("bg"):GetChoice())
+        W.advance(1)
+        assert.is_false(bar.undo:IsShown())
+    end)
+
+    it("the page's condition editor leaves the When tab's mount picker alone", function()
+        W.world.mounts = { { id = 7, name = "Swift Spectral Tiger", collected = true, types = { 1 } } }
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show(ns.Exceptions:Add({ { "zone", zoneName = "A" } }, "away").id)
+        local set = ns.Sets:Create("Riders")
+        ns.UI.Main:SelectSet("Riders")
+        local m = set:GetConditionModel()
+        m.groups = { { rows = { { "mount", mountIDs = {} } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:SelectTab("when")
+        local P = ns.UI.MountPicker
+        P:Open(set.settings.trigger[1], ns.UI.Main:GetFrame(), function() set:ConditionsChanged() end)
+        ns.Exceptions:Add({ { "zone", zoneName = "B" } }, "alone")
+        ns:Fire("ConditionStateChanged")
+        W.advance(1)
+        assert.is_true(P:IsShown())
+        ns.UI.Behaviour:Show()
+        assert.is_false(P:IsShown(), "the When tab is out of sight")
+    end)
+
+    it("a built-in exception's conditions are read only, their dots still tell", function()
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show()
+        local row = ns.UI.Behaviour._rows.dungeon
+        row.toggle:Click()
+        assert.is_true(row.editorHost:IsShown())
+        assert.is_false(row.delete:IsShown(), "a built-in cannot be deleted")
+        local focused = { cleared = false }
+        local box = CreateFrame("EditBox", nil, UIParent)
+        function box:ClearFocus() focused.cleared = true end
+        local inside = false
+        for _, f in ipairs(U.created) do
+            if f._parent == row.editorHost then box._parent, inside = f, true break end
+        end
+        assert.is_true(inside)
+        local was = GetCurrentKeyBoardFocus
+        GetCurrentKeyBoardFocus = function() return box end
+        local editor = ns.UI.ConditionEditor.New(CreateFrame("Frame", nil, UIParent))
+        editor:SetReadOnly(true)
+        assert.is_false(focused.cleared, "a box outside this editor keeps its focus")
+        row.toggle:Click()
+        row.toggle:Click()
+        GetCurrentKeyBoardFocus = was
+        assert.is_true(focused.cleared, "the page's read-only editor took the focus from its box")
     end)
 end)

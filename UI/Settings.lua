@@ -134,19 +134,6 @@ local function build()
         function() return ns.db.profile.autoSwitch.onZone end, function(v) ns.db.profile.autoSwitch.onZone = v end,
         L["Switch to a different random pet each time you travel to a new map or zone."])
 
-    header(L["Special Items"])
-    proxy("specialItems", Settings.VarType.Boolean, ENABLE, true,
-        function() return ns.SpecialItems:IsEnabled() end, function(v) ns.SpecialItems:SetEnabled(v) end,
-        L["EXPLAIN_SPECIAL_ITEMS"])
-    for _, item in ipairs(ns.SpecialItems:List()) do
-        local key = item.key
-        local setting = Settings.RegisterProxySetting(category, "PETCALL_SI_" .. key:gsub(":", "_"), Settings.VarType.Boolean,
-            item.name, true,
-            function() return ns.SpecialItems.db.profile.items[key] and true or false end,
-            function(v) ns.SpecialItems:SetItemEnabled(key, v) end)
-        Settings.CreateCheckbox(category, setting)
-    end
-
     Settings.RegisterAddOnCategory(category)
     S.category = category
     ns.UI.Profiles:Register(category)

@@ -93,6 +93,51 @@ Screens.list = {
         ns.UI.Main:Show()
         ns.UI.MountPicker:Open({ "mount", mountIDs = {} }, nil, function() end)
     end },
+    { name = "How PetCall acts, every exception set, one own exception open", open = function(ns)
+        for _, exc in ipairs(ns.Exceptions:List()) do exc:SetChoice("away") end
+        ns.Exceptions:Add({ { "zone", zoneName = "Stormwind City" }, { "groupType", raid = true } }, "alone", nil, "Raid group zoo")
+        ns.Exceptions:Add({ { "luacode", code = "return true", disabledByImport = true } }, "away", "Shared from a friend")
+        local own = ns.Exceptions:Add({ { "zone", zoneName = "Valdrakken" }, { "timeOfDay", from = 1080, to = 1380 } }, "away")
+        ns:PauseAuto()
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show(own.id)
+        ns.UI.Behaviour:GetFrame().itemsToggle:Click()
+    end },
+    { name = "Comparison, every row different", open = function(ns)
+        ns:SetAutoSummon(false)
+        ns.db.profile.nearPEWOnly, ns.db.profile.switchOnNewMap, ns.db.profile.overrideSetLoadout = true, true, false
+        local default = ns.Sets:Get("$Default")
+        default:SetSwitch(5, true)
+        default:SetAnnounce(true)
+        local other = { mounted = "away", bg = "alone", arena = "alone", dungeon = "alone", raid = "alone",
+            scenario = "away", hidden = false, outsideCities = "away" }
+        for _, exc in ipairs(ns.Exceptions:List()) do
+            exc:SetChoice(other[exc.id])
+            if exc:HasSolo() then exc:SetSolo(false) end
+        end
+        ns.Exceptions:Add({ { "groupType", raid = true } }, "away", nil, "Raid group zoo")
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show()
+        ns.UI.Comparison:Open(ns.UI.Behaviour:GetFrame())
+    end },
+    { name = "Set settings with Like Default values", open = function(ns)
+        local default = ns.Sets:Get("$Default")
+        default:SetSwitch(30, true)
+        default:SetAnnounce(false)
+        local town = ns.Sets:Create("Town and capital cities")
+        town:ApplyTemplate("city")
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Town and capital cities")
+        ns.UI.Main:SelectTab("settings")
+    end },
+    { name = "Out now with an exception cause", open = function(ns, U)
+        U.W.world.summoned = "b"
+        U.W.fire("COMPANION_UPDATE", "CRITTER")
+        U.W.world.mounted = true
+        U.W.fire("PLAYER_MOUNT_DISPLAY_CHANGED")
+        pets(ns)
+        ns.UI.StatusBar:Refresh()
+    end },
 }
 
 return Screens
