@@ -18,6 +18,7 @@ local specs = {
     "tests/petgrid_spec.lua",
     "tests/ready_spec.lua",
     "tests/gate_spec.lua",
+    "tests/recommended_spec.lua",
     "tests/conditions_spec.lua",
     "tests/summon_spec.lua",
     "tests/specialitems_spec.lua",

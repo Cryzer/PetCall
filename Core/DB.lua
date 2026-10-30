@@ -122,6 +122,13 @@ function DB:Namespace(name, defaults)
     return n
 end
 
+-- a profile setting changed by hand: whoever keeps a snapshot of them (Recommended) hears of it
+function ns:SetProfileValue(key, value)
+    if ns.db.profile[key] == value then return end
+    ns.db.profile[key] = value
+    ns:Fire("ProfileValueChanged", key)
+end
+
 function DB:Current()
     return profileName(ns.db.sv)
 end

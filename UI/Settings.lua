@@ -24,7 +24,7 @@ end
 local function profileBool(key, label, tooltip, after)
     return proxy(key, Settings.VarType.Boolean, label, ns.DB.defaults[key],
         function() return ns.db.profile[key] end,
-        function(v) ns.db.profile[key] = v onChanged() if after then after(v) end end, tooltip)
+        function(v) ns:SetProfileValue(key, v) onChanged() if after then after(v) end end, tooltip)
 end
 
 -- three-state "where" lists map onto the 1.x pair of booleans
@@ -68,7 +68,7 @@ local function build()
         local opts = Settings.CreateSliderOptions(1, 30, 0.5)
         opts:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(v) return format(L["%.1f s"], v) end)
         proxy("waitTimer", Settings.VarType.Number, L["Wait Time (Seconds)"], 3,
-            function() return ns.db.profile.waitTimer end, function(v) ns.db.profile.waitTimer = v end,
+            function() return ns.db.profile.waitTimer end, function(v) ns:SetProfileValue("waitTimer", v) end,
             L["Seconds of inactivity before PetCall summons a pet."], "slider", opts)
     end
     profileBool("verbose", L["Chat messages"], L["Print a message in the chat window each time a pet is summoned."])
