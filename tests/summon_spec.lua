@@ -216,13 +216,13 @@ describe("Summon", function()
         ns:SummonPet("b")
         W.advance(5)
         assert.equal("a", W.world.summoned)
-        assert.is_true(printedSince(n, "Sitting"))
+        assert.is_true(printedSince(n, "Stand up and your pet comes out."))
         n = #W.world.printed
         W.fire("PLAYER_STARTED_MOVING")                  -- stands up
         W.advance(1)
         assert.equal("b", W.world.summoned)
         assert.equal("b", ns.Summon.manualPick)
-        assert.is_false(printedSince(n, "Sitting"), "said once")
+        assert.is_false(printedSince(n, "Stand up and your pet comes out."), "said once")
     end)
 
     it("an explicit summon while Off summons and leaves Off", function()

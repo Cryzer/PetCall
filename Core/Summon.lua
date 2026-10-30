@@ -2,6 +2,7 @@ local _, ns = ...
 
 local L = ns.L
 local C_PetJournal, GetTime, InCombatLockdown, tinsert = C_PetJournal, GetTime, InCombatLockdown, tinsert
+local UIErrorsFrame = UIErrorsFrame
 
 local Summon = ns:NewModule("Summon")
 ns.Summon = Summon
@@ -62,6 +63,12 @@ end
 -- summons and dismissals outside PetCall from PetCall's
 local function summonByGUID(guid, outcome)
     Summon.expect = { pet = outcome, at = GetTime() }
+    -- the game's red "must be standing" error is no use when PetCall tries by itself (out of
+    -- combat, when nothing says you sit); Ready learns of it from its own listener
+    if not InCombatLockdown() and not ns.Ready.is_false.sitting then
+        UIErrorsFrame:UnregisterEvent("UI_ERROR_MESSAGE")
+        ns:After(0, function() UIErrorsFrame:RegisterEvent("UI_ERROR_MESSAGE") end)
+    end
     C_PetJournal.SummonPetByGUID(guid)
 end
 
@@ -98,7 +105,13 @@ end
 local function summonExplicit(petID)
     ns:ResumeAuto()
     local ok, cause = ns.Gate:Check("summon", "explicit")
-    if not ok then ns:Printf(L["Your pet comes out when this ends: %s."], cause.label) end
+    if not ok then
+        if cause.key == "sitting" then
+            ns:Printf(L["Stand up and your pet comes out."])
+        else
+            ns:Printf(L["Your pet comes out when this ends: %s."], cause.label)
+        end
+    end
     local choice, exc = ns.Exceptions:Strongest()
     if choice == "away" then
         ns:Printf(L["%s usually puts your pet away."], exc:DisplayName())

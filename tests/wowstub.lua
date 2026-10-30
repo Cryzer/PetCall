@@ -171,7 +171,9 @@ function W.reset()
     UnitCastingInfo = function() return w.casting and "Spell" or nil end
     UnitChannelInfo = function() return nil end
     SecureCmdOptionParse = function() return w.macroResult end
-    JumpOrAscendStart, SitStandOrDescendStart = noop, noop
+    JumpOrAscendStart, SitStandOrDescendStart, DoEmote = noop, noop, noop
+    UIErrorsFrame = W.newFrame()
+    UIErrorsFrame:RegisterEvent("UI_ERROR_MESSAGE")
     GetBindingKey = function() return nil end
     -- only the sounds the client has: a missing SOUNDKIT name is nil, and the game errors on PlaySound(nil)
     SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 856, IG_MAINMENU_OPTION_CHECKBOX_OFF = 857,

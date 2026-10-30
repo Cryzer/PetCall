@@ -162,3 +162,113 @@ describe("Ready", function()
         w:Free()
     end)
 end)
+
+describe("Ready: pet battles and sitting", function()
+    local ns
+    before_each(function()
+        W.reset()
+        W.world.pets = { a = { species = 1, name = "A" }, b = { species = 2, name = "B" } }
+        ns = W.load()
+        W.login()
+        W.advance(1)
+    end)
+    local function printed(text)
+        for _, m in ipairs(W.world.printed) do if m:find(text, 1, true) then return true end end
+        return false
+    end
+    local function count(text)
+        local n = 0
+        for _, m in ipairs(W.world.printed) do if m:find(text, 1, true) then n = n + 1 end end
+        return n
+    end
+
+    it("a pet battle blocks both sources", function()
+        W.fire("PET_BATTLE_OPENING_START")
+        for _, source in ipairs({ "auto", "explicit" }) do
+            local ok, cause = ns.Gate:Check("summon", source)
+            assert.is_false(ok)
+            assert.equal("game", cause.level)
+            assert.equal("pet_battle", cause.key)
+            assert.equal("In a pet battle", cause.label)
+        end
+        W.fire("PET_BATTLE_CLOSE")
+        assert.is_true((ns.Gate:Check("summon", "explicit")))
+        assert.is_true((ns.Gate:Check("summon", "auto")))
+    end)
+
+    it("a pet the battle took is not a pet you dismissed", function()
+        W.world.summoned = "a"
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        W.fire("PET_BATTLE_OPENING_START")
+        W.world.summoned = nil
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        assert.equal("on", ns:GetAutoState())
+    end)
+
+    it("/sit and /stand are noticed", function()
+        DoEmote("SIT")
+        assert.is_not_nil(ns.Ready.is_false.sitting)
+        DoEmote("STAND")
+        assert.is_nil(ns.Ready.is_false.sitting)
+        DoEmote("DANCE")
+        assert.is_nil(ns.Ready.is_false.sitting)
+        DoEmote("SIT")
+        SitStandOrDescendStart()
+        assert.is_nil(ns.Ready.is_false.sitting, "the key still toggles")
+    end)
+
+    it("an explicit summon learns from the standing error and waits", function()
+        ns:SummonPet("a")
+        assert.equal("a", W.world.summoned)
+        W.world.summoned = nil
+        W.fire("UI_ERROR_MESSAGE", 999, ERR_MUST_BE_STANDING)
+        assert.is_not_nil(ns.Ready.is_false.sitting)
+        assert.equal(1, count("Stand up and your pet comes out."))
+        W.advance(5)
+        assert.is_nil(W.world.summoned, "nothing is tried while sitting")
+        W.fire("PLAYER_STARTED_MOVING")
+        W.advance(2)
+        assert.equal("a", W.world.summoned)
+        assert.equal(1, count("Stand up and your pet comes out."))
+    end)
+
+    it("an explicit summon while sitting says so once instead of naming the blocker", function()
+        DoEmote("SIT")
+        ns:SummonPet("a")
+        assert.equal(1, count("Stand up and your pet comes out."))
+        assert.is_false(printed("when this ends"))
+    end)
+
+    it("PetCall's own summon does not show the standing error", function()
+        local frame = UIErrorsFrame
+        local seen
+        local summon = C_PetJournal.SummonPetByGUID
+        C_PetJournal.SummonPetByGUID = function(id)
+            seen = frame:IsEventRegistered("UI_ERROR_MESSAGE")
+            summon(id)
+        end
+        ns.Summon:SummonPick("a")
+        assert.is_false(seen, "hidden during the call")
+        assert.is_false(frame:IsEventRegistered("UI_ERROR_MESSAGE"))
+        W.advance(0.1)
+        assert.is_true(frame:IsEventRegistered("UI_ERROR_MESSAGE"), "back on the next frame")
+    end)
+
+    it("the standing error stays visible in combat and while Ready thinks you sit", function()
+        local frame = UIErrorsFrame
+        local seen
+        local summon = C_PetJournal.SummonPetByGUID
+        C_PetJournal.SummonPetByGUID = function(id)
+            seen = frame:IsEventRegistered("UI_ERROR_MESSAGE")
+            summon(id)
+        end
+        W.world.combat = true
+        ns.Summon:SummonPick("a")
+        assert.is_true(seen)
+        W.world.combat = false
+        W.world.summoned = nil
+        DoEmote("SIT")
+        ns.Summon:SummonPick("a")
+        assert.is_true(seen)
+    end)
+end)

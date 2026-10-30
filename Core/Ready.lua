@@ -16,20 +16,20 @@ local FOOD_SPELLS = { 430, 433, 167152, 160598, 160599 }
 
 -- blockers that take the pet away (unlike sitting or casting); seconds that tie a pet
 -- that went to one starting, and to PetCall's own call
-local TAKES_PET = { alive = true, vehicle = true }
+local TAKES_PET = { alive = true, vehicle = true, pet_battle = true }
 local TAKEN_WINDOW, EXPECT_WINDOW = 1.5, 3
 
 -- game blockers only: what the game itself does not allow, or a summon would break
 local BLOCKER_ORDER = {
     "have_pets", "combat", "alive", "flying", "vehicle", "stealthed", "invisible", "camo",
-    "feigned", "sitting", "casting", "looting", "barbar", "thunderisle_saurok", "addon_ready",
+    "feigned", "sitting", "casting", "looting", "barbar", "thunderisle_saurok", "pet_battle", "addon_ready",
 }
 local LABELS = {
     have_pets = L["No pets"], combat = L["In combat"],
     alive = L["Dead"], flying = L["Flying"], vehicle = L["In a vehicle"], stealthed = L["Stealthed"],
     invisible = L["Invisible"], camo = L["Camouflaged"], feigned = L["Feigning death"], sitting = L["Sitting"],
     casting = L["Casting"], looting = L["Looting"], barbar = L["At the barber"], thunderisle_saurok = L["Transformed"],
-    addon_ready = L["Loading"],
+    pet_battle = L["In a pet battle"], addon_ready = L["Loading"],
 }
 
 -- 12.x hides some values from addons in combat ("secret" values): any test on one
@@ -66,6 +66,8 @@ function Ready:OnInitialize()
     self:RegisterEvent("PLAYER_STARTED_MOVING")
     self:RegisterEvent("PLAYER_FLAGS_CHANGED")
     self:RegisterEvent("UI_ERROR_MESSAGE")
+    self:RegisterEvent("PET_BATTLE_OPENING_START")
+    self:RegisterEvent("PET_BATTLE_CLOSE")
     self:RegisterUnitEvent("UNIT_AURA", "player")
     self:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
     for _, e in ipairs({ "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_CHANNEL_UPDATE",
@@ -102,10 +104,20 @@ function Ready:OnEnable()
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
 
     hooksecurefunc("JumpOrAscendStart", function() Ready:SetReady("sitting", true) end)
+    -- the key does both, so it toggles; the emotes say which way
+    local function lockSitting() Ready._sit_move_lock = Ready.is_false.sitting and (GetTime() + 3) or nil end
     hooksecurefunc("SitStandOrDescendStart", function()
         if not IsFlying() and not IsMounted() then
             Ready:ToggleReady("sitting")
-            Ready._sit_move_lock = Ready.is_false.sitting and (GetTime() + 3) or nil
+            lockSitting()
+        end
+    end)
+    hooksecurefunc("DoEmote", function(token)
+        if token == "SIT" then
+            Ready:SetReady("sitting", false)
+            lockSitting()
+        elseif token == "STAND" then
+            Ready:SetReady("sitting", true)
         end
     end)
     local function onSendChat(msg, chatType)
@@ -191,6 +203,7 @@ function Ready:_CheckSummon(waitFinished)
     if waitFinished then
         if self:LastCheck() then
             local pick = self.pendingPet
+            self._ranExplicit, self._ranPick = source == "explicit", pick
             self.pending, self.pendingPet, self.comeback = nil, nil, nil
             if self.wait_timer then self.wait_timer:Cancel() self.wait_timer = nil end
             self._last_summon_time = GetTime()
@@ -402,8 +415,17 @@ function Ready:UI_ERROR_MESSAGE(_, _, message)
     if (message == ERR_MUST_BE_STANDING or message == SPELL_FAILED_NOT_STANDING)
         and self._last_summon_time and GetTime() - self._last_summon_time < 3 then
         self:SetReady("sitting", false)
+        -- a request of yours that failed this way waits until you stand
+        if self._ranExplicit and not self.pending then
+            self._ranExplicit = nil
+            self.pending, self.pendingPet = "explicit", self._ranPick
+            ns:Printf(L["Stand up and your pet comes out."])
+        end
     end
 end
+
+function Ready:PET_BATTLE_OPENING_START() self:SetReady("pet_battle", false) end
+function Ready:PET_BATTLE_CLOSE() self:SetReady("pet_battle", true) end
 
 function Ready:PLAYER_FLAGS_CHANGED(_, unit)
     if unit and unit ~= "player" then return end
