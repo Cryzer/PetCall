@@ -454,7 +454,10 @@ function Sets:Duplicate(set)
     for k, v in pairs(set.settings) do
         if k ~= "name" and k ~= "order" and k ~= "trigger" then st[k] = deepCopy(v) end
     end
-    if set:IsDefault() then st.priority = nil end
+    if set:IsDefault() then
+        -- the copy follows Default rather than pinning its timer and message
+        st.priority, st.switchMinutes, st.switchCitiesOnly, st.announce = nil, nil, nil, nil
+    end
     for _, e in ipairs(set.settings.trigger or {}) do st.trigger[#st.trigger + 1] = deepCopy(e) end
     st.order = (set:IsDefault() and math.huge) or ((set.settings.order or 0) + 0.5)
     self:Renumber()

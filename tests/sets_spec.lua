@@ -267,6 +267,15 @@ describe("Sets", function()
         assert.same({ 30, true, true }, { x:GetSwitch() })
     end)
 
+    it("a deleted set's timer and message setters do nothing", function()
+        local x = ns.Sets:Create("X")
+        x:Delete()
+        x:SetSwitch(5, true)
+        x:SetAnnounce(false)
+        assert.is_nil(x.settings.switchMinutes)
+        assert.is_nil(x.settings.announce)
+    end)
+
     it("Default's timer off is 0, not nil", function()
         assert.same({ 0, false, false }, { ns.Sets:Get("$Default"):GetSwitch() })
         ns.Sets:Get("$Default"):SetSwitch(nil)                      -- Default has no "like Default"
@@ -306,6 +315,9 @@ describe("Sets", function()
         local d = ns.Sets:Duplicate(ns.Sets:Get("$Default"))
         assert.equal("Default copy", d.name)
         assert.is_nil(d.settings.priority)
+        assert.same({ 0, false, false }, { ns.Sets:Get("$Default"):GetSwitch() })
+        assert.same({ 0, false, true }, { d:GetSwitch() })          -- follows Default, not pinned off
+        assert.same({ true, true }, { d:GetAnnounce() })
     end)
 
     it("a set's chat-message choice wins over the setting", function()
