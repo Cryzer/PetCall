@@ -208,7 +208,6 @@ Right-click a set, choose **Export** and send the text to a friend. They click *
 | `/pcall dismiss` | Dismiss your pet; turns auto-summon off |
 | `/pcall togglePet` | Pet out or away, with auto-summon |
 | `/pcall enable` | Auto-summon on or off |
-| `/pcall dismissWhenStealthed` | Dismissing in stealth on or off |
 | `/pcall migrate` | Show the PetLeash import again |
 | `/pcall help` | List the commands |
 

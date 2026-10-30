@@ -114,7 +114,7 @@ local function cardTooltip(c)
     if r.immediate then lines[#lines + 1] = L["Summons as soon as the set becomes active."] end
     if r.noPet then lines[#lines + 1] = L["No pet while this set is used"] end
     if r.switchMinutes then lines[#lines + 1] = format(L["A new pet every %d minutes."], r.switchMinutes) end
-    if r.needsMounted and ns.db.profile.noSummonMounted then
+    if r.needsMounted and ns.db.profile.exceptions.builtin.mounted then
         lines[#lines + 1] = "|cffffd100" .. L["Turn off \"Don't summon while mounted\" in the settings, or this set never brings a pet."] .. "|r"
     end
     return table.concat(lines, "\n")

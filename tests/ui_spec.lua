@@ -229,7 +229,7 @@ describe("UI smoke", function()
         local win = _G.PetCallMountPicker
         assert.is_true(win.warn:IsShown())
         win.warn.button:Click()
-        assert.is_false(ns.db.profile.noSummonMounted)
+        assert.is_false(ns.db.profile.exceptions.builtin.mounted)
         assert.is_false(win.warn:IsShown())
         P:Toggle(9)
         P:Toggle(7)

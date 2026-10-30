@@ -260,7 +260,6 @@ L["Summon another pet; turns auto-summon on"] = true
 L["Dismiss your pet; turns auto-summon off"] = true
 L["Toggle your pet and auto-summon"] = true
 L["Toggle auto-summon"] = true
-L["Toggle dismissing in stealth"] = true
 L["Import PetLeash data"] = true
 L["List commands"] = true
 L["This set no longer exists."] = true

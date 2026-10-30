@@ -6,6 +6,7 @@ local specs = {
     "tests/addon_spec.lua",
     "tests/locale_spec.lua",
     "tests/db_spec.lua",
+    "tests/upgrade_spec.lua",
     "tests/petcache_spec.lua",
     "tests/expansions_spec.lua",
     "tests/weights_spec.lua",

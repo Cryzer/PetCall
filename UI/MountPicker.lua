@@ -202,8 +202,9 @@ local function build()
     warn.edge:SetWidth(3)
     warn.edge:SetColorTexture(1, 0.82, 0, 1)
     warn.button = ns.Widgets.Button(warn, L["Turn it off"], function()
-        ns.db.profile.noSummonMounted = false
-        ns.Ready:UpdateChecks()
+        for _, exc in ipairs(ns.Exceptions:List()) do
+            if exc.id == "mounted" then exc:SetChoice(false) end
+        end
         Picker:PaintWarning()
     end)
     warn.button:SetPoint("RIGHT", -6, 0)
@@ -298,7 +299,7 @@ end
 -- the warning shows while "Don't summon while mounted" is on; the rest moves under it
 function Picker:PaintWarning()
     if not win then return end
-    local on = ns.db.profile.noSummonMounted and true or false
+    local on = ns.db.profile.exceptions.builtin.mounted and true or false
     win.warn:SetShown(on)
     win.body:ClearAllPoints()
     win.body:SetPoint("BOTTOMRIGHT", -6, 40)

@@ -51,8 +51,7 @@ function SwitchTimer:PLAYER_ENTERING_WORLD()
 end
 
 function SwitchTimer:ZONE_CHANGED_NEW_AREA()
-    local p = ns.db.profile
-    if p.switchOnNewMap or p.autoSwitch.onZone then
+    if ns.db.profile.switchOnNewMap then
         ns:After(1, function()
             local zone = GetZoneText()
             if zone ~= SwitchTimer.lastZone then

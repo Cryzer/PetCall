@@ -33,6 +33,7 @@ Locales\ptBR.lua
 Locales\ruRU.lua
 Locales\zhCN.lua
 Locales\zhTW.lua
+Core\Upgrade.lua
 Core\DB.lua
 Core\PetCache.lua
 Core\ExpansionData.lua

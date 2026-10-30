@@ -12,11 +12,6 @@ local list = {
     { "desummon", nil, function() ns:DismissPet(true) end },
     { "togglePet", L["Toggle your pet and auto-summon"], function() ns:TogglePet() end },
     { "enable", L["Toggle auto-summon"], function() ns:SetAutoSummon(not ns:IsAutoSummon()) end },
-    { "dismissWhenStealthed", L["Toggle dismissing in stealth"], function()
-        ns.db.profile.dismissWhenStealthed = not ns.db.profile.dismissWhenStealthed
-        ns.Ready:UpdateChecks()
-        ns:Printf("%s: %s", L["Dismiss When Stealthed or Invisible"], ns.db.profile.dismissWhenStealthed and L["On"] or L["Off"])
-    end },
     { "migrate", L["Import PetLeash data"], function() ns.Migrate:Prompt() end },
     { "debugstate", nil, function()
         ns:Printf("%s: %s", L["Auto-summon"], ns:IsAutoSummon() and L["On"] or L["Off"])

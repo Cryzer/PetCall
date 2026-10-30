@@ -8,20 +8,10 @@ ns.db = {}
 
 DB.defaults = {
     enable = true,
-    enableInBattleground = true,
-    dismissInBattleground = false,
-    disableOutsideCities = false,
-    dismissWhenStealthed = false,
-    noSummonMounted = true,               -- a summon on a mount takes the GCD from Skyriding abilities
-    disableForQuestItems = true,          -- unused since 1.x; kept so old data round-trips
-    enableInPVE = true,
-    dismissInPVE = false,
     nearPEWOnly = false,
     switchOnNewMap = false,
     overrideSetLoadout = false,
     waitTimer = 3,
-    verbose = true,
-    autoSwitch = { timer = false, timerValue = 30 * 60, citiesOnly = false, onZone = false },
     minimap = { hide = false },
     -- false: As usual; "alone": leave the pet alone; "away": put the pet away
     exceptions = {
@@ -94,6 +84,7 @@ local function bindProfile()
     local sv = ns.db.sv
     local name = profileName(sv)
     sv.profiles[name] = sv.profiles[name] or {}
+    ns.Upgrade.Profile(sv.profiles[name], sv.global)
     DB.ApplyDefaults(sv.profiles[name], DB.defaults)
     ns.db.profile = sv.profiles[name]
     for nsName, n in pairs(namespaces) do

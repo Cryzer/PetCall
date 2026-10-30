@@ -134,7 +134,9 @@ describe("Ready", function()
 
     it("blocks only on the game: preferences are not blockers", function()
         local p = ns.db.profile
-        p.nearPEWOnly, p.disableOutsideCities, p.enableInBattleground, p.enableInPVE = true, true, false, false
+        p.nearPEWOnly = true
+        p.exceptions.builtin.outsideCities, p.exceptions.builtin.bg, p.exceptions.builtin.dungeon = "alone", "away", "alone"
+        ns.Exceptions:Reload()
         ns:SetAutoSummon(false)
         ns.Ready:UpdateChecks()
         W.world.mounted, W.world.resting, W.world.instanceType, W.world.inGroup = true, false, "pvp", true

@@ -11,8 +11,6 @@ describe("Commands", function()
         assert.is_true(W.world.opened)
         SlashCmdList.PETCALL("ENABLE")
         assert.is_false(ns:IsAutoSummon())
-        SlashCmdList.PETCALL("dismissWhenStealthed")
-        assert.is_true(ns.db.profile.dismissWhenStealthed)
         local before = #W.world.printed
         SlashCmdList.PETCALL("debugstate")
         SlashCmdList.PETCALL("holidays")

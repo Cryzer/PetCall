@@ -33,9 +33,9 @@ describe("DB", function()
         assert.equal("Default", ns.DB:Current())
         assert.equal(5, ns.db.profile.waitTimer)
         assert.equal(true, ns.db.profile.enable)
-        assert.equal(true, ns.db.profile.autoSwitch.onZone)
-        assert.equal(false, ns.db.profile.autoSwitch.timer)
-        assert.equal(30 * 60, ns.db.profile.autoSwitch.timerValue)
+        assert.equal(true, ns.db.profile.switchOnNewMap)        -- the old setting, moved by the upgrade
+        assert.is_nil(ns.db.profile.autoSwitch)
+        assert.equal(0, ns.db.profile.sets["$Default"].switchMinutes)
     end)
 
     it("wildcard defaults: sets stripped by AceDB behave like 1.0.x", function()
