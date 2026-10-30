@@ -166,6 +166,49 @@ describe("Summon", function()
         ns.Ready.Request = orig
     end)
 
+    it("a pet the game puts back keeps whether you picked it", function()
+        local s = ns.Sets:Create("S")
+        s:SetPetWeight("a", 1)
+        s:SetPetWeight("b", 1)
+        s:SetOnActivate("new")
+        local requests = 0
+        local orig = ns.Ready.Request
+        local function takeAndGiveBack()
+            local pet = W.world.summoned
+            W.world.dead = true
+            W.fire("PLAYER_DEAD")
+            petChanged(nil)
+            W.world.dead = false
+            W.fire("PLAYER_UNGHOST")
+            petChanged(pet)                              -- the game, not you
+            ns.Ready.Request = function() requests = requests + 1 end
+            ns.Summon:OnImmediateSet(s)
+            ns.Ready.Request = orig
+        end
+        ns.Summon:SummonRandom()                         -- PetCall's own draw
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        takeAndGiveBack()
+        assert.is_nil(ns.Summon.manualPick)
+        assert.equal(1, requests, "still PetCall's draw: a set start replaces it")
+        W.advance(30)
+        petChanged(nil)
+        ns:ResumeAuto()
+        petChanged("b")                                  -- picked in the Pet Journal
+        takeAndGiveBack()
+        assert.equal("b", ns.Summon.manualPick)
+        assert.equal(1, requests, "still your pick")
+    end)
+
+    it("Summon another with no other pet still ends the pause", function()
+        ns.Sets:Get("$Default"):SetPetWeight("b", 0)
+        petChanged("a")
+        ns:PauseAuto()
+        local n = #W.world.printed
+        ns:SummonAnother()
+        assert.is_true(printedSince(n, "No other pet to choose from"))
+        assert.equal("on", ns:GetAutoState())
+    end)
+
     it("a grid pick waits while sitting", function()
         petChanged("a")
         ns.Ready:SetReady("sitting", false)

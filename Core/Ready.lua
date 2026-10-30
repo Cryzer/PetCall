@@ -285,13 +285,18 @@ function Ready:_GameTook()
     self._takenAt = now
     if self._vanishedAt and now - self._vanishedAt < TAKEN_WINDOW then
         self._vanishedAt = nil
+        self._takenPet, self._takenPick = self._vanishedPet, self._vanishedPick
         ns:ResumeAuto()
         self.comeback = true
     end
 end
 
 local function gameTakes(self)
-    return self.is_false.alive or self.is_false.vehicle or GetTime() - (self._takenAt or -TAKEN_WINDOW) < TAKEN_WINDOW
+    if GetTime() - (self._takenAt or -TAKEN_WINDOW) < TAKEN_WINDOW then return true end
+    for key in pairs(TAKES_PET) do
+        if self.is_false[key] then return true end
+    end
+    return false
 end
 
 -- a change PetCall did not ask for is yours (Pet Journal, pet frame) or the game's
@@ -306,14 +311,22 @@ function Ready:_PetChanged(pet)
         if not out then return end          -- no pet in between: a switch
     end
     if pet then
-        ns.Summon.manualPick = pet
-        ns:ResumeAuto()
-    elseif ns:GetAutoState() ~= "on" then
+        if pet == self._takenPet then
+            ns.Summon.manualPick = self._takenPick and pet or nil     -- the game put it back
+        else
+            ns.Summon.manualPick = pet
+            ns:ResumeAuto()
+        end
+        self._takenPet = nil
         return
-    elseif gameTakes(self) then
-        self.comeback = true
-    else
-        self._vanishedAt = GetTime()
+    end
+    local gone = self._petOut
+    local wasPick = gone ~= nil and ns.Summon.manualPick == gone
+    if gameTakes(self) then
+        self._takenPet, self._takenPick = gone, wasPick
+        if ns:GetAutoState() == "on" then self.comeback = true end
+    elseif ns:GetAutoState() == "on" then
+        self._vanishedAt, self._vanishedPet, self._vanishedPick = GetTime(), gone, wasPick
         ns:PauseAuto()
     end
 end

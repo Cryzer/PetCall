@@ -166,6 +166,7 @@ function ns:OpenOptions() ns:OpenWindow() end
 function ns:SummonAnother()
     local set = ns.Sets:GetCurrent()
     if set and not set:PickPet(ns:GetCurrentPet()) then
+        ns:ResumeAuto()
         ns:Printf(L["No other pet to choose from in %s."], set:DisplayName())
         return
     end

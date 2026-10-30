@@ -123,7 +123,7 @@ describe("Gate", function()
         W.world.combat = true
         W.fire("PLAYER_REGEN_DISABLED")
         ns:SummonAnother()
-        ns:DismissPet(true)
+        ns:DismissPet()
         assert.is_nil(ns.Ready.pending)
         W.world.combat = false
         W.fire("PLAYER_REGEN_ENABLED")
