@@ -106,7 +106,7 @@ local FIXED = {
       conditions = { { "specialLocation", locs = { "dungeon" } } }, rules = {}, noPet = true },
     { key = "quietpvp", category = "world", icon = I .. "Achievement_BG_winWSG", title = L["Quiet in PvP"],
       hint = L["In battlegrounds and arenas: no pet at all."],
-      conditions = { { "specialLocation", locs = { "pvp" } } }, rules = {}, noPet = true },
+      conditions = { { "specialLocation", locs = { "bg", "arena" } } }, rules = {}, noPet = true },
     -- on the move
     { key = "swimming", category = "moving", icon = I .. "Spell_Frost_SummonWaterElemental", title = L["Water pets while swimming"],
       hint = L["When you swim. Aquatic pets."],

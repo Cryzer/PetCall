@@ -103,6 +103,9 @@ fills({ "outfit" }, function(ctx)
     local info = id and id ~= 0 and T.GetOutfitInfo(id)
     if info and info.name and info.name ~= "" then ctx.outfit = info.name end
 end)
+fills({ "stealth", "invisible", "camo", "feign" }, function(ctx)
+    ctx.stealth, ctx.invisible, ctx.camo, ctx.feign = ns.Ready:HiddenState()
+end)
 fills({ "holidays" }, function(ctx) ctx.holidays = C.ActiveHolidays and C.ActiveHolidays() or {} end)
 
 local Lazy = { __index = function(ctx, key)
@@ -312,6 +315,7 @@ end
 
 local tickers = {}   -- seconds -> { ticker, watchers = {} }
 local listeners = {} -- event -> { [watcher] = true }
+local callbackListeners = {} -- PetCall callback -> { [watcher] = true }
 local dispatcher = {}
 
 -- every watcher woken together looks at one context: one look at the world per event
@@ -346,12 +350,30 @@ local function listen(w, event)
     set[w] = true
 end
 
+-- a state PetCall itself tracks (stealth...) is announced by a callback, not an event
+local function listenCallback(w, name)
+    local set = callbackListeners[name]
+    if not set then
+        set = {}
+        callbackListeners[name] = set
+        ns:RegisterCallback(callbackListeners, name, function() refreshAll(set) end)
+    end
+    set[w] = true
+end
+
 local function stopListening(w)
     for event, set in pairs(listeners) do
         set[w] = nil
         if not next(set) then
             ns.Events.Unregister(dispatcher, event)
             listeners[event] = nil
+        end
+    end
+    for name, set in pairs(callbackListeners) do
+        set[w] = nil
+        if not next(set) then
+            ns:UnregisterCallback(callbackListeners, name)
+            callbackListeners[name] = nil
         end
     end
 end
@@ -386,6 +408,7 @@ function Watcher:Rebuild()
         local def = types[e[1]]
         if def then
             for _, ev in ipairs(def.events or {}) do events[ev] = true end
+            for _, name in ipairs(def.callbacks or {}) do listenCallback(self, name) end
             if def.tick then subscribeTick(self, def.tick) end
             -- compiling runs the code's setup part; imported code must not run before review
             if e[1] == "luacode" and not e.disabledByImport then

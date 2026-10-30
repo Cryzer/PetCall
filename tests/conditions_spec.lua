@@ -359,4 +359,57 @@ describe("Conditions", function()
         assert.is_true(w.value)
         w:Free()
     end)
+    it("Hidden matches stealth and feign death", function()
+        local e = C.GetType("hidden").new()
+        assert.same({ "hidden", stealth = true, invisible = true, camo = true, feign = true }, e)
+        assert.is_false(eval(e))
+        local n = 0
+        local w = C.NewWatcher({ { "hidden", feign = true } }, function() n = n + 1 end)
+        W.world.stealthed = true
+        W.fire("UPDATE_STEALTH")
+        assert.is_true(eval(e))
+        assert.is_false(eval({ "hidden", feign = true }))
+        assert.is_false(w.value)
+        W.world.stealthed = false
+        W.fire("UPDATE_STEALTH")
+        n = 0
+        W.world.auras[5384] = true                              -- feign death
+        W.fire("UNIT_AURA", "player", { addedAuras = { {} } })
+        assert.is_true(eval({ "hidden", feign = true }))
+        assert.is_true(w.value)
+        assert.equal(1, n)
+        W.fire("UNIT_AURA", "player", { addedAuras = { {} } })  -- nothing hidden changed
+        assert.equal(1, n)
+        assert.equal("Hidden: Stealthed or Feigning death", C.Describe({ "hidden", stealth = true, feign = true }))
+        w:Free()
+    end)
+
+    it("a saved pvp place type matches battlegrounds and arenas", function()
+        W.world.resting = false
+        W.world.instanceType = "pvp"
+        assert.is_true(eval({ "specialLocation", locs = { "pvp" } }))
+        assert.is_true(eval({ "specialLocation", locs = { "bg" } }))
+        assert.is_false(eval({ "specialLocation", locs = { "arena" } }))
+        assert.is_true(eval({ "specialLocation", loc = "battleground" }))
+        W.world.instanceType = "arena"
+        assert.is_true(eval({ "specialLocation", locs = { "pvp" } }))
+        assert.is_true(eval({ "specialLocation", locs = { "arena" } }))
+        assert.is_false(eval({ "specialLocation", locs = { "bg" } }))
+        assert.is_true(eval({ "specialLocation", loc = "battleground" }))
+        assert.equal("Place type: Battleground or arena", C.Describe({ "specialLocation", locs = { "pvp" } }))
+        assert.equal("Place type: Battleground, Arena", C.Describe({ "specialLocation", locs = { "bg", "arena" } }))
+    end)
+
+    it("the picker offers Battleground and Arena, not pvp", function()
+        local def = C.GetType("specialLocation")
+        local labels = {}
+        for _, v in ipairs(def.fields[1].values(def.new())) do labels[v.value] = v.label end
+        assert.equal("Battleground", labels.bg)
+        assert.equal("Arena", labels.arena)
+        assert.is_nil(labels.pvp)
+        -- a condition that still has pvp keeps it listed, so it can be unticked
+        local old = {}
+        for _, v in ipairs(def.fields[1].values({ "specialLocation", locs = { "pvp" } })) do old[v.value] = v.label end
+        assert.equal("Battleground or arena", old.pvp)
+    end)
 end)

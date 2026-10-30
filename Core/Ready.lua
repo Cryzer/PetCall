@@ -307,8 +307,22 @@ end
 function Ready:UNIT_ENTERED_VEHICLE() self:SetReady("vehicle", false) end
 function Ready:UNIT_EXITED_VEHICLE() self:SetReady("vehicle", true) end
 
+-- stealth, invisibility, camouflage and feign death for the "Hidden" condition
+local hidden = { stealth = false, invisible = false, camo = false, feign = false }
+
+local function setHidden(stealth, invisible, camo, feign)
+    stealth, invisible, camo, feign = stealth and true or false, invisible and true or false, camo and true or false, feign and true or false
+    if stealth == hidden.stealth and invisible == hidden.invisible and camo == hidden.camo and feign == hidden.feign then return end
+    hidden.stealth, hidden.invisible, hidden.camo, hidden.feign = stealth, invisible, camo, feign
+    ns:Fire("HiddenChanged")
+end
+
+function Ready:HiddenState() return hidden.stealth, hidden.invisible, hidden.camo, hidden.feign end
+
 function Ready:UPDATE_STEALTH()
-    self:SetReady("stealthed", not (IsStealthed() and not PlayerHasAuraInList(CAMO_SPELLS)))
+    local stealth = IsStealthed() and not PlayerHasAuraInList(CAMO_SPELLS)
+    self:SetReady("stealthed", not stealth)
+    setHidden(stealth, hidden.invisible, hidden.camo, hidden.feign)
 end
 
 function Ready:UNIT_AURA(_, unit, info)
@@ -323,11 +337,13 @@ function Ready:UNIT_AURA(_, unit, info)
 end
 
 function Ready:CheckAuras()
-    self:SetReady("invisible", not PlayerHasAuraInList(INVIS_SPELLS))
-    self:SetReady("camo", not PlayerHasAuraInList(CAMO_SPELLS))
+    local invisible, camo, feign = PlayerHasAuraInList(INVIS_SPELLS), PlayerHasAuraInList(CAMO_SPELLS), PlayerHasAura(5384)
+    self:SetReady("invisible", not invisible)
+    self:SetReady("camo", not camo)
     self:SetReady("thunderisle_saurok", not PlayerHasAura(136461))
     if PlayerHasAuraInList(FOOD_SPELLS) then self:SetReady("sitting", false) end
-    self:SetReady("feigned", not PlayerHasAura(5384))
+    self:SetReady("feigned", not feign)
+    setHidden(hidden.stealth, invisible, camo, feign)
 end
 
 function Ready:UNIT_SPELLCAST_SENT(event, unit)

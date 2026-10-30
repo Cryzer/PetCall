@@ -22,6 +22,13 @@ DB.defaults = {
     verbose = true,
     autoSwitch = { timer = false, timerValue = 30 * 60, citiesOnly = false, onZone = false },
     minimap = { hide = false },
+    -- false: As usual; "alone": leave the pet alone; "away": put the pet away
+    exceptions = {
+        builtin = { mounted = "alone", bg = false, arena = false, dungeon = false, raid = false, scenario = false,
+            hidden = false, outsideCities = false },
+        solo = { dungeon = true, raid = true, scenario = true },   -- "Also when solo"
+        own = {},
+    },
     sets = {
         ["$Default"] = { name = DEFAULT, enabled = true, defaultValue = 1, priority = -1, pets = {}, filter = {},
             announce = "on", switchMinutes = 0 },

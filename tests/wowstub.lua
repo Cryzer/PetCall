@@ -180,7 +180,7 @@ function W.reset()
     ReloadUI = function() w.reloaded = true end
     ERR_MUST_BE_STANDING = "You must be standing to do that"
     SPELL_FAILED_NOT_STANDING = "You must be standing to do that"
-    DEFAULT, ZONE, PARTY, RAID, CLASS = "Default", "Zone", "Party", "Raid", "Class"
+    DEFAULT, ZONE, PARTY, RAID, CLASS, NONE = "Default", "Zone", "Party", "Raid", "Class", "None"
     CLASS_SORT_ORDER = { "HUNTER", "WARRIOR" }
     LOCALIZED_CLASS_NAMES_MALE = { HUNTER = "Hunter", WARRIOR = "Warrior" }
     local classFiles = { "WARRIOR", "HUNTER" }

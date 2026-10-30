@@ -11,6 +11,7 @@ local specs = {
     "tests/weights_spec.lua",
     "tests/autorules_spec.lua",
     "tests/sets_spec.lua",
+    "tests/exceptions_spec.lua",
     "tests/recipes_spec.lua",
     "tests/ui_spec.lua",
     "tests/petgrid_spec.lua",

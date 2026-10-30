@@ -73,35 +73,48 @@ function C.AddCurrentPlace(e)
     return true
 end
 
-local LOC_LEGACY = { city = { "city" }, battleground = { "pvp" }, instance = { "dungeon", "raid" } }
+local LOC_LEGACY = { city = { "city" }, battleground = { "bg", "arena" }, instance = { "dungeon", "raid" } }
 local LOC_VALUES = {
     { value = "city", label = L["City or rest area"] }, { value = "dungeon", label = L["Dungeon"] },
     { value = "raid", label = L["Raid"] }, { value = "scenario", label = L["Scenario"] },
-    { value = "delve", label = L["Delve"] }, { value = "pvp", label = L["Battleground or arena"] },
-    { value = "world", label = L["Open world"] },
+    { value = "delve", label = L["Delve"] }, { value = "bg", label = L["Battleground"] },
+    { value = "arena", label = L["Arena"] }, { value = "world", label = L["Open world"] },
 }
+-- before battlegrounds and arenas were split, one value stood for both; saved ones keep working
+local LOC_PVP = { value = "pvp", label = L["Battleground or arena"] }
 local function locs(e) return e.locs or LOC_LEGACY[e.loc] or {} end
-local function locLabel(v) for _, x in ipairs(LOC_VALUES) do if x.value == v then return x.label end end return v end
+local function locLabel(v)
+    if v == LOC_PVP.value then return LOC_PVP.label end
+    for _, x in ipairs(LOC_VALUES) do if x.value == v then return x.label end end
+    return v
+end
 local function currentLoc(ctx)
     if ctx.delve then return "delve" end
     local t = ctx.instanceType
     if t == "party" then return "dungeon" end
     if t == "raid" then return "raid" end
     if t == "scenario" then return "scenario" end
-    if t == "pvp" or t == "arena" then return "pvp" end
+    if t == "pvp" then return "bg" end
+    if t == "arena" then return "arena" end
     return "world"
 end
 
 C.RegisterType({
     key = "specialLocation", label = L["Place type"], group = "where", hint = L["Cities, dungeons, raids, delves, battlegrounds or the open world."],
-    fields = { { key = "locs", kind = "multiChoice", values = function() return LOC_VALUES end } },
+    fields = { { key = "locs", kind = "multiChoice", values = function(e)
+        -- a condition that still has the old value lists it, so it can be unticked
+        if not (e and contains(e.locs, LOC_PVP.value)) then return LOC_VALUES end
+        local list = { LOC_PVP }
+        for _, x in ipairs(LOC_VALUES) do list[#list + 1] = x end
+        return list
+    end } },
     events = { "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD", "PLAYER_FLAGS_CHANGED", "PLAYER_UPDATE_RESTING" },
     new = function() return { "specialLocation", locs = { "city" } } end,
     check = function(e, ctx)
         local cur = currentLoc(ctx)
         for _, v in ipairs(locs(e)) do
             if v == "city" and ctx.resting then return true end
-            if v == cur then return true end
+            if v == cur or (v == LOC_PVP.value and (cur == "bg" or cur == "arena")) then return true end
         end
         return false
     end,
@@ -302,6 +315,34 @@ C.RegisterType({
         local parts = {}
         for _, v in ipairs(ACTIVITY_VALUES) do if e[v.value] then parts[#parts + 1] = v.label end end
         return L["Activity"] .. ": " .. table.concat(parts, " " .. L["or"] .. " ")
+    end,
+})
+
+-- stealth, invisibility, camouflage or feign death, as Ready sees them; any ticked one is enough
+local HIDDEN_VALUES = {
+    { value = "stealth", label = L["Stealthed"] }, { value = "invisible", label = L["Invisible"] },
+    { value = "camo", label = L["Camouflaged"] }, { value = "feign", label = L["Feigning death"] },
+}
+C.RegisterType({
+    key = "hidden", label = L["Hidden"], group = "doing", hint = L["Stealth, invisibility, camouflage or feign death."],
+    fields = { { key = "hidden", kind = "flags", values = function() return HIDDEN_VALUES end } },
+    callbacks = { "HiddenChanged" },
+    new = function() return { "hidden", stealth = true, invisible = true, camo = true, feign = true } end,
+    check = function(e, ctx)
+        for _, v in ipairs(HIDDEN_VALUES) do
+            if e[v.value] and ctx[v.value] then return true end
+        end
+        return false
+    end,
+    reason = function(_, ctx)
+        local parts = {}
+        for _, v in ipairs(HIDDEN_VALUES) do if ctx[v.value] then parts[#parts + 1] = v.label end end
+        return format(L["Right now: %s"], #parts > 0 and table.concat(parts, ", ") or NONE)
+    end,
+    describe = function(e)
+        local parts = {}
+        for _, v in ipairs(HIDDEN_VALUES) do if e[v.value] then parts[#parts + 1] = v.label end end
+        return L["Hidden"] .. ": " .. table.concat(parts, " " .. L["or"] .. " ")
     end,
 })
 

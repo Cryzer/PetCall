@@ -76,10 +76,10 @@ local function buildField(row, e, field, prev)
         local dd = frames:Dropdown(row, 200, function(owner, root)
             for _, v in ipairs(values) do
                 root:CreateCheckbox(v.label, function()
-                    local cur = e[field.key] or (e[1] == "specialLocation" and ({ city = { "city" }, battleground = { "pvp" }, instance = { "dungeon", "raid" } })[e.loc]) or {}
+                    local cur = e[field.key] or (e[1] == "specialLocation" and ({ city = { "city" }, battleground = { "bg", "arena" }, instance = { "dungeon", "raid" } })[e.loc]) or {}
                     for _, x in ipairs(cur) do if x == v.value then return true end end
                 end, function()
-                    local cur = e[field.key] or (e[1] == "specialLocation" and ({ city = { "city" }, battleground = { "pvp" }, instance = { "dungeon", "raid" } })[e.loc]) or {}
+                    local cur = e[field.key] or (e[1] == "specialLocation" and ({ city = { "city" }, battleground = { "bg", "arena" }, instance = { "dungeon", "raid" } })[e.loc]) or {}
                     local out, found = {}, false
                     for _, x in ipairs(cur) do if x == v.value then found = true else out[#out + 1] = x end end
                     if not found then out[#out + 1] = v.value end

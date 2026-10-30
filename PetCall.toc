@@ -43,6 +43,7 @@ Core\AutoRules.lua
 Core\Conditions.lua
 Core\ConditionTypes.lua
 Core\Sets.lua
+Core\Exceptions.lua
 Core\Recipes.lua
 Core\Ready.lua
 Core\Summon.lua
