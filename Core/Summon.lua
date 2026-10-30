@@ -105,6 +105,7 @@ end
 -- explicit summon: ends a pause, says once what it waits for or goes past, then asks Ready
 local function summonExplicit(petID)
     ns:ResumeAuto()
+    ns.Gate:Note("explicit")          -- what comes out now is yours, not a set's doing
     local ok, cause = ns.Gate:Check("summon", "explicit")
     if not ok then
         if cause.key == "sitting" then

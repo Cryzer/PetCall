@@ -152,7 +152,7 @@ function Menu:Build(owner, root)
     root:CreateButton(L["Summon another"], function() ns:SummonAnother() end)
     root:CreateButton(L["Dismiss pet"], function() ns:Dismiss() end)
     local paused = ns:GetAutoState() == "paused"
-    root:CreateCheckbox(paused and format("%s (%s)", L["Auto-summon"], L["Paused"]) or L["Auto-summon"],
+    root:CreateCheckbox(paused and L["Auto-summon (Paused)"] or L["Auto-summon"],
         function() return ns:IsAutoSummon() end, function() ns:SetAutoSummon(not ns:IsAutoSummon()) end)
     if paused then root:CreateButton(L["Resume"], function() ns:ResumeAuto() end) end
     local set = ns.Sets:GetCurrent()

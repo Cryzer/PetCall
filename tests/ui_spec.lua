@@ -280,7 +280,7 @@ describe("UI smoke", function()
         ns.UI.Main:SelectTab("when")
         assert.is_false(P:IsShown())
     end)
-    it("tick boxes in a condition row start after the label before them", function()
+    it("tick boxes in a condition row come with their labels, in a box after is, and × after the box", function()
         ns.UI.Main:Show()
         local set = ns.Sets:Create("Visits")
         ns.UI.Main:SelectSet("Visits")
@@ -293,24 +293,20 @@ describe("UI smoke", function()
             if f._template == "UICheckButtonTemplate" and f:IsShown() and f.text and f.text._points and f.text._points.LEFT then boxes[#boxes + 1] = f end
         end
         assert.is_true(#boxes >= 3)
-        local chained = 0
-        for i = 2, #boxes do
-            local p = boxes[i]._points.LEFT
-            if p.rel == boxes[i - 1] then
-                chained = chained + 1
-                local w = tonumber(boxes[i - 1].text:GetStringWidth()) or 0
-                assert.equal(2 + w + 16, p.x)
-                assert.equal(boxes[i], boxes[i].text._points.LEFT.rel)
-            end
+        local box
+        for _, cb in ipairs(boxes) do
+            local holder = cb._parent
+            assert.equal(holder, cb._points.LEFT.rel)
+            assert.equal(cb, cb.text._points.LEFT.rel, "the label right after its box")
+            box = box or holder._parent
+            assert.equal(box, holder._parent, "every box in one wrapping box")
         end
-        assert.equal(2, chained)                      -- three boxes, each after the one before
-        local last = boxes[#boxes]
-        local after = false                           -- the remove × follows the last label, not the box
+        local after = false
         for _, f in ipairs(U.created) do
             local lp = f._points and f._points.LEFT
-            if lp and lp.rel == last.text then after = true end
+            if lp and lp.rel == box and f._text == "×" then after = true end
         end
-        assert.is_true(after)
+        assert.is_true(after, "the remove × follows the box")
     end)
     it("the window shows its logo whole in a framed corner tile, gold on Blizzard's look, accent on the dark ones", function()
         ns.UI.Main:Show()
@@ -2069,6 +2065,25 @@ describe("UI smoke", function()
         assert.is_true(bar.left:GetText():find("Paused: While mounted", 1, true) ~= nil, bar.left:GetText())
     end)
 
+    it("Out now says Because: only when the game holds something back", function()
+        W.world.summoned = "a"
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        ns.UI.Main:Show()
+        W.world.combat = true
+        W.fire("PLAYER_REGEN_DISABLED")
+        ns.UI.StatusBar:Refresh()
+        local card = ns.UI.SetList._nowCard
+        assert.equal("Nothing is blocking PetCall.", plain(card.state:GetText()), "a pet is out and nothing waits")
+        assert.is_false(card.action:IsShown())
+        ns.Sets:Get("$Default"):SetSwitch(5)
+        ns.SwitchTimer:Start()
+        ns.UI.StatusBar:Refresh()
+        assert.is_true(card.state:GetText():find("^Next new pet in") ~= nil, card.state:GetText())
+        ns.Ready:Request("summon", "auto")
+        ns.UI.StatusBar:Refresh()
+        assert.equal("Because: In combat.", plain(card.state:GetText()))
+    end)
+
     it("Resume ends the pause", function()
         ns.UI.Main:Show()
         ns:PauseAuto()
@@ -2196,6 +2211,25 @@ describe("UI smoke", function()
         assert.is_true(P:IsShown())
         ns.UI.Behaviour:Show()
         assert.is_false(P:IsShown(), "the When tab is out of sight")
+    end)
+
+    it("the page keeps its own mount picker open while the conditions change", function()
+        W.world.mounts = { { id = 7, name = "Swift Spectral Tiger", collected = true, types = { 1 } },
+            { id = 9, name = "Black Drake", collected = true, types = { 2 } } }
+        ns.UI.Main:Show()
+        local exc = ns.Exceptions:Add({ { "mount", mountIDs = {} } }, "away")
+        ns.UI.Behaviour:Show(exc.id)
+        assert.is_true(ns.UI.Behaviour._rows[exc.id].editorHost:IsShown())
+        local P = ns.UI.MountPicker
+        local e = exc.trigger[1]
+        P:Open(e, ns.UI.Main:GetFrame(), function() exc:ConditionsChanged() end)
+        P:Toggle(7)
+        assert.same({ 7 }, e.mountIDs)
+        exc:ConditionsChanged()
+        ns:Fire("ConditionStateChanged")
+        W.advance(1)
+        assert.is_true(P:IsShown())
+        assert.is_true(ns.UI.Behaviour._rows[exc.id].editorHost:IsShown())
     end)
 
     it("a built-in exception's conditions are read only, their dots still tell", function()

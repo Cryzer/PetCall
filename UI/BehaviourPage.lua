@@ -145,7 +145,7 @@ local function codeDisabled(list)
     return false
 end
 
-local refreshNow
+local refreshNow, refresh
 
 local function newRow(exc)
     local id = exc.id
@@ -231,7 +231,8 @@ local function buildExceptions()
     page.exceptions = section(L["Exceptions"])
     page.editorHost = CreateFrame("Frame", nil, body)
     page.editorHost:Hide()
-    editor = ns.UI.ConditionEditor.New(page.editorHost, { whole = true })
+    -- the editor redraws itself after a change made in it: the page makes room again
+    editor = ns.UI.ConditionEditor.New(page.editorHost, { whole = true, onHeight = function() refresh() end })
     page.delete = ns.Widgets.Button(body, DELETE, function()
         local r = expanded and rows[expanded]
         if not r or r.exc.builtin then return end
@@ -325,8 +326,11 @@ local function layout()
     y = y - ROW_GAP + SECTION_GAP
 
     y = placeSection(page.exceptions, y, width)
-    page.editorHost:Hide()
-    page.delete:Hide()
+    -- the host hides only when nothing is open: hiding it closes the mount picker
+    local open = expanded and rows[expanded]
+    page.editorHost:SetShown(open and true or false)
+    page.delete:SetShown(open and not open.exc.builtin or false)
+    if not open then page.editorHost.target = nil end
     for _, r in ipairs(order) do
         local f = r.frame
         f:Show()
@@ -365,7 +369,6 @@ local function layout()
             -- the conditions take the whole width: their rows do not wrap
             host:SetPoint("TOPLEFT", body, "TOPLEFT", 0, -y)
             host:SetWidth(math.max(width, bodyW))
-            host:Show()
             if host.target ~= r.exc then
                 host.target = r.exc
                 editor:Refresh(r.exc)
@@ -377,12 +380,10 @@ local function layout()
             if not r.exc.builtin then
                 page.delete:ClearAllPoints()
                 page.delete:SetPoint("TOPLEFT", body, "TOPLEFT", 8, -y)
-                page.delete:Show()
                 y = y + 22 + 4
             end
         end
     end
-    if not expanded then page.editorHost.target = nil end
     page.add:ClearAllPoints()
     page.add:SetPoint("TOPLEFT", body, "TOPLEFT", 8, -(y + 4))
     y = y + 4 + 22 + SECTION_GAP
@@ -511,7 +512,7 @@ function B:GetFocus() return focus end
 
 ns:RegisterCallback(B, "SelectedSetChanged", function() B:Hide() end)
 ns:RegisterCallback(B, "WindowHidden", function() B:Hide() end)
-local refresh = ns.Debounce(0.1, refreshNow)
+refresh = ns.Debounce(0.1, refreshNow)
 for _, cb in ipairs({ "AutoSummonChanged", "ExceptionsChanged", "ProfileValueChanged", "RecommendedUndoChanged",
     "ProfileChanged", "SpecialItemsChanged", "WindowResized" }) do
     ns:RegisterCallback(B, cb, refresh)

@@ -281,11 +281,12 @@ describe("Layout", function()
         assert.is_true(heights.b < heights.a or tops.b > tops.a, "more lines than that: the model makes room")
     end)
 
-    it("How PetCall acts, the comparison, Like Default and Because fit, in both sizes and a longer language", function()
+    it("How PetCall acts, the comparison, Like Default, Because and condition rows fit, in both sizes and a longer language", function()
         local Screens = dofile("tests/layout_screens.lua")
         local names = { ["How PetCall acts, every exception set, one own exception open"] = true,
             ["Comparison, every row different"] = true, ["Set settings with Like Default values"] = true,
-            ["Out now with an exception cause"] = true }
+            ["Out now with an exception cause"] = true, ["How PetCall acts, While mounted conditions open"] = true,
+            ["When, a row of tick boxes and many places"] = true }
         local seen = 0
         for _, screen in ipairs(Screens.list) do
             if names[screen.name] then
@@ -305,7 +306,7 @@ describe("Layout", function()
                 end
             end
         end
-        assert.equal(4, seen)
+        assert.equal(6, seen)
     end)
 
     it("wrapped text keeps its lines even instead of leaving one word on the last", function()

@@ -37,6 +37,8 @@ local QUICK = {
     when = { { label = L["During any holiday"], new = function() return { "holiday", holidayIDs = { 0 } } end } },
 }
 
+local WRAPS = { flags = true, multiPlace = true, multiMount = true }
+
 local function withHint(item, title, hint)
     if hint and item.SetTooltip then
         item:SetTooltip(function(tooltip)
@@ -48,7 +50,8 @@ local function withHint(item, title, hint)
 end
 
 -- Edits the conditions of anything with the condition API: a set or an exception.
--- opts.whole: the parent is made as tall as the conditions (GetHeight), so they do not scroll
+-- opts.whole: the parent is made as tall as the conditions (GetHeight), so they do not scroll;
+-- opts.onHeight(): after each redraw, for such a parent
 function Editor.New(parent, opts)
     local editor = {}
     local target, model, content, shield
@@ -81,8 +84,14 @@ function Editor.New(parent, opts)
     local function mapName(id) local i = C_Map.GetMapInfo(id) return i and i.name or tostring(id) end
     local function mountName(id) return C_MountJournal.GetMountInfoByID(id) or ("#" .. id) end
 
-    local function buildField(row, e, field, prev)
-        local function place(w, gap) w:SetPoint("LEFT", prev, "RIGHT", gap or 6, 0) prev = w return w end
+    -- items: the kinds in WRAPS put their pieces in it, for a box that wraps them in rows
+    local function buildField(row, e, field, prev, items)
+        local function place(w, gap)
+            if items then items[#items + 1] = w return w end
+            w:SetPoint("LEFT", prev, "RIGHT", gap or 6, 0)
+            prev = w
+            return w
+        end
         if field.kind == "multiPlace" then
             local names = {}
             if e.zoneName and e.zoneName ~= "" then names[#names + 1] = { text = e.zoneName, remove = function() e.zoneName = nil end } end
@@ -136,17 +145,18 @@ function Editor.New(parent, opts)
             end)
             place(dd)
         elseif field.kind == "flags" then
-            -- each box starts after the label before it, measured, so labels never run into boxes
-            local gap = 12
+            -- each box with its label as one piece, measured, so labels never run into boxes
             for _, v in ipairs(field.values()) do
-                local cb = frames:Checkbox(row, v.label, function() return e[v.value] end,
+                local holder = frames:Frame(row, "flag")
+                local cb = frames:Checkbox(holder, v.label, function() return e[v.value] end,
                     function(on) e[v.value] = on or nil changedInPlace() end)
+                cb:ClearAllPoints()
+                cb:SetPoint("LEFT", holder, "LEFT", 0, 0)
                 cb.text:ClearAllPoints()
                 cb.text:SetPoint("LEFT", cb, "RIGHT", 2, 0)
-                place(cb, gap)
-                gap = 2 + ns.Widgets.TextWidth(cb.text) + 16
+                holder:SetSize(24 + 2 + ns.Widgets.TextWidth(cb.text) + 4, 24)
+                place(holder)
             end
-            prev = prev.text or prev          -- what comes next (the remove ×) follows the last label
         elseif field.kind == "class" then
             place(frames:Dropdown(row, 150, function(owner, root)
                 root:CreateRadio(L["Any class"], function() return not e.class or e.class == "" end, function() e.class = "" changedInPlace() end)
@@ -282,6 +292,25 @@ function Editor.New(parent, opts)
         paintHeader()
     end
 
+    -- Chips and tick boxes that do not fit beside the condition's name go on more lines,
+    -- in a box after "is"; the row grows to hold it. Returns the box and the row's height.
+    local function wrapField(row, e, field, prev, dot)
+        local box = frames:Frame(row, "fieldBox")
+        local items = {}
+        buildField(box, e, field, nil, items)
+        local natural = 0
+        for i, item in ipairs(items) do natural = natural + (tonumber(item:GetWidth()) or 0) + (i > 1 and 6 or 0) end
+        -- the row is the content less the card's and its own insets; the × follows the box
+        local before = ns.Widgets.TextWidth(dot) + 6 + 110 + 4 + 64 + 6
+        local room = (tonumber(content:GetWidth()) or 0) - 8 - 16 - before - 12 - 24
+        local w = room > 0 and math.min(natural, room) or natural
+        box:SetWidth(math.max(1, w))
+        local h = ns.Widgets.Flow(box, items, { width = w, gap = 6 })
+        box:SetPoint("LEFT", prev, "RIGHT", 6, 0)
+        row:SetHeight(math.max(26, h + 2))
+        return box, math.max(28, h + 4)
+    end
+
     local function buildRow(parent, group, index, e, y)
         local row = frames:Frame(parent, "row")
         row.codeEditor, row.negate, row.last = nil, nil, nil
@@ -327,7 +356,13 @@ function Editor.New(parent, opts)
             negate:SetPoint("LEFT", name, "RIGHT", 4, 0)
             row.negate = negate
             local prev = negate
-            for _, field in ipairs(def.fields) do prev = buildField(row, e, field, prev) end
+            for _, field in ipairs(def.fields) do
+                if WRAPS[field.kind] then
+                    prev, height = wrapField(row, e, field, prev, dot)
+                else
+                    prev = buildField(row, e, field, prev)
+                end
+            end
             row.last = prev
             if row.codeEditor then height = 28 + codeEditor(parent, e, row) end
         end
@@ -443,6 +478,7 @@ function Editor.New(parent, opts)
             y = y - 30
         end
         content:SetHeight(-y + 10)
+        if opts and opts.onHeight then opts.onHeight() end
         -- the mount picker belongs to one condition: gone with it
         local present = {}
         for _, g in ipairs(model.groups) do for _, r in ipairs(g.rows) do present[r] = true end end
@@ -492,6 +528,15 @@ function Editor.New(parent, opts)
         scroll:SetScript("OnSizeChanged", function(self, w) content:SetWidth(w) end)
         ns.Skin:Apply("ScrollBar", scroll.ScrollBar)
     end
+    -- a new width may need the chips and tick boxes on more or fewer lines
+    local lastWidth = 0
+    local renderSoon = ns.Debounce(0.05, function() if target and model and not target.deleted then render() end end)
+    content:SetScript("OnSizeChanged", function(_, w)
+        w = math.floor(tonumber(w) or 0)
+        if w == lastWidth then return end
+        lastWidth = w
+        renderSoon()
+    end)
     -- another tab, or the window closing: the mount picker has nothing to edit
     parent:HookScript("OnHide", function() ns.UI.MountPicker:Close() end)
 

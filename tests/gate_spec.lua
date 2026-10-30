@@ -319,6 +319,26 @@ describe("Gate", function()
         assert.equal("not_in_set", why.reason)
     end)
 
+    it("Summon another after a set replaced the pet ends the set note", function()
+        W.world.pets.c = { species = 3, name = "C" }
+        ns.PetCache:Rescan()
+        local s = ns.Sets:Create("S")
+        s:SetPetWeight("b", 1)
+        s:SetPetWeight("c", 1)
+        W.world.summoned = "a"
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        ns.Summon.manualPick = nil
+        ns.Summon:OnImmediateSet(s)
+        ns.Summon:SummonRandom()
+        W.advance(1)
+        assert.equal("set", G:Explain().kind)
+        local was = W.world.summoned
+        ns:SummonAnother()
+        W.advance(5)
+        assert.is_true(W.world.summoned ~= was, "another pet came out")
+        assert.is_true(G:Explain().kind ~= "set", "your request is not the set's doing")
+    end)
+
     it("says whether a request is waiting", function()
         assert.is_false(G:Explain().waiting)
         W.world.combat = true

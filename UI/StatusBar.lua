@@ -45,7 +45,7 @@ end
 local function paintAuto()
     local paused = ns:GetAutoState() == "paused"
     bar.auto:SetChecked(ns:IsAutoSummon())
-    bar.auto.text:SetText(paused and format("%s (%s)", L["Auto-summon"], L["Paused"]) or L["Auto-summon"])
+    bar.auto.text:SetText(paused and L["Auto-summon (Paused)"] or L["Auto-summon"])
     bar.auto:ClearAllPoints()
     bar.auto:SetPoint("RIGHT", -ns.Widgets.TextWidth(bar.auto.text) - 6, 0)
 end

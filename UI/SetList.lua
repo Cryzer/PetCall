@@ -423,8 +423,6 @@ end
 function SetList.Because(why, pet)
     local kind = why.kind
     if kind == "game" then
-        -- with a pet out and nothing waiting, the game holds back only what may come later
-        if pet and not why.waiting then return "|cffffb040" .. format(L["Paused: %s"], why.label) .. "|r" end
         return "|cffffb040" .. format(L["Because: %s."], why.label) .. "|r"
     elseif kind == "paused" then
         return "|cffffb040" .. L["Because: Auto-summon is paused until you change zone (you dismissed your pet)."] .. "|r", "resume"
@@ -449,7 +447,7 @@ function SetList.Because(why, pet)
         return format(L["Next new pet in %s (%s: every %d minutes)."], format(L["%d min"], math.ceil(why.seconds / 60)),
             why.set:DisplayName(), why.minutes)
     end
-    if pet then return "|cff4cd964" .. L["Ready"] .. "|r" end
+    if pet then return "|cff4cd964" .. L["Nothing is blocking PetCall."] .. "|r" end
     if why.waiting then return L["Your pet comes out in a moment."] end
     if ns.db.profile.nearPEWOnly then return L["Your pet comes out after the next loading screen."] end
     return L["Your pet comes out when you stand still."]
@@ -482,6 +480,8 @@ function SetList:RefreshNow(why)
         nowCard.from:SetText(set and format(L["next from %s"], set:DisplayName()) or "")
     end
     why = why or ns.Gate:Explain()
+    -- with a pet out and nothing waiting, the game holds nothing back: say what comes next
+    if why.kind == "game" and info and not why.waiting then why = ns.Gate:Explain(true) end
     local text, action = SetList.Because(why, info and pet)
     nowCard.state:SetText(text)
     nowCard.why, nowCard.actionKind = why, action

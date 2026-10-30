@@ -87,13 +87,15 @@ local function switchItems()
         items[1] = { "like", likeDefault(switchText(ns.Sets:Get(ns.Sets.DEFAULT):GetSwitch())) }
     end
     items[#items + 1] = { switchChoice(0, false), L["Off"] }
-    local own, known = set.settings.switchMinutes, false
+    -- the set's own value, read as switchValue reads it
+    local own, cities = nil, false
+    if switchValue() ~= "like" then own, cities = set:GetSwitch() end
+    local known = false
     for _, m in ipairs(MINUTES) do
         for _, cities in ipairs({ false, true }) do items[#items + 1] = { switchChoice(m, cities), switchText(m, cities) } end
         if m == own then known = true end
     end
     if own and own > 0 and not known then
-        local cities = set.settings.switchCitiesOnly == true
         items[#items + 1] = { switchChoice(own, cities), switchText(own, cities) }
     end
     return items

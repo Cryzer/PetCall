@@ -103,6 +103,21 @@ Screens.list = {
         ns.UI.Behaviour:Show(own.id)
         ns.UI.Behaviour:GetFrame().itemsToggle:Click()
     end },
+    { name = "How PetCall acts, While mounted conditions open", open = function(ns)
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show()
+        ns.UI.Behaviour._rows.mounted.toggle:Click()
+    end },
+    { name = "When, a row of tick boxes and many places", open = function(ns)
+        local set = ns.Sets:Create("Out and about")
+        local m = set:GetConditionModel()
+        m.groups = { { rows = { { "activity", swimming = true, mounted = true },
+            { "zone", zoneNames = { "Stormwind City", "Orgrimmar", "Valdrakken", "Dornogal", "Oribos" } } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:Show()
+        ns.UI.Main:SelectSet("Out and about")
+        ns.UI.Main:SelectTab("when")
+    end },
     { name = "Comparison, every row different", open = function(ns)
         ns:SetAutoSummon(false)
         ns.db.profile.nearPEWOnly, ns.db.profile.switchOnNewMap, ns.db.profile.overrideSetLoadout = true, true, false

@@ -261,6 +261,8 @@ end
 -- another page (the recipe gallery) takes the place of the set header, tabs and
 -- pages; showing them again restores the tabs this set has
 function Main:SetSetPagesShown(shown)
+    -- the When tab's mount picker has nothing to edit while its page is away
+    if not shown then ns.UI.MountPicker:Close() end
     frame.header:SetShown(shown)
     frame.content:SetShown(shown)
     for key, t in pairs(tabs) do

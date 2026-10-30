@@ -57,6 +57,7 @@ end
 local NEWS_SECONDS = 600
 local lastEvent, lastData = nil, { at = 0 }
 
+-- events: set_kept, set_replaced, timer, new_map, put_away, paused, came_back, explicit (yours)
 -- data (optional): set, reason ("fits" | "always" | "not_in_set"), pick (a pet you chose), exc;
 -- the pet out at the time is kept with it
 function Gate:Note(event, data)
@@ -83,10 +84,20 @@ end
 
 -- Why nothing happens, or what happens next, as one record: { kind = "game" | "off" | "paused" |
 -- "exception" | "set" | "next" | "idle", label, exc, set, reason, pick, replaced, seconds, minutes,
--- waiting (a request waits to run) }. Allocates: call it from refreshes, not from event handlers.
-function Gate:Explain()
+-- waiting (a request waits to run) }. pastGame: leave the game level out (it holds back
+-- nothing while a pet is out and nothing waits). Allocates: call it from refreshes, not from
+-- event handlers.
+function Gate:Explain(pastGame)
     local waiting = ns.Ready.pending ~= nil
-    local ok, cause = self:Check("summon", "auto")
+    local ok, cause
+    if pastGame then
+        cause = self:AutoCause()
+        local choice, exc = ns.Exceptions:Strongest()
+        if not cause and choice then cause = exceptionCause(exc) end
+        ok = cause == nil
+    else
+        ok, cause = self:Check("summon", "auto")
+    end
     if not ok then
         local kind = cause.level == "auto" and cause.key or cause.level
         return { kind = kind, label = cause.label, exc = cause.exc, waiting = waiting }
