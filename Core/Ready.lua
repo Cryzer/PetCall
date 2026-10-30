@@ -94,10 +94,6 @@ function Ready:OnEnable()
     self:SetReady("alive", not UnitIsDeadOrGhost("player"))
     self:SetReady("vehicle", not UnitInVehicle("player"))
     self:SetReady("flying", not IsFlying())
-    self:CheckNoPetSet()
-    -- a "no pet" set dismisses the pet while it is used
-    ns:RegisterCallback(self, "CurrentSetChanged", function() Ready:CheckNoPetSet() end)
-    ns:RegisterCallback(self, "SetsChanged", function() Ready:CheckNoPetSet() end)
     self:UNIT_AURA(nil, "player")
     self:UPDATE_STEALTH()
     self:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", "CheckFlying")
@@ -243,15 +239,6 @@ end
 
 -- you dismissed: a request still waiting would go against that
 function Ready:CancelRequest() self.pending, self.pendingPet = nil, nil end
-
--- a "no pet" set puts the pet away when it starts to be used, like an exception
-function Ready:CheckNoPetSet()
-    local set = ns.Sets and ns.Sets:GetCurrent()
-    local noPet = set and set:IsNoPet() or false
-    if noPet == self.noPetSet then return end
-    self.noPetSet = noPet
-    if noPet then ns.Gate:PutAway() else self:_CheckSummon() end
-end
 
 function Ready:PetListUpdated() self:SetReady("have_pets", ns.PetCache:NumPets() > 0) end
 function Ready:CheckFlying() self:SetReady("flying", not IsFlying()) end

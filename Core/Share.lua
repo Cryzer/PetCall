@@ -18,7 +18,7 @@ function Share:Export(name)
         if species and type(w) == "number" and (pets[species] == nil or w > pets[species]) then pets[species] = w end
     end
     local data = { enabled = st.enabled, priority = st.priority, defaultValue = st.defaultValue,
-        immediate = st.immediate, alwaysNew = st.alwaysNew, noPet = st.noPet, switchMinutes = st.switchMinutes,
+        immediate = st.immediate, alwaysNew = st.alwaysNew, switchMinutes = st.switchMinutes,
         announce = st.announce, pets = pets, filter = st.filter, trigger = st.trigger }
     local cbor = C_EncodingUtil.SerializeCBOR(data)
     return V2 .. C_EncodingUtil.EncodeBase64(C_EncodingUtil.CompressString(cbor))
@@ -106,6 +106,14 @@ function Share:Import(str, name)
     local okName, nameErr = ns.Sets:ValidateName(name)
     if not okName then return false, nameErr end
     local info = { hasLuaCode = false, dropped = 0 }
+    -- strings from before exceptions: a "no pet" set keeps the pet away, which an exception does
+    if data.noPet == true then
+        info.exception = ns.Exceptions:Add(sanitize(data.trigger, knownCondition, info), "away", nil, name)
+        local hasPets = type(data.pets) == "table" and next(data.pets) ~= nil
+        local hasFilter = type(data.filter) == "table" and next(data.filter) ~= nil
+        if not (hasPets or hasFilter) then return true, nil, info end
+        info.dropped = 0                       -- the set below counts the trigger's drops again
+    end
     local set = ns.Sets:Create(name)
     local st = set.settings
     st.enabled = data.enabled ~= false
@@ -114,7 +122,6 @@ function Share:Import(str, name)
     st.defaultValue = (isNumber(data.defaultValue) and data.defaultValue >= 0) and data.defaultValue or 0
     st.immediate = data.immediate and true or nil
     st.alwaysNew = data.alwaysNew == true or nil
-    st.noPet = data.noPet == true or nil
     st.switchMinutes = (isNumber(data.switchMinutes) and data.switchMinutes >= 1 and data.switchMinutes <= 60) and data.switchMinutes or nil
     st.announce = (data.announce == "on" or data.announce == "off") and data.announce or nil
     st.filter = sanitize(data.filter, knownFilter, info, true)

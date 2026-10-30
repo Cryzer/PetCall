@@ -134,10 +134,10 @@ describe("Recipes", function()
         end
         for m = 0, 23 * 60, 60 do assert.is_not_nil(owner[m], "nothing at " .. m / 60) end
     end)
-    it("new templates: quiet dungeons, wild-caught, trophies, the collector's shelf, the workshop", function()
-        local quiet = R.Create(byKey("quietdungeon"))
-        assert.is_true(quiet:IsNoPet())
-        assert.same({ "dungeon" }, quiet.settings.trigger[1].locs)
+    it("the gallery has no Quiet templates", function()
+        for _, key in ipairs({ "quietraid", "quietdungeon", "quietpvp" }) do assert.is_nil(byKey(key), key) end
+    end)
+    it("new templates: wild-caught, trophies, the collector's shelf, the workshop", function()
         _G.BATTLE_PET_SOURCE_5 = "Pet Battle"
         W.world.pets.wolf = { species = 50, name = "Wolf", type = 8 }
         W.world.sources[50] = "Pet Battle: Elwynn Forest"
@@ -259,11 +259,7 @@ describe("Recipes", function()
         end
         assert.is_true(byKey("expansion:7").icon:find("TiragardeSound") ~= nil, "Alliance: Tiragarde Sound")
     end)
-    it("a no-pet recipe is usable without pets and makes a set that summons none", function()
-        local r = byKey("quietpvp")
-        assert.is_true((R.Usable(r)))
-        local set = R.Create(r)
-        assert.is_true(set:IsNoPet())
+    it("a recipe's set can have a timer", function()
         local zoo = R.Create(byKey("raidzoo"))
         assert.equal(5, zoo.settings.switchMinutes)
         assert.is_true(zoo:Contains("bird"))               -- every pet you own

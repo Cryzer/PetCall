@@ -79,7 +79,6 @@ end
 
 function Summon:SummonRandom()
     local set = ns.Sets:GetCurrent()
-    if set and set:IsNoPet() then return false end
     -- never "summon" the pet that is already out: that would dismiss it
     local petID = set and set:PickPet(ns:GetCurrentPet())
     if not petID then return false end
@@ -142,7 +141,6 @@ end
 
 -- a pet you picked yourself stays; the set's timer and a new map still replace it
 function Summon:OnImmediateSet(set)
-    if set:IsNoPet() then return end
     local cur = ns:GetCurrentPet()
     if cur and cur == self.manualPick then return end
     if set.settings.alwaysNew or not set:Contains(cur) then ns.Ready:Request("switch", "auto") end

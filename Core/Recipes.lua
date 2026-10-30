@@ -98,15 +98,6 @@ local FIXED = {
     { key = "scenario", category = "world", icon = I .. "INV_Sword_04", title = L["Scenario sidekicks"],
       hint = L["In scenarios. Humanoids and beasts."],
       conditions = { { "specialLocation", locs = { "scenario" } } }, rules = { types(NORMAL, 1, 8) } },
-    { key = "quietraid", category = "world", icon = I .. "Spell_Holy_Silence", title = L["Quiet raid nights"],
-      hint = L["In raids: no pet at all."],
-      conditions = { { "specialLocation", locs = { "raid" } } }, rules = {}, noPet = true },
-    { key = "quietdungeon", category = "world", icon = I .. "INV_Misc_Key_03", title = L["Quiet in dungeons"],
-      hint = L["In dungeons: no pet at all."],
-      conditions = { { "specialLocation", locs = { "dungeon" } } }, rules = {}, noPet = true },
-    { key = "quietpvp", category = "world", icon = I .. "Achievement_BG_winWSG", title = L["Quiet in PvP"],
-      hint = L["In battlegrounds and arenas: no pet at all."],
-      conditions = { { "specialLocation", locs = { "bg", "arena" } } }, rules = {}, noPet = true },
     -- on the move
     { key = "swimming", category = "moving", icon = I .. "Spell_Frost_SummonWaterElemental", title = L["Water pets while swimming"],
       hint = L["When you swim. Aquatic pets."],
@@ -277,7 +268,6 @@ function R.ForgetCounts() wipe(counts) end
 ns:RegisterCallback(R, "PetsChanged", R.ForgetCounts)
 
 function R.Usable(r)
-    if r.noPet then return true end                         -- a set for no pet needs none
     if R.Count(r) == 0 then return false, L["You have no pets for this yet."] end
     return true
 end
@@ -342,7 +332,6 @@ function R.Create(r)
     for _, e in ipairs(r.rules) do filter[#filter + 1] = copy(e) end
     if r.lowest then ns.Sets:MoveToBottom(set) end
     if r.immediate then set:SetImmediate(true) end
-    if r.noPet then set:SetNoPet(true) end
     if r.switchMinutes then set:SetSwitch(r.switchMinutes) end
     set:FiltersChanged()
     set:ConditionsChanged()

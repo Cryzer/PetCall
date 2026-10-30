@@ -12,7 +12,6 @@ ns.Gate = Gate
 local gameCauses = {}
 local AUTO_OFF = { level = "auto", key = "off", label = L["Auto-summon is off"] }
 local AUTO_PAUSED = { level = "auto", key = "paused", label = L["Paused until you change zone"] }
-local NO_PET_SET = { level = "exception", key = "noPetSet", label = L["This set keeps the pet away"] }
 
 local function gameCause(key)
     local c = gameCauses[key]
@@ -49,16 +48,13 @@ function Gate:Check(action, source)
     if source ~= "auto" then return true end
     local auto = self:AutoCause()
     if auto then return false, auto end
-    local set = ns.Sets:GetCurrent()
-    if set and set:IsNoPet() then return false, NO_PET_SET end
     local choice, exc = ns.Exceptions:Strongest()
     if choice then return false, exceptionCause(exc) end
     return true
 end
 
 local function awayInForce()
-    local set = ns.Sets:GetCurrent()
-    return ns.Exceptions:Strongest() == "away" or (set and set:IsNoPet())
+    return ns.Exceptions:Strongest() == "away"
 end
 
 -- "Put the pet away" acts as it starts to fit; in combat, once combat ends

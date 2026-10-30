@@ -123,10 +123,6 @@ function SetMixin:SetOnActivate(mode)
     changed(self)
 end
 
--- a set that keeps the pet away (raids, arenas...): it dismisses instead of summoning
-function SetMixin:SetNoPet(v) self.settings.noPet = v and true or nil changed(self) end
-function SetMixin:IsNoPet() return self.settings.noPet == true end
-
 -- A set's own value wins; without one it reads Default's (fromDefault). Default always has one.
 -- New pet every: minutes (0 = off), only in cities, fromDefault
 function SetMixin:GetSwitch()
@@ -249,7 +245,6 @@ end
 function SetMixin:IsActive()
     if self.deleted or self:IsPaused() then return false end
     if not self:ConditionsMet() then return false end
-    if self:IsNoPet() then return true end
     return self:GetWeightTable().total > 0
 end
 
@@ -260,7 +255,7 @@ end
 -- "outranked": the set could be used right now, but a set above it in the list is
 function SetMixin:GetStatus()
     if self:IsPaused() then return "paused" end
-    if not self:IsNoPet() and self:GetWeightTable().total <= 0 then return "empty" end
+    if self:GetWeightTable().total <= 0 then return "empty" end
     if current == self then return "active" end
     if self:ConditionsMet() then return "outranked" end
     return "waiting"
@@ -312,7 +307,7 @@ end
 -- A set object outlives its data when it is deleted or the profile changes; its
 -- mutators must not touch the (new) profile's tables or revive its freed watcher.
 for _, method in ipairs({ "Rename", "Delete", "SetEnabled", "Pause", "Resume", "SetImmediate", "SetDefaultWeight",
-    "SetOnActivate", "SetNoPet", "SetSwitch", "SetAnnounce",
+    "SetOnActivate", "SetSwitch", "SetAnnounce",
     "SetPetWeight", "SetPetWeights", "ClearPetWeights", "FiltersChanged", "SetConditionModel", "ConditionsChanged",
     "ApplyTemplate" }) do
     local original = SetMixin[method]

@@ -64,7 +64,6 @@ end
 local function stateLine(set)
     local status = set:GetStatus()
     if status == "active" then
-        if set:IsNoPet() then return format("|cff4cd964%s|r · %s", L["Active now"], L["no pet"]) end
         return format("|cff4cd964%s|r · %s", L["Active now"], ns.Widgets.PetCount((ns.UI.SetHeader.Counts(set))))
     elseif status == "paused" then
         return "|cff808080" .. ns.UI.SetHeader.PauseText(set) .. "|r"

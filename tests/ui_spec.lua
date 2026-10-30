@@ -1231,7 +1231,6 @@ describe("UI smoke", function()
         s = shown()
         assert.is_true(s.swimming)                          -- the fish
         assert.is_nil(s.night, "withPets")                  -- no undead or magic pets: hidden
-        assert.is_true(s.quietpvp)                          -- a set for no pet needs none
         G._withPets:SetChecked(false)
         G._withPets:Click()
         assert.is_true(G.Matches(ns.Recipes.List()[1], "everyday", { group = "all", search = "", withPets = false }))

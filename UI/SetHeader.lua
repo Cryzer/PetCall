@@ -65,7 +65,6 @@ function Header.Summary(set)
     if Header.RulesOnly(set) then
         picks = format(L["PetCall picks one of %d pets chosen by rules: %s."], inSet, Header.RulesText(set))
     end
-    if set:IsNoPet() then picks = L["While it is used, PetCall keeps your pet away."] end
     if set:IsDefault() then return L["Used when no other set is active."] .. " " .. picks end
     if not set:HasConditions() then
         local text = L["No conditions, so this set is used everywhere."]

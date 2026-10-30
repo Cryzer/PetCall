@@ -155,7 +155,6 @@ function Tab:Refresh(newSet)
     page.onActivate:GenerateMenu()
     page.switch:GenerateMenu()
     page.announce:GenerateMenu()
-    page.noPet:SetChecked(set:IsNoPet())
     page.defaultWeight:GenerateMenu()
     local rules = ns.UI.SetHeader.RulesText(set)
     page.rules:SetText(rules ~= "" and rules or ("|cff808080" .. L["None"] .. "|r"))
@@ -231,10 +230,6 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     end)
     fitDropdown(page.announce, labels(announces))
     addRow(b, { label = ns.Widgets.Label(b, L["Chat message on summon"]), items = { page.announce } })
-    page.noPet = ns.Widgets.Checkbox(b, L["No pet while this set is used"],
-        function() return set and set:IsNoPet() end, function(v) set:SetNoPet(v) end)
-    addRow(b, { items = { page.noPet }, check = page.noPet, indent = 28,
-        help = help(b, L["Dismisses your pet instead of summoning one, e.g. for raids or arenas."]) })
     tinsert(page.sections, b)
 
     -- which pets and how often, for pets nobody set by hand

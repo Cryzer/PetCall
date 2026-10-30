@@ -324,13 +324,7 @@ function Tab:Rebuild()
     page.count:SetText(format(L["%d in this set · %d left out"], inSet, leftOut))
     Tab:RefreshFilterBar(#ids, inSet + leftOut)
     -- a set nobody picked pets for yet says what to do instead of only "0 in this set"
-    -- a "no pet" set says so instead; the pets below are not used while it is
-    local noPet = set:IsNoPet()
-    local empty = noPet or (inSet == 0 and ns.PetCache:NumPets() > 0)
-    page.emptyBanner.text:SetText(noPet and L["This set keeps your pet away. The pets below are not used while it is."]
-        or L["No pets in this set yet. Tick the ones you want, or include them all."])
-    page.emptyBanner.all:SetShown(not noPet)
-    page.emptyBanner:SetShown(empty)
+    page.emptyBanner:SetShown(inSet == 0 and ns.PetCache:NumPets() > 0)
     Tab:PlaceBelowFilters()
     page.show:Refresh()
     -- the same pet stays in the preview: its weight and chance change, its model does not reload

@@ -84,8 +84,11 @@ local function build()
             return
         end
         dialog:Hide()
-        ns.UI.Main:Show()
-        ns.UI.Main:SelectSet(result)
+        if info.exception then ns:Print(L["Imported as an exception."]) end
+        if result then
+            ns.UI.Main:Show()
+            ns.UI.Main:SelectSet(result)
+        end
         if info.hasLuaCode then
             ns:Print(L["The imported set contains Lua code. It is disabled until you review it in the When tab."])
             ns.UI.Main:SelectTab("when")

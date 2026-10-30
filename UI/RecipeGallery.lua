@@ -93,7 +93,7 @@ local function initCard(card, recipe)
         card.create:SetEnabled(true)
         card.reason:SetText("")
     else
-        card.count:SetText(recipe.noPet and L["No pet"] or n > 0 and ns.Widgets.PetCount(n) or "")
+        card.count:SetText(n > 0 and ns.Widgets.PetCount(n) or "")
         card.create:SetText(L["Create"])
         card.create:SetEnabled(ok)
         card.reason:SetText(reason or "")
@@ -112,7 +112,6 @@ local function cardTooltip(c)
     end
     lines[#lines + 1] = format("%s: %s", L["Other pets"], ns.Weights.Label(r.defaultValue or 0))
     if r.immediate then lines[#lines + 1] = L["Summons as soon as the set becomes active."] end
-    if r.noPet then lines[#lines + 1] = L["No pet while this set is used"] end
     if r.switchMinutes then lines[#lines + 1] = format(L["A new pet every %d minutes."], r.switchMinutes) end
     if r.needsMounted and ns.db.profile.exceptions.builtin.mounted then
         lines[#lines + 1] = "|cffffd100" .. L["Turn off \"Don't summon while mounted\" in the settings, or this set never brings a pet."] .. "|r"
