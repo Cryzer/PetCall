@@ -33,13 +33,9 @@ function ns:GetRecentPets()
     return out
 end
 
--- the set's own choice wins over the setting
 local function announce()
     local set = ns.Sets:GetCurrent()
-    local own = set and set.settings.announce
-    if own == "on" then return true end
-    if own == "off" then return false end
-    return ns.db.profile.verbose
+    return set and (set:GetAnnounce())
 end
 
 local function doSummon(petID)

@@ -248,12 +248,49 @@ describe("Sets", function()
     it("a set's own switch interval wins over the setting", function()
         local s = ns.Sets:Create("Quick")
         s:SetPetWeight("BattlePet-0-0001", 1)
-        s:SetSwitchMinutes(5)
+        s:SetSwitch(5)
         W.advance(1)
         assert.equal(s, ns.Sets:GetCurrent())
         W.world.summoned = "BattlePet-0-0001"
         ns.SwitchTimer:Start()
         assert.equal(300, ns.SwitchTimer.interval)
+    end)
+
+    it("a set without its own timer uses Default's", function()
+        local d = ns.Sets:Get("$Default")
+        local x = ns.Sets:Create("X")
+        d:SetSwitch(30, true)
+        assert.same({ 30, true, true }, { x:GetSwitch() })
+        x:SetSwitch(5)
+        assert.same({ 5, false, false }, { x:GetSwitch() })
+        x:SetSwitch(nil)
+        assert.same({ 30, true, true }, { x:GetSwitch() })
+    end)
+
+    it("Default's timer off is 0, not nil", function()
+        assert.same({ 0, false, false }, { ns.Sets:Get("$Default"):GetSwitch() })
+        ns.Sets:Get("$Default"):SetSwitch(nil)                      -- Default has no "like Default"
+        assert.same({ 0, false, false }, { ns.Sets:Get("$Default"):GetSwitch() })
+    end)
+
+    it("keeps a timer value that is not a dropdown choice", function()
+        local x = ns.Sets:Create("X")
+        x.settings.switchMinutes = 7
+        assert.equal(7, (x:GetSwitch()))
+    end)
+
+    it("announce follows Default unless set", function()
+        local d, x = ns.Sets:Get("$Default"), ns.Sets:Create("X")
+        assert.same({ true, true }, { x:GetAnnounce() })
+        d:SetAnnounce(false)
+        assert.same({ false, true }, { x:GetAnnounce() })
+        x:SetAnnounce(true)
+        assert.same({ true, false }, { x:GetAnnounce() })
+        assert.equal("on", x.settings.announce)
+        x:SetAnnounce(nil)
+        assert.is_nil(x.settings.announce)
+        d:SetAnnounce(nil)
+        assert.same({ false, false }, { d:GetAnnounce() })
     end)
 
     it("duplicates a set right below it with all its settings", function()
@@ -274,15 +311,15 @@ describe("Sets", function()
     it("a set's chat-message choice wins over the setting", function()
         local s = ns.Sets:Create("Loud")
         s:SetPetWeight("BattlePet-0-0001", 1)
-        s:SetAnnounce("on")
-        ns.db.profile.verbose = false
+        s:SetAnnounce(true)
+        ns.Sets:Get("$Default"):SetAnnounce(false)
         W.advance(1)
         W.world.summoned = nil
         local before = #W.world.printed
         assert.is_true(ns.Summon:SummonRandom())
         assert.is_true(#W.world.printed > before)
-        s:SetAnnounce("off")
-        ns.db.profile.verbose = true
+        s:SetAnnounce(false)
+        ns.Sets:Get("$Default"):SetAnnounce(true)
         before = #W.world.printed
         W.world.summoned = nil
         ns.Summon:SummonRandom()

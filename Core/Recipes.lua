@@ -343,7 +343,7 @@ function R.Create(r)
     if r.lowest then ns.Sets:MoveToBottom(set) end
     if r.immediate then set:SetImmediate(true) end
     if r.noPet then set:SetNoPet(true) end
-    if r.switchMinutes then set:SetSwitchMinutes(r.switchMinutes) end
+    if r.switchMinutes then set:SetSwitch(r.switchMinutes) end
     set:FiltersChanged()
     set:ConditionsChanged()
     return set

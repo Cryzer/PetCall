@@ -23,7 +23,8 @@ DB.defaults = {
     autoSwitch = { timer = false, timerValue = 30 * 60, citiesOnly = false, onZone = false },
     minimap = { hide = false },
     sets = {
-        ["$Default"] = { name = DEFAULT, enabled = true, defaultValue = 1, priority = -1, pets = {}, filter = {} },
+        ["$Default"] = { name = DEFAULT, enabled = true, defaultValue = 1, priority = -1, pets = {}, filter = {},
+            announce = "on", switchMinutes = 0 },
         ["*"] = { enabled = true, defaultValue = 0, priority = 1, pets = {}, filter = {}, trigger = {} },
     },
 }

@@ -127,11 +127,38 @@ end
 function SetMixin:SetNoPet(v) self.settings.noPet = v and true or nil changed(self) end
 function SetMixin:IsNoPet() return self.settings.noPet == true end
 
--- its own pet-switch interval in minutes, or nil for the one in the settings
-function SetMixin:SetSwitchMinutes(m) self.settings.switchMinutes = m changed(self) end
+-- A set's own value wins; without one it reads Default's (fromDefault). Default always has one.
+-- New pet every: minutes (0 = off), only in cities, fromDefault
+function SetMixin:GetSwitch()
+    local own = self.settings.switchMinutes
+    if own == nil and not self:IsDefault() then
+        local d = Sets:Get(Sets.DEFAULT).settings
+        return d.switchMinutes or 0, d.switchCitiesOnly == true, true
+    end
+    return own or 0, self.settings.switchCitiesOnly == true, false
+end
+-- nil minutes = like Default (a no-op on Default)
+function SetMixin:SetSwitch(minutes, citiesOnly)
+    if minutes == nil and self:IsDefault() then return end
+    self.settings.switchMinutes = minutes
+    self.settings.switchCitiesOnly = minutes ~= nil and citiesOnly or nil
+    changed(self)
+end
 
--- chat message on summon: nil = like the settings, "on", "off"
-function SetMixin:SetAnnounce(v) self.settings.announce = v changed(self) end
+-- Message on summon: on?, fromDefault
+function SetMixin:GetAnnounce()
+    local own = self.settings.announce
+    if own == nil and not self:IsDefault() then
+        return Sets:Get(Sets.DEFAULT).settings.announce ~= "off", true
+    end
+    return own ~= "off", false
+end
+-- nil = like Default (a no-op on Default)
+function SetMixin:SetAnnounce(on)
+    if on == nil and self:IsDefault() then return end
+    if on == nil then self.settings.announce = nil else self.settings.announce = on and "on" or "off" end
+    changed(self)
+end
 function SetMixin:SetDefaultWeight(w) self.settings.defaultValue = w changed(self) end
 
 function SetMixin:GetPetWeight(petID) return ns.Weights.PetWeight(self.settings, petID) end
@@ -285,7 +312,7 @@ end
 -- A set object outlives its data when it is deleted or the profile changes; its
 -- mutators must not touch the (new) profile's tables or revive its freed watcher.
 for _, method in ipairs({ "Rename", "Delete", "SetEnabled", "Pause", "Resume", "SetImmediate", "SetDefaultWeight",
-    "SetOnActivate", "SetNoPet", "SetSwitchMinutes", "SetAnnounce",
+    "SetOnActivate", "SetNoPet", "SetSwitch", "SetAnnounce",
     "SetPetWeight", "SetPetWeights", "ClearPetWeights", "FiltersChanged", "SetConditionModel", "ConditionsChanged",
     "ApplyTemplate" }) do
     local original = SetMixin[method]

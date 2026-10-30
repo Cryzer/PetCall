@@ -219,13 +219,15 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     local switches = { { false, L["Like the settings"] } }
     for _, m in ipairs({ 5, 10, 15, 30, 60 }) do switches[#switches + 1] = { m, format(L["%d minutes"], m) } end
     page.switch = ns.Widgets.Dropdown(b, 260, function(_, root)
-        radios(root, switches, function() return set.settings.switchMinutes or false end, function(v) set:SetSwitchMinutes(v or nil) end)
+        radios(root, switches, function() return set.settings.switchMinutes or false end, function(v) set:SetSwitch(v or nil) end)
     end)
     fitDropdown(page.switch, labels(switches))
     addRow(b, { label = ns.Widgets.Label(b, L["Switch pet every"]), items = { page.switch } })
-    local announces = { { false, L["Like the settings"] }, { "on", L["Always"] }, { "off", L["Never"] } }
+    local announces = { { "like", L["Like the settings"] }, { "on", L["Always"] }, { "off", L["Never"] } }
     page.announce = ns.Widgets.Dropdown(b, 260, function(_, root)
-        radios(root, announces, function() return set.settings.announce or false end, function(v) set:SetAnnounce(v or nil) end)
+        radios(root, announces, function() return set.settings.announce or "like" end, function(v)
+            if v == "like" then set:SetAnnounce(nil) else set:SetAnnounce(v == "on") end
+        end)
     end)
     fitDropdown(page.announce, labels(announces))
     addRow(b, { label = ns.Widgets.Label(b, L["Chat message on summon"]), items = { page.announce } })

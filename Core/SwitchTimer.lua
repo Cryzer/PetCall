@@ -23,13 +23,11 @@ function SwitchTimer:Start(noRestart)
         self.timer:Cancel()
         self.timer = nil
     end
-    local cfg = ns.db.profile.autoSwitch
     local set = ns.Sets and ns.Sets:GetCurrent()
-    local minutes = set and set.settings.switchMinutes
-    local seconds = minutes and minutes * 60 or (cfg.timer and cfg.timerValue)
-    if seconds then
-        self.interval = seconds
-        self.timer = ns:After(seconds, function() SwitchTimer:Fire() end)
+    local minutes = set and set:GetSwitch() or 0
+    if minutes > 0 then
+        self.interval = minutes * 60
+        self.timer = ns:After(self.interval, function() SwitchTimer:Fire() end)
     end
 end
 
@@ -39,7 +37,8 @@ end
 
 function SwitchTimer:Fire()
     self.timer = nil
-    if ns.db.profile.autoSwitch.citiesOnly then
+    local set = ns.Sets:GetCurrent()
+    if set and select(2, set:GetSwitch()) then
         -- a hidden (secret) value cannot be tested: wait for the next round
         local resting = IsResting()
         if (issecretvalue and issecretvalue(resting)) or not resting then return self:Start() end

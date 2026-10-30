@@ -51,6 +51,25 @@ describe("Summon", function()
         assert.equal("b", W.world.summoned)            -- no W.advance: immediate
     end)
 
+    it("a set's own timer only in cities waits outside a city", function()
+        local s = ns.Sets:Create("Quick")
+        s:SetPetWeight("a", 1)
+        s:SetSwitch(5, true)
+        W.advance(1)
+        W.world.summoned = "a"
+        local resummons = 0
+        local orig = ns.ResummonPet
+        ns.ResummonPet = function() resummons = resummons + 1 end
+        W.world.resting = false
+        ns.SwitchTimer:Start()
+        W.advance(301)
+        assert.equal(0, resummons)
+        assert.is_not_nil(ns.SwitchTimer.timer)                     -- waiting for the next round
+        W.world.resting = true
+        W.advance(300)
+        assert.equal(1, resummons)
+        ns.ResummonPet = orig
+    end)
     it("verbose message", function()
         ns.Summon:SummonRandom()
         assert.is_true(W.world.printed[#W.world.printed]:find("Summoning") ~= nil)
