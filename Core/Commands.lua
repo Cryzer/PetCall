@@ -23,6 +23,7 @@ local list = {
         ns.db.global.profile = not ns.db.global.profile or nil
         ReloadUI()
     end },
+    { "welcome", nil, function() ns.UI.Welcome:Show(true) end },
     { "holidays", nil, function() ns.Conditions.DumpHolidays() end },
     { "model", nil, function() if ns.UI.DumpModel then ns.UI.DumpModel() end end },
     -- longer test texts in the whole window, for checking the layout; takes a reload

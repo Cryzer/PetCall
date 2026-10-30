@@ -24,6 +24,22 @@ local function pets(ns)
     ns.UI.Main:SelectTab("pets")
 end
 
+-- every setting away from the recommended one, and an own exception beside them
+local function everyRowDifferent(ns)
+    ns:SetAutoSummon(false)
+    ns.db.profile.nearPEWOnly, ns.db.profile.switchOnNewMap, ns.db.profile.overrideSetLoadout = true, true, false
+    local default = ns.Sets:Get("$Default")
+    default:SetSwitch(5, true)
+    default:SetAnnounce(true)
+    local other = { mounted = "away", bg = "alone", arena = "alone", dungeon = "alone", raid = "alone",
+        scenario = "away", hidden = false, outsideCities = "away" }
+    for _, exc in ipairs(ns.Exceptions:List()) do
+        exc:SetChoice(other[exc.id])
+        if exc:HasSolo() then exc:SetSolo(false) end
+    end
+    ns.Exceptions:Add({ { "groupType", raid = true } }, "away", nil, "Raid group zoo")
+end
+
 Screens.list = {
     { name = "Pets", open = pets },
     { name = "Pets with rules and filters", open = function(ns)
@@ -119,21 +135,15 @@ Screens.list = {
         ns.UI.Main:SelectTab("when")
     end },
     { name = "Comparison, every row different", open = function(ns)
-        ns:SetAutoSummon(false)
-        ns.db.profile.nearPEWOnly, ns.db.profile.switchOnNewMap, ns.db.profile.overrideSetLoadout = true, true, false
-        local default = ns.Sets:Get("$Default")
-        default:SetSwitch(5, true)
-        default:SetAnnounce(true)
-        local other = { mounted = "away", bg = "alone", arena = "alone", dungeon = "alone", raid = "alone",
-            scenario = "away", hidden = false, outsideCities = "away" }
-        for _, exc in ipairs(ns.Exceptions:List()) do
-            exc:SetChoice(other[exc.id])
-            if exc:HasSolo() then exc:SetSolo(false) end
-        end
-        ns.Exceptions:Add({ { "groupType", raid = true } }, "away", nil, "Raid group zoo")
+        everyRowDifferent(ns)
         ns.UI.Main:Show()
         ns.UI.Behaviour:Show()
         ns.UI.Comparison:Open(ns.UI.Behaviour:GetFrame())
+    end },
+    { name = "Welcome with every row different", open = function(ns)
+        everyRowDifferent(ns)
+        ns.UI.Main:Show()
+        ns.UI.Welcome:Show(true)
     end },
     { name = "Set settings with Like Default values", open = function(ns)
         local default = ns.Sets:Get("$Default")

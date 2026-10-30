@@ -2258,3 +2258,141 @@ describe("UI smoke", function()
         assert.is_true(focused.cleared, "the page's read-only editor took the focus from its box")
     end)
 end)
+
+describe("Welcome screen", function()
+    local ns
+    local function load(db)
+        ns = U.load({ prepare = function() PetCall3DB = db end })
+        W.world.pets = { a = { species = 1, name = "A" } }
+    end
+    local function upgraded(global)
+        return { global = global, profileKeys = { ["Tester - Realm"] = "Default" },
+            profiles = { Default = { enableInBattleground = false } } }
+    end
+    local function printed(text)
+        local n = 0
+        for _, m in ipairs(W.world.printed) do if m:find(text, 1, true) then n = n + 1 end end
+        return n
+    end
+    local function shownUp()
+        W.login()
+        W.advance(3)
+        return ns.UI.Welcome._dialog
+    end
+    local function bgChoice()
+        for _, e in ipairs(ns.Exceptions:List()) do if e.id == "bg" then return e:GetChoice() end end
+    end
+
+    it("shows once after an upgrade with old settings", function()
+        load(upgraded())
+        W.login()
+        assert.is_nil(ns.UI.Welcome._dialog, "not at once")
+        W.advance(3)
+        local dialog = ns.UI.Welcome._dialog
+        assert.is_true(dialog:IsShown())
+        assert.equal("PetCallWelcome", UISpecialFrames[#UISpecialFrames], "Escape closes it")
+        dialog:Hide()      -- Escape
+        assert.is_true(ns.db.global.welcomeSeen)
+        assert.is_nil(ns.db.global.welcomePending)
+        assert.equal("alone", bgChoice(), "Keep mine changes nothing")
+        assert.is_false(ns.Recommended:CanUndo())
+        ns.UI.Welcome._dialog = nil
+        W.fire("PLAYER_ENTERING_WORLD", false, false)
+        W.advance(3)
+        assert.is_false(dialog:IsShown())
+    end)
+
+    it("is not shown to a fresh install", function()
+        load(nil)
+        W.login()
+        W.advance(3)
+        assert.is_nil(ns.UI.Welcome._dialog)
+        assert.is_nil(ns.db.global.welcomePending)
+    end)
+
+    it("waits for the end of a fight", function()
+        load(upgraded())
+        W.world.combat = true
+        W.login()
+        W.advance(3)
+        assert.is_nil(ns.UI.Welcome._dialog)
+        W.world.combat = false
+        W.fire("PLAYER_REGEN_ENABLED")
+        assert.is_true(ns.UI.Welcome._dialog:IsShown())
+    end)
+
+    it("Use recommended applies, offers Undo in the chat and closes", function()
+        load(upgraded())
+        local dialog = shownUp()
+        dialog.use:Click()
+        assert.is_false(dialog:IsShown())
+        assert.is_true(ns.db.global.welcomeSeen)
+        assert.equal("away", bgChoice())
+        assert.equal(1, printed("|Haddon:PetCall:undo|h[Undo]|h"))
+        SetItemRef("addon:PetCall:undo")
+        assert.equal("alone", bgChoice())
+        assert.equal(1, printed("Your earlier settings are back."))
+        SetItemRef("addon:PetCall:undo")
+        assert.equal(1, printed("can no longer be undone"))
+    end)
+
+    it("Use recommended on the page's comparison prints the same Undo line once", function()
+        load(upgraded())
+        shownUp():Hide()
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show()
+        ns.UI.Behaviour:GetFrame().recommend:Click()
+        ns.UI.Comparison._box.use:Click()
+        assert.equal(1, printed("|Haddon:PetCall:undo|h[Undo]|h"))
+    end)
+
+    it("Open PetCall opens How PetCall acts", function()
+        load(upgraded())
+        local dialog = shownUp()
+        dialog.open:Click()
+        assert.is_false(dialog:IsShown())
+        assert.is_true(ns.UI.Behaviour:IsShown())
+        assert.is_true(ns.db.global.welcomeSeen)
+    end)
+
+    it("/pcall welcome shows it again without marking it seen", function()
+        load(upgraded())
+        local dialog = shownUp()
+        dialog:Hide()
+        assert.is_true(ns.db.global.welcomeSeen)
+        ns.db.global.welcomeSeen, ns.db.global.welcomePending = nil, true
+        SlashCmdList.PETCALL("welcome")
+        assert.is_true(dialog:IsShown())
+        dialog.keep:Click()
+        assert.is_true(ns.db.global.welcomePending, "a look at it does not count")
+        assert.is_nil(ns.db.global.welcomeSeen)
+        for _, line in ipairs(ns.Commands:HelpLines()) do assert.is_nil(line:find("welcome", 1, true), line) end
+    end)
+
+    it("/pcall welcome works for a fresh install too", function()
+        load(nil)
+        W.login()
+        SlashCmdList.PETCALL("welcome")
+        assert.is_true(ns.UI.Welcome._dialog:IsShown())
+        ns.UI.Welcome._dialog:Hide()
+        assert.is_nil(ns.db.global.welcomeSeen)
+    end)
+
+    it("a later-upgraded profile gets one chat line", function()
+        load(upgraded({ welcomeSeen = true }))
+        W.login()
+        W.advance(3)
+        assert.is_nil(ns.UI.Welcome._dialog)
+        assert.equal(1, printed("PetCall's settings moved into its window. Type /pcall to see them."))
+        assert.is_true(ns.db.profile.upgradeFacts.announced)
+        W.fire("PLAYER_ENTERING_WORLD", false, false)
+        W.advance(3)
+        assert.equal(1, printed("moved into its window"))
+    end)
+
+    it("a profile announced by the screen gets no chat line", function()
+        load(upgraded())
+        shownUp():Hide()
+        assert.is_true(ns.db.profile.upgradeFacts.announced)
+    end)
+end)

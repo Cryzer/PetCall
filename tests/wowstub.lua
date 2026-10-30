@@ -124,6 +124,7 @@ function W.reset()
     CreateFrame = function() return W.newFrame() end
     UIParent = W.newFrame()
     DEFAULT_CHAT_FRAME = { AddMessage = function(_, m) w.printed[#w.printed + 1] = m end }
+    SetItemRef = function() end
     StaticPopupDialogs = {}
     StaticPopup_Show = function(name) w.popup = name end
     SlashCmdList = {}
