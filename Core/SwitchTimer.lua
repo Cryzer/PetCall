@@ -26,13 +26,19 @@ function SwitchTimer:Start(noRestart)
     local set = ns.Sets and ns.Sets:GetCurrent()
     local minutes = set and set:GetSwitch() or 0
     if minutes > 0 then
-        self.interval = minutes * 60
+        self.interval, self.startedAt = minutes * 60, GetTime()
         self.timer = ns:After(self.interval, function() SwitchTimer:Fire() end)
     end
 end
 
 function SwitchTimer:Stop()
     if self.timer then self.timer:Cancel() self.timer = nil end
+end
+
+-- seconds until the next new pet, nil with no timer running
+function SwitchTimer:Remaining()
+    if not self.timer then return end
+    return math.max(0, self.startedAt + self.interval - GetTime())
 end
 
 function SwitchTimer:Fire()
@@ -43,6 +49,7 @@ function SwitchTimer:Fire()
         local resting = IsResting()
         if (issecretvalue and issecretvalue(resting)) or not resting then return self:Start() end
     end
+    ns.Gate:Note("timer")
     ns.Ready:Request("switch", "auto")
 end
 
@@ -55,6 +62,7 @@ function SwitchTimer:ZONE_CHANGED_NEW_AREA()
         ns:After(1, function()
             local zone = GetZoneText()
             if zone ~= SwitchTimer.lastZone then
+                ns.Gate:Note("new_map")
                 ns.Ready:Request("switch", "auto")
                 SwitchTimer.lastZone = zone
             end

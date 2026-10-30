@@ -204,6 +204,7 @@ function Ready:_CheckSummon(waitFinished)
         if self:LastCheck() then
             local pick = self.pendingPet
             self._ranExplicit, self._ranPick = source == "explicit", pick
+            if self.comeback then ns.Gate:Note("came_back") end
             self.pending, self.pendingPet, self.comeback = nil, nil, nil
             if self.wait_timer then self.wait_timer:Cancel() self.wait_timer = nil end
             self._last_summon_time = GetTime()

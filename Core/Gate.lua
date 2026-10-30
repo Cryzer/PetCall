@@ -1,7 +1,7 @@
 local _, ns = ...
 
 local L = ns.L
-local InCombatLockdown, wipe = InCombatLockdown, wipe
+local GetTime, InCombatLockdown, wipe = GetTime, InCombatLockdown, wipe
 
 -- The order of decisions: the game, then Auto-summon, then exceptions. The set and the pet
 -- come after, in Summon. What you do yourself ("explicit") waits only for the game.
@@ -53,6 +53,43 @@ function Gate:Check(action, source)
     return true
 end
 
+-- The last thing PetCall did by itself, for "Because:". Memory only; one record is reused.
+local NEWS_SECONDS = 600
+local lastEvent, lastData = nil, { at = 0 }
+
+-- data (optional): set, reason ("fits" | "always" | "not_in_set"), pick (a pet you chose), exc
+function Gate:Note(event, data)
+    lastEvent = event
+    lastData.at = GetTime()
+    lastData.set = data and data.set
+    lastData.reason = data and data.reason
+    lastData.pick = data and data.pick
+    lastData.exc = data and data.exc
+end
+
+function Gate:LastEvent() return lastEvent, lastData end
+
+-- Why nothing happens, or what happens next, as one record: { kind = "game" | "off" | "paused" |
+-- "exception" | "set" | "next" | "idle", label, exc, set, reason, pick, seconds, minutes }.
+-- Allocates: call it from refreshes, not from event handlers.
+function Gate:Explain()
+    local ok, cause = self:Check("summon", "auto")
+    if not ok then
+        local kind = cause.level == "auto" and cause.key or cause.level
+        return { kind = kind, label = cause.label, exc = cause.exc }
+    end
+    local set = ns.Sets:GetCurrent()
+    if (lastEvent == "set_kept" or lastEvent == "set_replaced") and GetTime() - lastData.at < NEWS_SECONDS then
+        return { kind = "set", set = lastData.set, reason = lastData.reason, pick = lastData.pick,
+            replaced = lastEvent == "set_replaced" }
+    end
+    local seconds = ns.SwitchTimer:Remaining()
+    if seconds and set then
+        return { kind = "next", set = set, seconds = seconds, minutes = (set:GetSwitch()) }
+    end
+    return { kind = "idle" }
+end
+
 local function awayInForce()
     return ns.Exceptions:Strongest() == "away"
 end
@@ -65,6 +102,7 @@ function Gate:PutAway()
         return
     end
     if ns:GetCurrentPet() then
+        self:Note("put_away", { exc = select(2, ns.Exceptions:Strongest()) })
         ns.Ready.comeback = true
         ns.Summon:Dismiss(true)
     end

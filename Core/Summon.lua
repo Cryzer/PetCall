@@ -30,6 +30,7 @@ end
 function ns:PauseAuto()
     if paused or not ns:IsAutoSummon() then return end
     paused = true
+    ns.Gate:Note("paused")
     ns:Fire("AutoSummonChanged", true)
 end
 
@@ -155,8 +156,13 @@ end
 -- a pet you picked yourself stays; the set's timer and a new map still replace it
 function Summon:OnImmediateSet(set)
     local cur = ns:GetCurrentPet()
-    if cur and cur == self.manualPick then return end
-    if set.settings.alwaysNew or not set:Contains(cur) then ns.Ready:Request("switch", "auto") end
+    if cur and cur == self.manualPick then
+        ns.Gate:Note("set_kept", { set = set, reason = set:Contains(cur) and "fits" or "not_in_set", pick = true })
+        return
+    end
+    local reason = set.settings.alwaysNew and "always" or not set:Contains(cur) and "not_in_set"
+    if cur then ns.Gate:Note(reason and "set_replaced" or "set_kept", { set = set, reason = reason or "fits" }) end
+    if reason then ns.Ready:Request("switch", "auto") end
 end
 
 -- Compatibility API (Bindings.xml and 1.x macros call these on the global)
