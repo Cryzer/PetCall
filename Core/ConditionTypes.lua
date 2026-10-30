@@ -294,7 +294,7 @@ local ACTIVITY_VALUES = {
 }
 C.RegisterType({
     key = "activity", label = L["Activity"], group = "doing",
-    hint = L["Swimming, indoors or outdoors, AFK, or in a form like Travel Form. Any ticked one is enough. Mounted needs \"Don't summon while mounted\" turned off in the settings."],
+    hint = L["Swimming, indoors or outdoors, AFK, or in a form like Travel Form. Any ticked one is enough. Mounted needs the While mounted exception set to As usual."],
     fields = { { key = "activity", kind = "flags", values = function() return ACTIVITY_VALUES end } },
     -- swimming and indoors have no events of their own
     tick = 1,
@@ -436,7 +436,7 @@ end
 
 C.RegisterType({
     key = "mount", label = L["Mount"], group = "doing",
-    hint = L["Riding one of the chosen mounts. Needs \"Don't summon while mounted\" turned off in the settings."],
+    hint = L["Riding one of the chosen mounts. Needs the While mounted exception set to As usual."],
     fields = { { key = "mountIDs", kind = "multiMount" } },
     events = { "PLAYER_MOUNT_DISPLAY_CHANGED", "PLAYER_ENTERING_WORLD" },
     new = function()

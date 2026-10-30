@@ -225,12 +225,11 @@ describe("UI smoke", function()
         open()
         assert.is_true(P:IsShown())
         assert.equal("Black Drake", P:GetPreviewed().name)       -- the first on the list until one is pointed at
-        -- "Don't summon while mounted" is on by default: a warning offers to turn it off
-        local win = _G.PetCallMountPicker
-        assert.is_true(win.warn:IsShown())
-        win.warn.button:Click()
-        assert.is_false(ns.db.profile.exceptions.builtin.mounted)
-        assert.is_false(win.warn:IsShown())
+        -- While mounted is not As usual by default: the picker warns about it
+        assert.is_true(_G.PetCallMountPicker.warn:IsShown())
+        ns.db.profile.exceptions.builtin.mounted = false
+        P:PaintWarning()
+        assert.is_false(_G.PetCallMountPicker.warn:IsShown())
         P:Toggle(9)
         P:Toggle(7)
         assert.same({ 9, 7 }, e.mountIDs)
@@ -358,6 +357,42 @@ describe("UI smoke", function()
         assert.same({ r, g, b }, { bar._color[1], bar._color[2], bar._color[3] })
         ns.db.global.look = "auto"
         ns.Skin._Forget()
+    end)
+    it("the mount picker warning opens the exceptions page", function()
+        W.world.mounts = { { id = 7, name = "Swift Spectral Tiger", collected = true, types = { 1 } } }
+        ns.UI.Main:Show()
+        local set = ns.Sets:Create("Riders")
+        ns.UI.Main:SelectSet("Riders")
+        local m = set:GetConditionModel()
+        m.groups = { { rows = { { "mount", mountIDs = {} } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:SelectTab("when")
+        ns.UI.MountPicker:Open(set.settings.trigger[1], ns.UI.Main:GetFrame(), function() end)
+        local win = _G.PetCallMountPicker
+        assert.is_true(win.warn:IsShown())
+        local before = ns.db.profile.exceptions.builtin.mounted
+        win.warn.button:Click()
+        assert.equal("mounted", ns.UI.Behaviour:GetFocus())
+        assert.is_true(ns.UI.Behaviour:IsShown())
+        assert.equal(before, ns.db.profile.exceptions.builtin.mounted)
+    end)
+    it("the AddOns panel has no behaviour settings", function()
+        local proxies, buttons, headers = {}, {}, {}
+        local real, btn, hdr = Settings, CreateSettingsButtonInitializer, CreateSettingsListSectionHeaderInitializer
+        Settings = setmetatable({ RegisterProxySetting = function(cat, var, ...)
+            proxies[#proxies + 1] = var
+            return real.RegisterProxySetting(cat, var, ...)
+        end }, { __index = real })
+        CreateSettingsButtonInitializer = function(name, ...) buttons[#buttons + 1] = name return btn(name, ...) end
+        CreateSettingsListSectionHeaderInitializer = function(text) headers[#headers + 1] = text return hdr(text) end
+        assert.has_no_error(function() ns.UI.Settings:Build() end)
+        Settings, CreateSettingsButtonInitializer, CreateSettingsListSectionHeaderInitializer = real, btn, hdr
+        assert.same({ "PETCALL_minimap", "PETCALL_windowScale", "PETCALL_look" }, proxies)
+        assert.same({ "PetCall window", "Key bindings" }, buttons)
+        assert.equal("Which pets come out, where and how often is set in the PetCall window.", headers[1])
+        assert.equal("This page only changes how PetCall looks.", headers[2])
+        assert.equal("Appearance", headers[3])
+        assert.equal("Keys and commands", headers[4])
     end)
     it("share dialog shows export and import", function()
         assert.has_no_error(function()

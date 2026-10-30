@@ -201,14 +201,9 @@ local function build()
     warn.edge:SetPoint("BOTTOMLEFT")
     warn.edge:SetWidth(3)
     warn.edge:SetColorTexture(1, 0.82, 0, 1)
-    warn.button = ns.Widgets.Button(warn, L["Turn it off"], function()
-        for _, exc in ipairs(ns.Exceptions:List()) do
-            if exc.id == "mounted" then exc:SetChoice(false) end
-        end
-        Picker:PaintWarning()
-    end)
+    warn.button = ns.Widgets.Button(warn, L["Open exceptions"], function() ns.UI.Behaviour:Show("mounted") end)
     warn.button:SetPoint("RIGHT", -6, 0)
-    warn.text = ns.Widgets.Label(warn, L["\"Don't summon while mounted\" is on, so PetCall waits until you dismount and these mounts change nothing. Turn it off?"], "GameFontHighlightSmall")
+    warn.text = ns.Widgets.Label(warn, L["While mounted is not As usual, so PetCall waits until you dismount and these mounts change nothing."], "GameFontHighlightSmall")
     warn.text:SetTextColor(1, 0.82, 0)
     warn.text:SetPoint("LEFT", 12, 0)
     warn.text:SetPoint("RIGHT", warn.button, "LEFT", -8, 0)
@@ -296,7 +291,7 @@ function Picker:Open(e, anchor, onChanged)
     previewMount(visible[1])
 end
 
--- the warning shows while "Don't summon while mounted" is on; the rest moves under it
+-- the warning shows while the While mounted exception is not As usual; the rest moves under it
 function Picker:PaintWarning()
     if not win then return end
     local on = ns.db.profile.exceptions.builtin.mounted and true or false
