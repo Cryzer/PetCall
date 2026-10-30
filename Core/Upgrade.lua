@@ -1,6 +1,7 @@
 local _, ns = ...
 
-local pairs, ipairs, type, next, rawget, sort = pairs, ipairs, type, next, rawget, table.sort
+local pairs, ipairs, type, tonumber, rawget, sort = pairs, ipairs, type, tonumber, rawget, table.sort
+local floor, min, max = math.floor, math.min, math.max
 
 -- Moves the settings from before exceptions into exceptions and the Default set, once per
 -- profile. Pure table work: it runs before the profile gets its defaults.
@@ -43,9 +44,15 @@ end
 
 local function oldSwitch(profile, key)
     local t = rawget(profile, "autoSwitch")
-    local v = type(t) == "table" and t[key]
+    local v = type(t) == "table" and t[key] or nil
     if v == nil then return OLD.autoSwitch[key] end
     return v
+end
+
+-- whole minutes in the range the old slider had
+local function minutes(seconds)
+    if type(seconds) ~= "number" or seconds ~= seconds then return 30 end
+    return max(1, min(60, floor(seconds / 60 + 0.5)))
 end
 
 -- false: summon as usual; "alone": don't summon; "away": dismiss
@@ -57,9 +64,16 @@ end
 
 local function list(t) return type(t) == "table" and t or {} end
 
--- pets by hand, by pet rules, or every other pet
+-- pets by hand, by pet rules, or every other pet; a weight of 0 brings none
 local function hasPets(s)
-    return next(list(s.pets)) ~= nil or #list(s.filter) > 0 or (s.defaultValue or 0) > 0
+    if (tonumber(s.defaultValue) or 0) > 0 then return true end
+    for _, w in pairs(list(s.pets)) do
+        if (tonumber(w) or 0) > 0 then return true end
+    end
+    for _, rule in ipairs(list(s.filter)) do
+        if type(rule) == "table" and (tonumber(rule[2] or 1) or 0) > 0 then return true end
+    end
+    return false
 end
 
 -- the sets in list order (the first that fits is used), Default left out
@@ -100,7 +114,7 @@ local function convertSettings(profile, exc)
     local default = rawget(sets, DEFAULT) or {}
     sets[DEFAULT] = default
     default.announce = old(profile, "verbose") and "on" or "off"
-    default.switchMinutes = oldSwitch(profile, "timer") and oldSwitch(profile, "timerValue") / 60 or 0
+    default.switchMinutes = oldSwitch(profile, "timer") and minutes(oldSwitch(profile, "timerValue")) or 0
     local citiesOnly = oldSwitch(profile, "citiesOnly") and true or false
     default.switchCitiesOnly = citiesOnly
     for name, s in pairs(sets) do
@@ -123,7 +137,8 @@ local function convertSettings(profile, exc)
     for key in pairs(OLD) do profile[key] = nil end
 end
 
--- "no pet" sets become exceptions; the set stays only when it has pets of its own
+-- "no pet" sets become exceptions (one that always fits turns Auto-summon off); the set
+-- stays only when it has pets of its own
 local function convertNoPetSets(profile, exc, converted)
     local own = exc.own
     local id = 0
@@ -136,7 +151,11 @@ local function convertNoPetSets(profile, exc, converted)
             local forever = s.enabled == false
             local into = not forever and #above == 0 and foldTarget(trigger)
             local fact = { set = name }
-            if into then
+            if not forever and #above == 0 and #trigger == 0 then
+                -- it kept the pet away everywhere: that is Auto-summon Off
+                profile.enable = false
+                fact.outcome = "off"
+            elseif into then
                 for _, key in ipairs(into) do
                     exc.builtin[key] = "away"
                     if key == "dungeon" or key == "raid" then exc.solo[key] = true end

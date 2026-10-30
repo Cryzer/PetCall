@@ -31,6 +31,21 @@ describe("Upgrade", function()
         assert.equal(0, up({ autoSwitch = { timer = false, timerValue = 15 * 60 } }).sets["$Default"].switchMinutes)
         assert.equal(30, up({ autoSwitch = { timer = true } }).sets["$Default"].switchMinutes)
         assert.is_nil(p.autoSwitch)
+        -- whole minutes from 1 to 60; anything else is the old 30
+        assert.equal(2, up({ autoSwitch = { timer = true, timerValue = 100 } }).sets["$Default"].switchMinutes)
+        assert.equal(1, up({ autoSwitch = { timer = true, timerValue = 5 } }).sets["$Default"].switchMinutes)
+        assert.equal(60, up({ autoSwitch = { timer = true, timerValue = 99999 } }).sets["$Default"].switchMinutes)
+        assert.equal(30, up({ autoSwitch = { timer = true, timerValue = "x" } }).sets["$Default"].switchMinutes)
+    end)
+
+    it("a missing or broken autoSwitch means its old defaults", function()
+        for _, value in ipairs({ "x", 5 }) do
+            local p = up({ verbose = true, autoSwitch = value })
+            assert.equal(0, p.sets["$Default"].switchMinutes)
+            assert.is_false(p.sets["$Default"].switchCitiesOnly)
+            assert.is_false(p.switchOnNewMap)
+            assert.is_nil(p.autoSwitch)
+        end
     end)
 
     it("only in cities goes to Default and to every set with its own timer", function()
@@ -195,6 +210,40 @@ describe("Upgrade", function()
         assert.is_false(own(p)[1].choice)
         assert.same(RAID, own(p)[1].trigger)
         assert.equal("disabled", fact(p, "Quiet").outcome)
+    end)
+
+    it("a no-pet set without conditions and nothing above it turns Auto-summon off", function()
+        local p = up({ sets = {
+            Never = { noPet = true, order = 2 },
+            Empty = { trigger = CITY, pets = { a = 0 }, filter = { { "family", 0 } }, order = 1 },   -- weight 0: no pets
+        } })
+        assert.is_false(p.enable)
+        assert.same({}, own(p))
+        assert.same({ set = "Never", outcome = "off" }, fact(p, "Never"))
+        assert.is_nil(p.sets.Never)
+        assert.is_nil(p.sets.Empty.noPet)
+        assert.is_not_nil(p.sets.Empty)
+        -- kept when it has pets of its own
+        p = up({ sets = { Never = { noPet = true, pets = { a = 3 } } } })
+        assert.is_false(p.enable)
+        assert.is_false(p.sets.Never.enabled)
+        assert.equal("off", fact(p, "Never").outcome)
+        -- paused for good: Auto-summon stays as it was
+        p = up({ sets = { Never = { noPet = true, enabled = false } } })
+        assert.is_nil(p.enable)
+        assert.equal("disabled", fact(p, "Never").outcome)
+    end)
+
+    it("a no-pet set without conditions below a set with pets puts the pet away outside that set", function()
+        local p = up({ sets = {
+            City = { trigger = CITY, pets = { a = 3 }, order = 1 },
+            Raid = { trigger = RAID, filter = { { "family", 2 } }, order = 2 },
+            Never = { noPet = true, order = 3 },
+        } })
+        assert.is_nil(p.enable)
+        assert.same({ { "OR", negate = true, items = { CITY[1], RAID[1] } } }, own(p)[1].trigger)
+        assert.equal("away", own(p)[1].choice)
+        assert.equal("deleted", fact(p, "Never").outcome)
     end)
 
     it("a no-pet set paused for good becomes a disabled exception and never folds", function()
