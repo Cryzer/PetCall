@@ -94,17 +94,17 @@ end
 
 function Summon:OnImmediateSet(set)
     if set:IsNoPet() then return end
-    if set.settings.alwaysNew or not set:Contains(ns:GetCurrentPet()) then ns.Ready:QueueResummon() end
+    if set.settings.alwaysNew or not set:Contains(ns:GetCurrentPet()) then ns.Ready:Request("switch", "auto") end
 end
 
 -- Compatibility API (Bindings.xml and 1.x macros call these on the global)
-function ns:ResummonPet(enable, nowait)
+function ns:ResummonPet(enable)
     if enable then ns:SetAutoSummon(true) end
-    ns.Ready:QueueResummon(nowait)
+    ns.Ready:Request("summon", "explicit")
 end
 function ns:DismissPet(disable) Summon:Dismiss(disable) end
 function ns:TogglePet()
-    if ns:GetCurrentPet() then Summon:Dismiss(true) else ns:ResummonPet(true, true) end
+    if ns:GetCurrentPet() then Summon:Dismiss(true) else ns:ResummonPet(true) end
 end
 function ns:OpenOptions() ns:OpenWindow() end
 
@@ -121,13 +121,13 @@ function ns:SummonAnother()
         for _, b in ipairs(blockers) do labels[#labels + 1] = b.label end
         ns:Printf(L["A pet will be summoned when this ends: %s."], table.concat(labels, ", "))
     end
-    ns:ResummonPet(true, true)
+    ns:ResummonPet(true)
 end
 function ns:Dismiss() Summon:Dismiss(true) end
 function ns:Toggle() ns:TogglePet() end
 
 function Summon:OnInitialize()
     hooksecurefunc(C_PetJournal, "SetPetLoadOutInfo", function(slot)
-        if ns.db.profile.overrideSetLoadout and slot == 1 then ns:ResummonPet() end
+        if ns.db.profile.overrideSetLoadout and slot == 1 then ns.Ready:Request("summon", "auto") end
     end)
 end

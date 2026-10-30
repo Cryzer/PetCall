@@ -7,7 +7,7 @@ ns.Commands = Commands
 local list = {
     { "config", L["Open the PetCall window"], function() ns:OpenWindow() end },
     { "settings", L["Open the settings"], function() ns:OpenSettings() end },
-    { "resummon", L["Summon another pet; turns auto-summon on"], function() ns:ResummonPet(true, true) end },
+    { "resummon", L["Summon another pet; turns auto-summon on"], function() ns:ResummonPet(true) end },
     { "dismiss", L["Dismiss your pet; turns auto-summon off"], function() ns:DismissPet(true) end },
     { "desummon", nil, function() ns:DismissPet(true) end },
     { "togglePet", L["Toggle your pet and auto-summon"], function() ns:TogglePet() end },

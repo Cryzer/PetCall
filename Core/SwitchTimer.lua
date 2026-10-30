@@ -43,7 +43,7 @@ function SwitchTimer:Fire()
         local resting = IsResting()
         if (issecretvalue and issecretvalue(resting)) or not resting then return self:Start() end
     end
-    ns:ResummonPet()
+    ns.Ready:Request("switch", "auto")
 end
 
 function SwitchTimer:PLAYER_ENTERING_WORLD()
@@ -51,11 +51,12 @@ function SwitchTimer:PLAYER_ENTERING_WORLD()
 end
 
 function SwitchTimer:ZONE_CHANGED_NEW_AREA()
-    if ns.db.profile.autoSwitch.onZone then
+    local p = ns.db.profile
+    if p.switchOnNewMap or p.autoSwitch.onZone then
         ns:After(1, function()
             local zone = GetZoneText()
             if zone ~= SwitchTimer.lastZone then
-                ns.Ready:QueueResummon()
+                ns.Ready:Request("switch", "auto")
                 SwitchTimer.lastZone = zone
             end
         end)

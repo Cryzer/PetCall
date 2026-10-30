@@ -17,6 +17,7 @@ DB.defaults = {
     enableInPVE = true,
     dismissInPVE = false,
     nearPEWOnly = false,
+    switchOnNewMap = false,
     overrideSetLoadout = false,
     waitTimer = 3,
     verbose = true,

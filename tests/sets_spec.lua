@@ -214,14 +214,12 @@ describe("Sets", function()
         W.advance(1)
         assert.equal(raid, ns.Sets:GetCurrent())                   -- no pets, still used
         assert.equal("active", raid:GetStatus())
-        local keys = {}
-        for _, b in ipairs(ns.Ready:GetBlockers()) do keys[b.key] = true end
-        assert.is_true(keys.no_pet_set)
+        local ok, cause = ns.Gate:Check("summon", "auto")
+        assert.is_false(ok)
+        assert.equal("exception", cause.level)
         assert.is_false(ns.Summon:SummonRandom())
         raid:SetNoPet(false)
-        keys = {}
-        for _, b in ipairs(ns.Ready:GetBlockers()) do keys[b.key] = true end
-        assert.is_nil(keys.no_pet_set)
+        assert.is_true((ns.Gate:Check("summon", "auto")))
     end)
 
     it("on start: keep, new unless it fits, always new", function()
@@ -235,14 +233,18 @@ describe("Sets", function()
         W.world.summoned = "BattlePet-0-0001"
         s:SetPetWeight("BattlePet-0-0001", 1)
         local queued = 0
-        local orig = ns.Ready.QueueResummon
-        ns.Ready.QueueResummon = function() queued = queued + 1 end
+        local orig = ns.Ready.Request
+        ns.Ready.Request = function(_, action, source)
+            assert.equal("switch", action)
+            assert.equal("auto", source)
+            queued = queued + 1
+        end
         ns.Summon:OnImmediateSet(s)
         assert.equal(0, queued)                                     -- the pet out fits: kept
         s:SetOnActivate("new")
         ns.Summon:OnImmediateSet(s)
         assert.equal(1, queued)
-        ns.Ready.QueueResummon = orig
+        ns.Ready.Request = orig
     end)
 
     it("a set's own switch interval wins over the setting", function()

@@ -46,6 +46,7 @@ Core\Sets.lua
 Core\Exceptions.lua
 Core\Recipes.lua
 Core\Ready.lua
+Core\Gate.lua
 Core\Summon.lua
 Core\SwitchTimer.lua
 Core\SpecialItems.lua

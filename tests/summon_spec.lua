@@ -58,8 +58,8 @@ describe("Summon", function()
         W.advance(1)
         W.world.summoned = "a"
         local resummons = 0
-        local orig = ns.ResummonPet
-        ns.ResummonPet = function() resummons = resummons + 1 end
+        local orig = ns.Ready.Request
+        ns.Ready.Request = function() resummons = resummons + 1 end
         W.world.resting = false
         ns.SwitchTimer:Start()
         W.advance(301)
@@ -68,7 +68,22 @@ describe("Summon", function()
         W.world.resting = true
         W.advance(300)
         assert.equal(1, resummons)
-        ns.ResummonPet = orig
+        ns.Ready.Request = orig
+    end)
+    it("a new map asks for a new pet when that is on", function()
+        local requests = {}
+        local orig = ns.Ready.Request
+        ns.Ready.Request = function(_, action, source) requests[#requests + 1] = action .. " " .. source end
+        W.world.zone = "Westfall"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        W.advance(2)
+        assert.equal(0, #requests)
+        ns.db.profile.switchOnNewMap = true
+        W.world.zone = "Duskwood"
+        W.fire("ZONE_CHANGED_NEW_AREA")
+        W.advance(2)
+        assert.same({ "switch auto" }, requests)
+        ns.Ready.Request = orig
     end)
     it("verbose message", function()
         ns.Summon:SummonRandom()
