@@ -44,6 +44,23 @@ local function specifiers(text)
     return table.concat(list, " ")
 end
 
+-- a sentence said twice in one text: what an edit that adds to an old translation leaves behind
+local function repeated(text)
+    text = text:gsub("\n", "\1")
+    for _, stop in ipairs({ "%. ", "! ", "%? ", "。", "！", "？" }) do
+        text = text:gsub(stop, "%0\1")
+    end
+    local seen, twice = {}, {}
+    for sentence in text:gmatch("[^\1]+") do
+        sentence = sentence:match("^%s*(.-)%s*$")
+        if #sentence > 3 then
+            if seen[sentence] then twice[#twice + 1] = sentence end
+            seen[sentence] = true
+        end
+    end
+    return twice
+end
+
 describe("Translations", function()
     it("every translation file has exactly enUS's keys", function()
         local en = enUS()
@@ -65,6 +82,20 @@ describe("Translations", function()
             for _, key in ipairs(sortedKeys(file.L)) do
                 if en[key] and specifiers(en[key]) ~= specifiers(file.L[key]) then
                     problems[#problems + 1] = file.locale .. ": " .. key
+                end
+            end
+        end
+        assert.equal("", table.concat(problems, "\n"))
+    end)
+    it("no translation says a sentence twice that enUS says once", function()
+        local en = enUS()
+        local problems = {}
+        for _, file in ipairs(imports()) do
+            for _, key in ipairs(sortedKeys(file.L)) do
+                if en[key] and #repeated(en[key]) == 0 then
+                    for _, sentence in ipairs(repeated(file.L[key])) do
+                        problems[#problems + 1] = file.locale .. " " .. key .. ": " .. sentence
+                    end
                 end
             end
         end
