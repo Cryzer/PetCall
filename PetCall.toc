@@ -69,6 +69,7 @@ UI\SetList.lua
 UI\RecipeGallery.lua
 UI\StatusBar.lua
 UI\SetSettingsTab.lua
+UI\ConditionEditor.lua
 UI\WhenTab.lua
 UI\MountPicker.lua
 UI\ShareDialog.lua
