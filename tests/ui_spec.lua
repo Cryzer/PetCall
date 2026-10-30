@@ -377,22 +377,62 @@ describe("UI smoke", function()
         assert.equal(before, ns.db.profile.exceptions.builtin.mounted)
     end)
     it("the AddOns panel has no behaviour settings", function()
-        local proxies, buttons, headers = {}, {}, {}
+        local proxies, buttons, rows = {}, {}, {}
         local real, btn, hdr = Settings, CreateSettingsButtonInitializer, CreateSettingsListSectionHeaderInitializer
+        local headers = {}
         Settings = setmetatable({ RegisterProxySetting = function(cat, var, ...)
             proxies[#proxies + 1] = var
             return real.RegisterProxySetting(cat, var, ...)
+        end, CreateElementInitializer = function(template, data)
+            local init = {}
+            rows[#rows + 1] = { template = template, data = data, init = init }
+            return init
         end }, { __index = real })
         CreateSettingsButtonInitializer = function(name, ...) buttons[#buttons + 1] = name return btn(name, ...) end
         CreateSettingsListSectionHeaderInitializer = function(text) headers[#headers + 1] = text return hdr(text) end
-        assert.has_no_error(function() ns.UI.Settings:Build() end)
+        local ok, err = pcall(function() ns.UI.Settings:Build() end)
         Settings, CreateSettingsButtonInitializer, CreateSettingsListSectionHeaderInitializer = real, btn, hdr
+        if not ok then error(err, 0) end
         assert.same({ "PETCALL_minimap", "PETCALL_windowScale", "PETCALL_look" }, proxies)
         assert.same({ "PetCall window", "Key bindings" }, buttons)
-        assert.equal("Which pets come out, where and how often is set in the PetCall window.", headers[1])
-        assert.equal("This page only changes how PetCall looks.", headers[2])
-        assert.equal("Appearance", headers[3])
-        assert.equal("Keys and commands", headers[4])
+        assert.same({ "Appearance", "Keys and commands" }, headers)
+        assert.equal(2, #rows)
+        assert.equal("Which pets come out, where and how often is set in the PetCall window. This page only changes how PetCall looks.", rows[1].data.name)
+        assert.equal("/pcall · /pcall help", rows[2].data.name)
+        -- the paragraphs wrap and the row grows with the text
+        local Universal = getmetatable(CreateFrame("Frame"))
+        local oldHeight, oldWidth = rawget(Universal, "GetStringHeight"), rawget(Universal, "SetWidth")
+        Universal.SetWidth = function(self, w) self._w = w end
+        Universal.GetStringHeight = function(self)
+            local perLine = math.max(1, math.floor((self._w or 600) / 7))
+            return 14 * math.ceil(#(self._text or "") / perLine)
+        end
+        local ok2, err2 = pcall(function()
+            local short, long = rows[2].init, rows[1].init
+            assert.is_true(long:GetExtent() > short:GetExtent(), long:GetExtent() .. " vs " .. short:GetExtent())
+            local frame = CreateFrame("Frame")
+            long:InitFrame(frame)
+            assert.is_true(frame.pcText._wordWrap)
+            assert.equal(rows[1].data.name, frame.pcText:GetText())
+        end)
+        Universal.GetStringHeight, Universal.SetWidth = oldHeight, oldWidth
+        if not ok2 then error(err2, 0) end
+    end)
+    it("the mount picker warning follows the While mounted exception", function()
+        W.world.mounts = { { id = 7, name = "Swift Spectral Tiger", collected = true, types = { 1 } } }
+        ns.UI.Main:Show()
+        local set = ns.Sets:Create("Riders")
+        ns.UI.Main:SelectSet("Riders")
+        local m = set:GetConditionModel()
+        m.groups = { { rows = { { "mount", mountIDs = {} } } } }
+        set:SetConditionModel(m)
+        ns.UI.Main:SelectTab("when")
+        ns.UI.MountPicker:Open(set.settings.trigger[1], ns.UI.Main:GetFrame(), function() end)
+        local win = _G.PetCallMountPicker
+        assert.is_true(win.warn:IsShown())
+        ns.db.profile.exceptions.builtin.mounted = false
+        ns:Fire("ExceptionsChanged")
+        assert.is_false(win.warn:IsShown())
     end)
     it("share dialog shows export and import", function()
         assert.has_no_error(function()

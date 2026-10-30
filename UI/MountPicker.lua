@@ -301,6 +301,8 @@ function Picker:PaintWarning()
     if on then win.body:SetPoint("TOPLEFT", win.warn, "BOTTOMLEFT", 0, -8) else win.body:SetPoint("TOPLEFT", 6, -8) end
 end
 
+ns:RegisterCallback(Picker, "ExceptionsChanged", function() Picker:PaintWarning() end)
+
 function Picker:Close() if win then win:Hide() end end
 function Picker:IsShown() return win ~= nil and win:IsShown() end
 function Picker:GetPreviewed() return current end

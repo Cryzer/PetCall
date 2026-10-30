@@ -19,6 +19,60 @@ local function proxy(key, varType, label, default, get, set, tooltip, kind, opti
     return setting
 end
 
+local PAD = 20
+local measurer
+
+-- a paragraph that wraps inside the settings list: the list sizes the row from GetExtent
+local function textRow(text)
+    local init = Settings.CreateElementInitializer("SettingsListElementTemplate", { name = text })
+    local function width()
+        local list = SettingsPanel and SettingsPanel.Container and SettingsPanel.Container.SettingsList
+        return math.max(100, (tonumber(list and list:GetWidth()) or 600) - 2 * PAD)
+    end
+    function init:GetExtent()
+        if not measurer then
+            measurer = UIParent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            measurer:Hide()
+            measurer:SetWordWrap(true)
+        end
+        measurer:SetWidth(width())
+        measurer:SetText(text)
+        return (tonumber(measurer:GetStringHeight()) or 0) + 8
+    end
+    function init:InitFrame(frame)
+        if frame.Text then frame.Text:SetText("") end
+        local fs = frame.pcText
+        if not fs then
+            fs = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            fs:SetPoint("TOPLEFT", PAD, -4)
+            fs:SetPoint("RIGHT", -PAD, 0)
+            fs:SetJustifyH("LEFT")
+            fs:SetJustifyV("TOP")
+            fs:SetWordWrap(true)
+            frame.pcText = fs
+        end
+        fs:SetText(text)
+    end
+    return init
+end
+
+local pendingOpen
+local function openWhenSafe(id)
+    if InCombatLockdown() then
+        if not pendingOpen then
+            pendingOpen = {}
+            ns:Print(L["Settings will open after combat."])
+            ns.Events.Register(pendingOpen, "PLAYER_REGEN_ENABLED", function()
+                ns.Events.Unregister(pendingOpen, "PLAYER_REGEN_ENABLED")
+                pendingOpen = nil
+                Settings.OpenToCategory(id)
+            end)
+        end
+        return
+    end
+    Settings.OpenToCategory(id)
+end
+
 local function header(text) layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(text)) end
 
 function S:Build()
@@ -29,8 +83,8 @@ function S:Build()
         ns:OpenWindow()
     end, L["Pick pets, create sets and set their conditions."], true))
 
-    header(L["Which pets come out, where and how often is set in the PetCall window."])
-    header(L["This page only changes how PetCall looks."])
+    layout:AddInitializer(textRow(L["Which pets come out, where and how often is set in the PetCall window."]
+        .. " " .. L["This page only changes how PetCall looks."]))
 
     header(L["Appearance"])
     proxy("minimap", Settings.VarType.Boolean, L["Show Minimap Button"], false,
@@ -69,9 +123,9 @@ function S:Build()
 
     header(L["Keys and commands"])
     layout:AddInitializer(CreateSettingsButtonInitializer(L["Key bindings"], L["Open"], function()
-        Settings.OpenToCategory(Settings.KEYBINDINGS_CATEGORY_ID)
+        openWhenSafe(Settings.KEYBINDINGS_CATEGORY_ID)
     end, L["Open the game's key bindings, where PetCall's keys are listed."], true))
-    header("/pcall · /pcall help")
+    layout:AddInitializer(textRow("/pcall · /pcall help"))
 
     Settings.RegisterAddOnCategory(category)
     S.category = category
@@ -133,22 +187,7 @@ function S:RegisterAbout(parent)
     Settings.RegisterCanvasLayoutSubcategory(parent, f, L["About"])
 end
 
-local pendingOpen
-function ns:OpenSettings()
-    if InCombatLockdown() then
-        if not pendingOpen then
-            pendingOpen = {}
-            ns:Print(L["Settings will open after combat."])
-            ns.Events.Register(pendingOpen, "PLAYER_REGEN_ENABLED", function()
-                ns.Events.Unregister(pendingOpen, "PLAYER_REGEN_ENABLED")
-                pendingOpen = nil
-                Settings.OpenToCategory(category:GetID())
-            end)
-        end
-        return
-    end
-    Settings.OpenToCategory(category:GetID())
-end
+function ns:OpenSettings() openWhenSafe(category:GetID()) end
 
 local loader = {}
 ns.Events.Register(loader, "PLAYER_LOGIN", function()

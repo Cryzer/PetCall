@@ -78,6 +78,7 @@ function Universal:Hide()
 end
 function Universal:SetShown(v) if v then self:Show() else self:Hide() end end
 function Universal:SetText(t) self._text = t end
+function Universal:SetWordWrap(v) self._wordWrap = v end
 function Universal:GetChecked() return self._checked or false end
 function Universal:SetChecked(v) self._checked = v end
 function Universal:GetParent() return self._parent end
