@@ -7,14 +7,15 @@ ns.Commands = Commands
 local list = {
     { "config", L["Open the PetCall window"], function() ns:OpenWindow() end },
     { "settings", L["Open the settings"], function() ns:OpenSettings() end },
-    { "resummon", L["Summon another pet; turns auto-summon on"], function() ns:ResummonPet(true) end },
-    { "dismiss", L["Dismiss your pet; turns auto-summon off"], function() ns:DismissPet(true) end },
-    { "desummon", nil, function() ns:DismissPet(true) end },
-    { "togglePet", L["Toggle your pet and auto-summon"], function() ns:TogglePet() end },
+    { "resummon", L["Summon another pet"], function() ns:SummonAnother() end },
+    { "dismiss", L["Dismiss your pet; Auto-summon pauses until you change zone"], function() ns:DismissPet() end },
+    { "desummon", nil, function() ns:DismissPet() end },
+    { "togglePet", L["Summon or dismiss your pet"], function() ns:TogglePet() end },
     { "enable", L["Toggle auto-summon"], function() ns:SetAutoSummon(not ns:IsAutoSummon()) end },
     { "migrate", L["Import PetLeash data"], function() ns.Migrate:Prompt() end },
     { "debugstate", nil, function()
-        ns:Printf("%s: %s", L["Auto-summon"], ns:IsAutoSummon() and L["On"] or L["Off"])
+        local state = ns:GetAutoState()
+        ns:Printf("%s: %s", L["Auto-summon"], state == "on" and L["On"] or state == "off" and L["Off"] or L["Paused until you change zone"])
         ns.Ready:DumpDebugState()
     end },
     -- names the parts of PetCall that take long, in chat; takes a reload

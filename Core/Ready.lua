@@ -14,6 +14,11 @@ local INVIS_SPELLS = { 66, 11392, 3680 }
 local CAMO_SPELLS = { 198783, 199483 }
 local FOOD_SPELLS = { 430, 433, 167152, 160598, 160599 }
 
+-- blockers that take the pet away (unlike sitting or casting); seconds that tie a pet
+-- that went to one starting, and to PetCall's own call
+local TAKES_PET = { alive = true, vehicle = true }
+local TAKEN_WINDOW, EXPECT_WINDOW = 1.5, 3
+
 -- game blockers only: what the game itself does not allow, or a summon would break
 local BLOCKER_ORDER = {
     "have_pets", "combat", "alive", "flying", "vehicle", "stealthed", "invisible", "camo",
@@ -74,7 +79,10 @@ function Ready:OnInitialize()
     ns:RegisterCallback(self, "ProfileChanged", function() Ready:UpdateChecks() end)
     ns:RegisterCallback(self, "PetsChanged", function() Ready:PetListUpdated() end)
     -- the later levels of the order of decisions may have let go
-    ns:RegisterCallback(self, "AutoSummonChanged", function() Ready:_CheckSummon() end)
+    ns:RegisterCallback(self, "AutoSummonChanged", function()
+        if ns:GetAutoState() ~= "on" then Ready.comeback = nil end
+        Ready:_CheckSummon()
+    end)
     ns:RegisterCallback(self, "ExceptionsChanged", function() Ready:_CheckSummon() end)
 end
 
@@ -186,10 +194,11 @@ function Ready:_CheckSummon(waitFinished)
     end
     if waitFinished then
         if self:LastCheck() then
-            self.pending, self.comeback = nil, nil
+            local pick = self.pendingPet
+            self.pending, self.pendingPet, self.comeback = nil, nil, nil
             if self.wait_timer then self.wait_timer:Cancel() self.wait_timer = nil end
             self._last_summon_time = GetTime()
-            ns.Summon:SummonRandom()
+            if pick then ns.Summon:SummonPick(pick) else ns.Summon:SummonRandom() end
             ns:After(2, function() Ready:_CheckSummon() end)
             return
         end
@@ -201,8 +210,8 @@ function Ready:_CheckSummon(waitFinished)
     self.wait_timer = ns:NewTicker(0.5, function() Ready:WaitTimerProgress() end)
 end
 
-function Ready:_CheckUn()
-    self._blocked_at = GetTime()
+function Ready:_CheckUn(name)
+    if TAKES_PET[name] then self:_GameTook() end
     if self.wait_timer then
         self.wait_timer:Cancel()
         self.wait_timer = nil
@@ -221,15 +230,19 @@ function Ready:WaitTimerProgress()
     end
 end
 
--- action: "summon" or "switch"; source: "explicit" (you) or "auto" (PetCall). At most one
--- request waits, and yours replaces PetCall's own.
-function Ready:Request(action, source)
-    if source == "explicit" or self.pending ~= "explicit" then self.pending = source end
+-- action: "summon" or "switch"; source: "explicit" (you) or "auto" (PetCall); petID: the pet
+-- you picked, else one is drawn. At most one request waits, and yours replaces PetCall's own.
+function Ready:Request(action, source, petID)
+    if source == "explicit" then
+        self.pending, self.pendingPet = source, petID
+    elseif self.pending ~= "explicit" then
+        self.pending = source
+    end
     self:_CheckSummon(source == "explicit")
 end
 
 -- you dismissed: a request still waiting would go against that
-function Ready:CancelRequest() self.pending = nil end
+function Ready:CancelRequest() self.pending, self.pendingPet = nil, nil end
 
 -- a "no pet" set puts the pet away when it starts to be used, like an exception
 function Ready:CheckNoPetSet()
@@ -250,7 +263,10 @@ function Ready:FrequentCheck()
     self._lastPet = petID
 end
 
-function Ready:PLAYER_ENTERING_WORLD() self:OpenZoningWindow() end
+function Ready:PLAYER_ENTERING_WORLD()
+    self:_GameTook()
+    self:OpenZoningWindow()
+end
 
 -- "Only after a loading screen": a few seconds after a loading screen or a new zone
 function Ready:OpenZoningWindow()
@@ -262,14 +278,51 @@ function Ready:OpenZoningWindow()
     self:_CheckSummon()
 end
 
+-- the game takes the pet on death, in a vehicle and on a loading screen: it comes back after.
+-- A pet that went just before counts too, whichever event the game sends first.
+function Ready:_GameTook()
+    local now = GetTime()
+    self._takenAt = now
+    if self._vanishedAt and now - self._vanishedAt < TAKEN_WINDOW then
+        self._vanishedAt = nil
+        ns:ResumeAuto()
+        self.comeback = true
+    end
+end
+
+local function gameTakes(self)
+    return self.is_false.alive or self.is_false.vehicle or GetTime() - (self._takenAt or -TAKEN_WINDOW) < TAKEN_WINDOW
+end
+
+-- a change PetCall did not ask for is yours (Pet Journal, pet frame) or the game's
+function Ready:_PetChanged(pet)
+    local expect = ns.Summon.expect
+    if expect and GetTime() - expect.at < EXPECT_WINDOW then
+        local out = pet or false
+        if out == expect.pet then
+            ns.Summon.expect = nil
+            return
+        end
+        if not out then return end          -- no pet in between: a switch
+    end
+    if pet then
+        ns.Summon.manualPick = pet
+        ns:ResumeAuto()
+    elseif ns:GetAutoState() ~= "on" then
+        return
+    elseif gameTakes(self) then
+        self.comeback = true
+    else
+        self._vanishedAt = GetTime()
+        ns:PauseAuto()
+    end
+end
+
 function Ready:COMPANION_UPDATE(_, ctype)
     if ctype ~= "CRITTER" then return end
     local pet = ns:GetCurrentPet()
-    if pet then
-        self.comeback = nil
-    elseif self._petOut and (next(self.is_false) or GetTime() - (self._blocked_at or 0) < 1.5) then
-        self.comeback = true        -- the game took it (death, a vehicle): it comes back after
-    end
+    if pet then self.comeback = nil end
+    if pet ~= self._petOut then self:_PetChanged(pet) end
     self._petOut = pet
     ns:Fire("SummonedPetChanged")
     self:_CheckSummon()

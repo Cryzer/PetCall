@@ -11,6 +11,7 @@ ns.Gate = Gate
 -- causes are shared tables: checking allocates nothing
 local gameCauses = {}
 local AUTO_OFF = { level = "auto", key = "off", label = L["Auto-summon is off"] }
+local AUTO_PAUSED = { level = "auto", key = "paused", label = L["Paused until you change zone"] }
 local NO_PET_SET = { level = "exception", key = "noPetSet", label = L["This set keeps the pet away"] }
 
 local function gameCause(key)
@@ -36,7 +37,9 @@ end
 
 -- the Auto-summon level: nil while PetCall may act by itself
 function Gate:AutoCause()
-    if not ns:IsAutoSummon() then return AUTO_OFF end
+    local state = ns:GetAutoState()
+    if state == "off" then return AUTO_OFF end
+    if state == "paused" then return AUTO_PAUSED end
 end
 
 -- action: "summon" or "switch"; source: "explicit" or "auto". Returns ok, cause.
@@ -67,7 +70,7 @@ function Gate:PutAway()
     end
     if ns:GetCurrentPet() then
         ns.Ready.comeback = true
-        ns.Summon:Dismiss(false, true)
+        ns.Summon:Dismiss(true)
     end
 end
 
