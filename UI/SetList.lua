@@ -418,6 +418,11 @@ function SetList.StopDrag(r)
     SetList:Refresh()
 end
 
+local function nextText(seconds, set, minutes)
+    return format(L["Next new pet in %s (%s: every %d minutes)."], format(L["%d min"], math.ceil(seconds / 60)),
+        set:DisplayName(), minutes)
+end
+
 -- The Because: sentence for Gate:Explain()'s record, and the one button that leads to
 -- where that cause is changed: "resume", "on", "exception", "set" or nil.
 function SetList.Because(why, pet)
@@ -446,10 +451,11 @@ function SetList.Because(why, pet)
         else
             text = L["Because: %s started and the pet out is one of its pets."]
         end
-        return format(text, why.set:DisplayName()), "set"
+        text = format(text, why.set:DisplayName())
+        if why.seconds then text = text .. " " .. nextText(why.seconds, why.next, why.minutes) end
+        return text, "set"
     elseif kind == "next" then
-        return format(L["Next new pet in %s (%s: every %d minutes)."], format(L["%d min"], math.ceil(why.seconds / 60)),
-            why.set:DisplayName(), why.minutes)
+        return nextText(why.seconds, why.set, why.minutes)
     end
     if pet then return "|cff4cd964" .. L["Nothing is blocking PetCall."] .. "|r" end
     if why.waiting then return L["Your pet comes out in a moment."] end

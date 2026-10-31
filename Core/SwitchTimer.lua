@@ -15,6 +15,13 @@ function SwitchTimer:OnInitialize()
     ns:RegisterCallback(self, "CurrentSetChanged", function()
         if ns:GetCurrentPet() then SwitchTimer:Start() else SwitchTimer:Stop() end
     end)
+    -- a new interval for the current set (its own or Default's) starts over; Off stops
+    ns:RegisterCallback(self, "SetsChanged", function()
+        local set = ns.Sets:GetCurrent()
+        local minutes = set and set:GetSwitch() or 0
+        if minutes * 60 == (SwitchTimer.timer and SwitchTimer.interval or 0) then return end
+        if ns:GetCurrentPet() then SwitchTimer:Start() else SwitchTimer:Stop() end
+    end)
     -- a round that came due while Off or Paused found nothing to do
     ns:RegisterCallback(self, "AutoSummonChanged", function()
         if ns:GetAutoState() == "on" and ns:GetCurrentPet() then SwitchTimer:Start(true) end

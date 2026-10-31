@@ -80,6 +80,15 @@ function Bar:Refresh()
     bar.undo:SetShown(ns.Recommended:CanUndo())
     fit()
     if ns.UI.SetList then ns.UI.SetList:RefreshNow(why) end
+    -- "Next new pet in N min" counts down: draw again when N changes
+    if Bar.tick then Bar.tick:Cancel() Bar.tick = nil end
+    if why.seconds then
+        local s = why.seconds
+        Bar.tick = ns:After(math.max(0.5, s - (math.ceil(s / 60) - 1) * 60 + 0.1), function()
+            Bar.tick = nil
+            Bar:Refresh()
+        end)
+    end
 end
 
 ns:RegisterCallback(Bar, "WindowBuilt", function(_, frame)
@@ -120,7 +129,7 @@ end)
 ns:RegisterCallback(Bar, "WindowResized", fit)
 
 local refresh = ns.Debounce(0.1, function() Bar:Refresh() end)
-for _, cb in ipairs({ "ReadyChanged", "CurrentSetChanged", "PetsChanged", "AutoSummonChanged", "SummonedPetChanged", "WindowShown",
+for _, cb in ipairs({ "ReadyChanged", "CurrentSetChanged", "SetsChanged", "PetsChanged", "AutoSummonChanged", "SummonedPetChanged", "WindowShown",
     "ExceptionsChanged", "RecommendedUndoChanged" }) do
     ns:RegisterCallback(Bar, cb, refresh)
 end

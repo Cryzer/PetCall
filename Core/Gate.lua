@@ -84,7 +84,7 @@ end
 
 -- Why nothing happens, or what happens next, as one record: { kind = "game" | "off" | "paused" |
 -- "exception" | "set" | "next" | "idle", label, exc, set, reason, pick, replaced, seconds, minutes,
--- waiting (a request waits to run) }. pastGame: leave the game level out (it holds back
+-- next (the set whose timer runs, with a "set" record), waiting (a request waits to run) }. pastGame: leave the game level out (it holds back
 -- nothing while a pet is out and nothing waits). Allocates: call it from refreshes, not from
 -- event handlers.
 function Gate:Explain(pastGame)
@@ -103,13 +103,15 @@ function Gate:Explain(pastGame)
         return { kind = kind, label = cause.label, exc = cause.exc, waiting = waiting }
     end
     local set = ns.Sets:GetCurrent()
+    local seconds = set and ns.SwitchTimer:Remaining()
+    local minutes = seconds and (set:GetSwitch())
+    -- the news of a set that started says when the next pet comes too
     if setNews() then
         return { kind = "set", set = lastData.set, reason = lastData.reason, pick = lastData.pick,
-            replaced = lastEvent == "set_replaced", waiting = waiting }
+            replaced = lastEvent == "set_replaced", waiting = waiting, seconds = seconds, minutes = minutes, next = set }
     end
-    local seconds = ns.SwitchTimer:Remaining()
-    if seconds and set then
-        return { kind = "next", set = set, seconds = seconds, minutes = (set:GetSwitch()), waiting = waiting }
+    if seconds then
+        return { kind = "next", set = set, seconds = seconds, minutes = minutes, waiting = waiting }
     end
     return { kind = "idle", waiting = waiting }
 end
