@@ -164,6 +164,7 @@ function W.reset()
     UnitChannelInfo = function() return nil end
     SecureCmdOptionParse = function() return w.macroResult end
     JumpOrAscendStart, SitStandOrDescendStart, DoEmote = noop, noop, noop
+    C_PetBattles = { IsInBattle = function() return w.petBattle == true end }
     UIErrorsFrame = W.newFrame()
     UIErrorsFrame:RegisterEvent("UI_ERROR_MESSAGE")
     GetBindingKey = function() return nil end

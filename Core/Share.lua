@@ -19,7 +19,7 @@ function Share:Export(name)
     end
     local data = { enabled = st.enabled, priority = st.priority, defaultValue = st.defaultValue,
         immediate = st.immediate, alwaysNew = st.alwaysNew, switchMinutes = st.switchMinutes,
-        announce = st.announce, pets = pets, filter = st.filter, trigger = st.trigger }
+        switchCitiesOnly = st.switchCitiesOnly, announce = st.announce, pets = pets, filter = st.filter, trigger = st.trigger }
     local cbor = C_EncodingUtil.SerializeCBOR(data)
     return V2 .. C_EncodingUtil.EncodeBase64(C_EncodingUtil.CompressString(cbor))
 end
@@ -123,6 +123,7 @@ function Share:Import(str, name)
     st.immediate = data.immediate and true or nil
     st.alwaysNew = data.alwaysNew == true or nil
     st.switchMinutes = (isNumber(data.switchMinutes) and data.switchMinutes >= 1 and data.switchMinutes <= 60) and data.switchMinutes or nil
+    st.switchCitiesOnly = (st.switchMinutes and data.switchCitiesOnly == true) or nil
     st.announce = (data.announce == "on" or data.announce == "off") and data.announce or nil
     st.filter = sanitize(data.filter, knownFilter, info, true)
     -- fill the existing trigger table in place: the set's watcher holds a reference to it

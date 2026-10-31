@@ -199,6 +199,62 @@ describe("Summon", function()
         assert.equal(1, requests, "still your pick")
     end)
 
+    it("a pet the game took and PetCall replaced is yours when you bring it back", function()
+        ns.Sets:Get("$Default"):SetPetWeight("a", 0)
+        petChanged("a")
+        W.world.dead = true
+        W.fire("PLAYER_DEAD")
+        petChanged(nil)
+        W.world.dead = false
+        W.fire("PLAYER_UNGHOST")
+        W.advance(ns.db.profile.waitTimer + 2)
+        W.fire("COMPANION_UPDATE", "CRITTER")
+        assert.equal("b", W.world.summoned, "PetCall brings another")
+        W.advance(30)
+        petChanged(nil)                                  -- dismissed in the Pet Journal
+        assert.equal("paused", ns:GetAutoState())
+        petChanged("a")                                  -- and the old one summoned there
+        assert.equal("on", ns:GetAutoState())
+        assert.equal("a", ns.Summon.manualPick)
+    end)
+
+    it("a set that starts with no pet out asks for nothing", function()
+        local s = ns.Sets:Create("S")
+        s:SetPetWeight("a", 1)
+        s:SetOnActivate("new")
+        local requests = 0
+        local orig = ns.Ready.Request
+        ns.Ready.Request = function() requests = requests + 1 end
+        W.world.summoned = nil
+        ns.Summon:OnImmediateSet(s)
+        ns.Ready.Request = orig
+        assert.equal(0, requests)
+    end)
+
+    it("leaves the error frame alone when something else had already silenced it", function()
+        UIErrorsFrame:UnregisterEvent("UI_ERROR_MESSAGE")
+        ns.Summon:SummonPick("a")
+        W.advance(0.1)
+        assert.is_false(UIErrorsFrame:IsEventRegistered("UI_ERROR_MESSAGE"))
+    end)
+
+    it("a set's timer that came due while paused starts again when Auto-summon is back on", function()
+        ns.Sets:Get("$Default"):SetSwitch(5)
+        petChanged("a")
+        ns.SwitchTimer:Start()
+        ns:PauseAuto()
+        W.advance(301)
+        assert.equal("a", W.world.summoned)
+        assert.is_nil(ns.SwitchTimer.timer)
+        ns:ResumeAuto()
+        assert.is_not_nil(ns.SwitchTimer.timer)
+        ns:SetAutoSummon(false)
+        W.advance(301)
+        assert.is_nil(ns.SwitchTimer.timer)
+        ns:SetAutoSummon(true)
+        assert.is_not_nil(ns.SwitchTimer.timer)
+    end)
+
     it("Summon another with no other pet still ends the pause", function()
         ns.Sets:Get("$Default"):SetPetWeight("b", 0)
         petChanged("a")

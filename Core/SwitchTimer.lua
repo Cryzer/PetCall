@@ -15,6 +15,10 @@ function SwitchTimer:OnInitialize()
     ns:RegisterCallback(self, "CurrentSetChanged", function()
         if ns:GetCurrentPet() then SwitchTimer:Start() else SwitchTimer:Stop() end
     end)
+    -- a round that came due while Off or Paused found nothing to do
+    ns:RegisterCallback(self, "AutoSummonChanged", function()
+        if ns:GetAutoState() == "on" and ns:GetCurrentPet() then SwitchTimer:Start(true) end
+    end)
 end
 
 function SwitchTimer:Start(noRestart)

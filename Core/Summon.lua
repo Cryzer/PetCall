@@ -66,7 +66,7 @@ local function summonByGUID(guid, outcome)
     Summon.expect = { pet = outcome, at = GetTime() }
     -- the game's red "must be standing" error is no use when PetCall tries by itself (out of
     -- combat, when nothing says you sit); Ready learns of it from its own listener
-    if not InCombatLockdown() and not ns.Ready.is_false.sitting then
+    if not InCombatLockdown() and not ns.Ready.is_false.sitting and UIErrorsFrame:IsEventRegistered("UI_ERROR_MESSAGE") then
         UIErrorsFrame:UnregisterEvent("UI_ERROR_MESSAGE")
         ns:After(0, function() UIErrorsFrame:RegisterEvent("UI_ERROR_MESSAGE") end)
     end
@@ -154,15 +154,17 @@ function Summon:Dismiss(verify)
     end
 end
 
--- a pet you picked yourself stays; the set's timer and a new map still replace it
+-- a pet you picked yourself stays; the set's timer and a new map still replace it. With no
+-- pet out the usual summon applies (a request would skip "Only after a loading screen").
 function Summon:OnImmediateSet(set)
     local cur = ns:GetCurrentPet()
-    if cur and cur == self.manualPick then
+    if not cur then return end
+    if cur == self.manualPick then
         ns.Gate:Note("set_kept", { set = set, reason = set:Contains(cur) and "fits" or "not_in_set", pick = true })
         return
     end
     local reason = set.settings.alwaysNew and "always" or not set:Contains(cur) and "not_in_set"
-    if cur then ns.Gate:Note(reason and "set_replaced" or "set_kept", { set = set, reason = reason or "fits" }) end
+    ns.Gate:Note(reason and "set_replaced" or "set_kept", { set = set, reason = reason or "fits" })
     if reason then ns.Ready:Request("switch", "auto") end
 end
 

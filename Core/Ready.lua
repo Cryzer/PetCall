@@ -96,6 +96,7 @@ function Ready:OnEnable()
     self:SetReady("alive", not UnitIsDeadOrGhost("player"))
     self:SetReady("vehicle", not UnitInVehicle("player"))
     self:SetReady("flying", not IsFlying())
+    self:SetReady("pet_battle", not C_PetBattles.IsInBattle())
     self:UNIT_AURA(nil, "player")
     self:UPDATE_STEALTH()
     self:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", "CheckFlying")
@@ -113,6 +114,8 @@ function Ready:OnEnable()
         end
     end)
     hooksecurefunc("DoEmote", function(token)
+        if type(token) ~= "string" or IsFlying() or IsMounted() then return end
+        token = token:upper()
         if token == "SIT" then
             Ready:SetReady("sitting", false)
             lockSitting()
@@ -204,7 +207,10 @@ function Ready:_CheckSummon(waitFinished)
         if self:LastCheck() then
             local pick = self.pendingPet
             self._ranExplicit, self._ranPick = source == "explicit", pick
-            if self.comeback then ns.Gate:Note("came_back") end
+            if self.comeback then
+                ns.Gate:Note("came_back")
+                self._takenPet, self._takenPick = nil, nil
+            end
             self.pending, self.pendingPet, self.comeback = nil, nil, nil
             if self.wait_timer then self.wait_timer:Cancel() self.wait_timer = nil end
             self._last_summon_time = GetTime()
@@ -307,6 +313,7 @@ function Ready:_PetChanged(pet)
         local out = pet or false
         if out == expect.pet then
             ns.Summon.expect = nil
+            self._takenPet, self._takenPick = nil, nil      -- PetCall's own call replaced it
             return
         end
         if not out then return end          -- no pet in between: a switch
