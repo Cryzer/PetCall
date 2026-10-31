@@ -15,14 +15,15 @@
 
 ### Changed
 
-- Key presses and commands pause Auto-summon instead of switching it off. Dismissing your pet, also outside PetCall, pauses it until you change zone; summoning one ends the pause. Only the check box turns it off.
+- Key presses and commands pause Auto-summon instead of switching it off. Dismissing your pet, also outside PetCall, pauses it until you change zone; summoning one ends the pause. Only the check box and /pcall enable turn it off.
 - Your own actions go past exceptions: a key press summons in a battleground too, and the chat says which exception it went past.
 - A pet that an exception, stealth, death or a pet battle took away comes back when that ends, also with Only after a loading screen.
 - Picking a pet in the grid, the preview or the menu waits for the game (combat, flying, sitting…) like every other summon.
 - A pet you picked yourself stays when a set starts. The set's timer and a new map still replace it.
 - The Quiet raid nights, Quiet in dungeons and Quiet in PvP templates are gone: the exceptions do their job. A set with "No pet while this set is used" becomes an exception, also when you import one.
+- A "no pet" set that had sets with pets above it becomes an exception with an "and not" condition, so those sets still win where both fit. It shows as a Complex rule you can't edit; replace it with your own conditions when you like.
 - Sets show "Like Default" with its value instead of "Like the settings". New pet every and Message on summon live on the Default set.
-- PetCall waits during a pet battle, notices /sit and /stand, and its own try while you sit shows no red error.
+- PetCall waits during a pet battle, notices /sit and /stand, and tries to hide the red error when its own try finds you sitting.
 - Your old settings move into the PetCall window once and keep doing what they did.
 
 ### Fixed
