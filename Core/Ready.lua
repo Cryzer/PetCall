@@ -113,7 +113,7 @@ function Ready:OnEnable()
             lockSitting()
         end
     end)
-    hooksecurefunc("DoEmote", function(token)
+    local function onEmote(token)
         if type(token) ~= "string" or IsFlying() or IsMounted() then return end
         token = token:upper()
         if token == "SIT" then
@@ -122,7 +122,10 @@ function Ready:OnEnable()
         elseif token == "STAND" then
             Ready:SetReady("sitting", true)
         end
-    end)
+    end
+    -- /sit typed in chat goes straight to C_ChatInfo.PerformEmote; addons may still call DoEmote
+    hooksecurefunc("DoEmote", onEmote)
+    if C_ChatInfo and C_ChatInfo.PerformEmote then hooksecurefunc(C_ChatInfo, "PerformEmote", onEmote) end
     local function onSendChat(msg, chatType)
         if chatType == "AFK" then Ready.afk_message = msg end
     end
@@ -159,6 +162,10 @@ function Ready:_Changed() ns:Fire("ReadyChanged") end
 
 function Ready:SetReady(name, value)
     if isSecret(value) then return end
+    -- for /pcall debugstate: what last said you sit or stand, and where from
+    if name == "sitting" then
+        self._sitLast = { at = GetTime(), value = value, from = debugstack and debugstack(2, 1, 0) or "?" }
+    end
     if value then
         if self.is_false[name] then
             self.is_false[name], self.is_true[name] = nil, true
@@ -207,10 +214,7 @@ function Ready:_CheckSummon(waitFinished)
         if self:LastCheck() then
             local pick = self.pendingPet
             self._ranExplicit, self._ranPick = source == "explicit", pick
-            if self.comeback then
-                ns.Gate:Note("came_back")
-                self._takenPet, self._takenPick = nil, nil
-            end
+            if self.comeback then self._takenPet, self._takenPick = nil, nil end
             self.pending, self.pendingPet, self.comeback = nil, nil, nil
             if self.wait_timer then self.wait_timer:Cancel() self.wait_timer = nil end
             self._last_summon_time = GetTime()
@@ -438,6 +442,7 @@ function Ready:PET_BATTLE_CLOSE() self:SetReady("pet_battle", true) end
 function Ready:PLAYER_FLAGS_CHANGED(_, unit)
     if unit and unit ~= "player" then return end
     local afk = UnitIsAFK("player")
+    self._flagsLast = { at = GetTime(), unit = tostring(unit), afk = tostring(afk), typed = self.afk_message ~= nil }
     if not isSecret(afk) and afk and self.afk_message == nil then self:SetReady("sitting", false) end
     self.afk_message = nil
 end
@@ -490,4 +495,9 @@ function Ready:DumpDebugState()
     end
     ns:Printf("Falling %s, full control %s, since last cast %.1f s, waiting %s, request %s", tostring(IsFalling()), tostring(HasFullControl()),
         GetTime() - self.last_spell_sent, tostring(self.wait_timer ~= nil), tostring(self.pending))
+    local f, sit = self._flagsLast, self._sitLast
+    ns:Printf("AFK now %s; last flags event: %s", tostring(UnitIsAFK("player")),
+        f and format("%.0f s ago, unit %s, afk %s, typed /afk %s", GetTime() - f.at, f.unit, f.afk, tostring(f.typed)) or "none")
+    ns:Printf("Sitting last set: %s", sit and format("%s, %.0f s ago, from %s", sit.value and "standing" or "sitting",
+        GetTime() - sit.at, (tostring(sit.from):gsub("%s+$", ""))) or "never")
 end

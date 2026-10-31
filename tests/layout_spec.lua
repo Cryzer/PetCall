@@ -82,6 +82,32 @@ describe("Layout", function()
         assert.is_true(checked > 40, "placed " .. checked)
     end)
 
+    it("Out now counts the next pet down by the second while it can be seen", function()
+        local ns, U = Layout.load()
+        U.W.world.pets = { a = { species = 1, name = "A" } }
+        U.W.login()
+        U.W.advance(30)
+        ns.Sets:Get("$Default"):SetSwitch(5)
+        ns.SwitchTimer:Start()
+        ns.UI.Main:Show()
+        Layout.SetWindowSize(ns, U, 940, 640)
+        local card = ns.UI.SetList._nowCard
+        assert.is_true(card:IsVisible())
+        local function left()
+            local m, ss = card.state:GetText():match("^New pet in (%d+):(%d%d)$")
+            assert.is_true(m ~= nil, card.state:GetText())
+            return tonumber(m) * 60 + tonumber(ss)
+        end
+        local before = left()
+        U.W.advance(10)
+        assert.is_true(math.abs(before - 10 - left()) <= 1, card.state:GetText())
+        -- away when it runs out, the timer starts another round: the card follows it
+        U.W.world.afk = true
+        U.W.advance(before - 10 + 5)
+        assert.is_true(math.abs(300 - 5 - left()) <= 1, card.state:GetText())
+        assert.same({}, Layout.Check(U, card))
+    end)
+
     it("a set card with a long name grows to show all of it; the tabs and the header fit their text", function()
         local ns, U = Layout.load()
         U.W.world.pets = { a = { species = 1, name = "A" } }

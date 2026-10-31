@@ -8,7 +8,8 @@
 - **How PetCall acts.** A row above your sets opens one page for everything PetCall does by itself: Auto-summon, when a pet comes out, a new pet on a new map, what happens after a pet battle, the exceptions and pet-like items. The AddOns panel keeps only the look.
 - **Exceptions** keep the pet away in some places: Battlegrounds, Arenas, Dungeons, Raids, Scenarios and delves, While mounted, Stealth or invisibility and Outside cities. Each one is As usual, Leave the pet alone or Put the pet away. Add exception makes your own from the same conditions as sets.
 - **Also when solo** on Dungeons, Raids, and Scenarios and delves. Clear it and the exception fits only in a party or raid group.
-- **Because:** on the Out now card says why the pet is or isn't out, with a button to where you can change it.
+- **Because:** on the Out now card says why no pet comes out, with a button where one helps. With a pet out, the card counts down to the next new pet by the second, and says "your pick" for a pet you chose yourself.
+- **New pet every** can be 1 minute.
 - **Use recommended settings** shows your settings beside the recommended ones first. Undo puts yours back.
 - Battleground and Arena are separate place types. A new Hidden condition covers stealth, invisibility, camouflage and feign death.
 - A welcome screen after the update shows what moved. /pcall welcome opens it again.

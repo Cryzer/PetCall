@@ -364,6 +364,25 @@ describe("Summon", function()
         assert.equal(1, resummons)
         ns.Ready.Request = orig
     end)
+    it("the timer leaves the pet alone while you are away", function()
+        local s = ns.Sets:Create("Quick")
+        s:SetPetWeight("a", 1)
+        s:SetSwitch(5)
+        W.advance(1)
+        W.world.summoned = "a"
+        local resummons = 0
+        local orig = ns.Ready.Request
+        ns.Ready.Request = function() resummons = resummons + 1 end
+        W.world.afk = true
+        ns.SwitchTimer:Start()
+        W.advance(301)
+        assert.equal(0, resummons, "the game may have sat you down: a summon would only put the pet away")
+        assert.is_not_nil(ns.SwitchTimer.timer)
+        W.world.afk = false
+        W.advance(300)
+        assert.equal(1, resummons)
+        ns.Ready.Request = orig
+    end)
     it("a new map asks for a new pet when that is on", function()
         local requests = {}
         local orig = ns.Ready.Request

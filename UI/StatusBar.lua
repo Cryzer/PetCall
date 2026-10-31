@@ -80,15 +80,6 @@ function Bar:Refresh()
     bar.undo:SetShown(ns.Recommended:CanUndo())
     fit()
     if ns.UI.SetList then ns.UI.SetList:RefreshNow(why) end
-    -- "Next new pet in N min" counts down: draw again when N changes
-    if Bar.tick then Bar.tick:Cancel() Bar.tick = nil end
-    if why.seconds then
-        local s = why.seconds
-        Bar.tick = ns:After(math.max(0.5, s - (math.ceil(s / 60) - 1) * 60 + 0.1), function()
-            Bar.tick = nil
-            Bar:Refresh()
-        end)
-    end
 end
 
 ns:RegisterCallback(Bar, "WindowBuilt", function(_, frame)

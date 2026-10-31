@@ -65,17 +65,14 @@ end
 
 -- New pet every: Off, or N minutes, each also "only in cities"; a value set some other
 -- way is offered as it is. Choices are "like" or { minutes, cities } kept per value.
-local MINUTES = { 5, 10, 15, 30, 60 }
+local MINUTES = { 1, 5, 10, 15, 30, 60 }
 local switchChoices = {}
 local function switchChoice(minutes, cities)
     local key = minutes .. (cities and "c" or "")
     switchChoices[key] = switchChoices[key] or { minutes = minutes, cities = cities }
     return switchChoices[key]
 end
-local function switchText(minutes, cities)
-    if minutes <= 0 then return L["Off"] end
-    return format(cities and L["%d minutes, only in cities"] or L["%d minutes"], minutes)
-end
+local switchText = ns.Sets.SwitchText
 
 local function switchValue()
     if set.settings.switchMinutes == nil and not set:IsDefault() then return "like" end

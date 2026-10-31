@@ -479,6 +479,13 @@ end
 
 function Sets:GetCurrent() return current end
 
+-- "Off", "1 minute", "30 minutes, only in cities"
+function Sets.SwitchText(minutes, citiesOnly)
+    if not minutes or minutes <= 0 then return L["Off"] end
+    if minutes == 1 then return citiesOnly and L["1 minute, only in cities"] or L["1 minute"] end
+    return format(citiesOnly and L["%d minutes, only in cities"] or L["%d minutes"], minutes)
+end
+
 function Sets:Update()
     local best
     for _, set in ipairs(self:List()) do

@@ -68,10 +68,6 @@ local function bringOut(only, seconds)
     return format(L["When I stand still, %s s"], format("%g", seconds))
 end
 
-local function switchText(minutes, citiesOnly)
-    if not minutes or minutes <= 0 then return L["Off"] end
-    return format(citiesOnly and L["%d minutes, only in cities"] or L["%d minutes"], minutes)
-end
 
 local function soloText(flags)
     local names = {}
@@ -96,7 +92,7 @@ function Recommended:Rows()
     add("petBattle", L["After a pet battle"],
         p.overrideSetLoadout and L["Bring back my pet"] or L["Keep the game's pick"],
         V.overrideSetLoadout and L["Bring back my pet"] or L["Keep the game's pick"])
-    add("defaultSwitch", L["Default set: New pet every"], switchText(minutes, cities), switchText(V.defaultSwitch[1], V.defaultSwitch[2]))
+    add("defaultSwitch", L["Default set: New pet every"], ns.Sets.SwitchText(minutes, cities), ns.Sets.SwitchText(V.defaultSwitch[1], V.defaultSwitch[2]))
     add("defaultAnnounce", L["Default set: Message on summon"],
         default():GetAnnounce() and L["Always"] or L["Never"], V.defaultAnnounce == "off" and L["Never"] or L["Always"])
     local solo = {}

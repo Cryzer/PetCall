@@ -251,94 +251,6 @@ describe("Gate", function()
         assert.is_nil(ns.SwitchTimer:Remaining())
     end)
 
-    it("explains a kept pet after a set starts", function()
-        local s = ns.Sets:Create("S")
-        s:SetPetWeight("a", 1)
-        s:SetOnActivate("fits")
-        W.world.summoned = "a"
-        W.fire("COMPANION_UPDATE", "CRITTER")
-        ns.Summon:OnImmediateSet(s)
-        local why = G:Explain()
-        assert.equal("set", why.kind)
-        assert.equal(s, why.set)
-        assert.equal("fits", why.reason)
-        assert.equal("set_kept", (G:LastEvent()))
-        assert.equal(s, select(2, G:LastEvent()).set)
-        W.advance(601)
-        assert.equal("idle", G:Explain().kind, "a set start is only news for ten minutes")
-    end)
-
-    it("remembers a replaced pet and the other events", function()
-        local s = ns.Sets:Create("S")
-        s:SetPetWeight("b", 1)
-        W.world.summoned = "a"
-        W.fire("COMPANION_UPDATE", "CRITTER")
-        ns.Summon.manualPick = nil                       -- PetCall's own draw, not your pick
-        ns.Summon:OnImmediateSet(s)
-        local event, data = G:LastEvent()
-        assert.equal("set_replaced", event)
-        assert.equal("not_in_set", data.reason)
-        ns:PauseAuto()
-        assert.equal("paused", (G:LastEvent()))
-        byId("bg"):SetChoice("away")
-        ns:ResumeAuto()
-        enter("pvp")
-        event, data = G:LastEvent()
-        assert.equal("put_away", event)
-        assert.equal(byId("bg"), data.exc)
-    end)
-
-    it("a set note stands only while the pet it was about is out", function()
-        local s = ns.Sets:Create("S")
-        s:SetPetWeight("a", 1)
-        s:SetPetWeight("b", 1)
-        s:SetOnActivate("fits")
-        W.world.summoned = "a"
-        W.fire("COMPANION_UPDATE", "CRITTER")
-        ns.Summon:OnImmediateSet(s)
-        assert.equal("set", G:Explain().kind)
-        W.world.summoned = "b"
-        W.fire("COMPANION_UPDATE", "CRITTER")
-        assert.is_true(G:Explain().kind ~= "set", "another pet came out since")
-    end)
-
-    it("a replaced pet is explained once the new one is out", function()
-        local s = ns.Sets:Create("S")
-        s:SetPetWeight("b", 1)
-        W.world.summoned = "a"
-        W.fire("COMPANION_UPDATE", "CRITTER")
-        ns.Summon.manualPick = nil
-        ns.Summon:OnImmediateSet(s)
-        assert.is_true(G:Explain().kind ~= "set", "the old pet is still out")
-        assert.is_true(ns.Summon:SummonRandom())
-        W.advance(1)
-        assert.equal("b", W.world.summoned)
-        local why = G:Explain()
-        assert.equal("set", why.kind)
-        assert.is_true(why.replaced)
-        assert.equal("not_in_set", why.reason)
-    end)
-
-    it("Summon another after a set replaced the pet ends the set note", function()
-        W.world.pets.c = { species = 3, name = "C" }
-        ns.PetCache:Rescan()
-        local s = ns.Sets:Create("S")
-        s:SetPetWeight("b", 1)
-        s:SetPetWeight("c", 1)
-        W.world.summoned = "a"
-        W.fire("COMPANION_UPDATE", "CRITTER")
-        ns.Summon.manualPick = nil
-        ns.Summon:OnImmediateSet(s)
-        ns.Summon:SummonRandom()
-        W.advance(1)
-        assert.equal("set", G:Explain().kind)
-        local was = W.world.summoned
-        ns:SummonAnother()
-        W.advance(5)
-        assert.is_true(W.world.summoned ~= was, "another pet came out")
-        assert.is_true(G:Explain().kind ~= "set", "your request is not the set's doing")
-    end)
-
     it("says whether a request is waiting", function()
         assert.is_false(G:Explain().waiting)
         W.world.combat = true
@@ -347,15 +259,6 @@ describe("Gate", function()
         local why = G:Explain()
         assert.equal("game", why.kind)
         assert.is_true(why.waiting)
-    end)
-
-    it("noting does not allocate", function()
-        collectgarbage("stop")
-        local before = collectgarbage("count")
-        for _ = 1, 1000 do G:Note("timer") end
-        local grew = collectgarbage("count") - before
-        collectgarbage("restart")
-        assert.is_true(grew < 1, "grew " .. grew .. " KB")
     end)
 
     it("checking does not allocate", function()

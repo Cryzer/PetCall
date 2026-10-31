@@ -217,6 +217,13 @@ describe("Ready: pet battles and sitting", function()
         assert.is_nil(ns.Ready.is_false.sitting, "the key still toggles")
     end)
 
+    it("/sit typed in chat is noticed: the game sends it through C_ChatInfo.PerformEmote", function()
+        C_ChatInfo.PerformEmote("SIT")
+        assert.is_not_nil(ns.Ready.is_false.sitting)
+        C_ChatInfo.PerformEmote("STAND")
+        assert.is_nil(ns.Ready.is_false.sitting)
+    end)
+
     it("/sit is noticed in any case, and not while flying or mounted", function()
         DoEmote("sit")
         assert.is_not_nil(ns.Ready.is_false.sitting)

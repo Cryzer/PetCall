@@ -54,13 +54,15 @@ end
 
 function SwitchTimer:Fire()
     self.timer = nil
+    -- away, the game may have sat you down without a word: a summon then only puts the pet away
+    local afk = UnitIsAFK("player")
+    if not (issecretvalue and issecretvalue(afk)) and afk then return self:Start() end
     local set = ns.Sets:GetCurrent()
     if set and select(2, set:GetSwitch()) then
         -- a hidden (secret) value cannot be tested: wait for the next round
         local resting = IsResting()
         if (issecretvalue and issecretvalue(resting)) or not resting then return self:Start() end
     end
-    ns.Gate:Note("timer")
     ns.Ready:Request("switch", "auto")
 end
 
@@ -73,7 +75,6 @@ function SwitchTimer:ZONE_CHANGED_NEW_AREA()
         ns:After(1, function()
             local zone = GetZoneText()
             if zone ~= SwitchTimer.lastZone then
-                ns.Gate:Note("new_map")
                 ns.Ready:Request("switch", "auto")
                 SwitchTimer.lastZone = zone
             end

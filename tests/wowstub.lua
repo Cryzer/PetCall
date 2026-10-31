@@ -247,7 +247,7 @@ function W.reset()
         RequestLoadItemDataByID = noop,
         GetItemQualityColor = function() return 1, 1, 1 end,
     }
-    C_ChatInfo = { SendChatMessage = noop }
+    C_ChatInfo = { SendChatMessage = noop, PerformEmote = noop }
     C_SpecializationInfo = {
         GetSpecialization = function() return w.spec end,
         GetSpecializationInfo = function(i) return i, "Spec" .. i end,

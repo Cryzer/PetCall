@@ -418,13 +418,14 @@ function SetList.StopDrag(r)
     SetList:Refresh()
 end
 
-local function nextText(seconds, set, minutes)
-    return format(L["Next new pet in %s (%s: every %d minutes)."], format(L["%d min"], math.ceil(seconds / 60)),
-        set:DisplayName(), minutes)
+-- "New pet in 4:05"
+local function nextText(seconds)
+    seconds = math.max(0, math.ceil(seconds))
+    return format(L["New pet in %s"], format("%d:%02d", math.floor(seconds / 60), seconds % 60))
 end
 
 -- The Because: sentence for Gate:Explain()'s record, and the one button that leads to
--- where that cause is changed: "resume", "on", "exception", "set" or nil.
+-- where that cause is changed: "resume", "on", "exception" or nil.
 function SetList.Because(why, pet)
     local kind = why.kind
     if kind == "game" then
@@ -441,21 +442,8 @@ function SetList.Because(why, pet)
                 or L["Because: exception %s puts the pet away."]
         end
         return "|cffffb040" .. format(text, why.label) .. "|r", "exception"
-    elseif kind == "set" then
-        local text
-        if why.replaced then
-            text = why.reason == "always" and L["Because: %s started and always brings a new pet."]
-                or L["Because: %s started and the pet out was not one of its pets."]
-        elseif why.pick and why.reason ~= "fits" then
-            text = L["Because: %s started and you picked the pet out yourself."]
-        else
-            text = L["Because: %s started and the pet out is one of its pets."]
-        end
-        text = format(text, why.set:DisplayName())
-        if why.seconds then text = text .. " " .. nextText(why.seconds, why.next, why.minutes) end
-        return text, "set"
     elseif kind == "next" then
-        return nextText(why.seconds, why.set, why.minutes)
+        return nextText(why.seconds)
     end
     if pet then return "|cff4cd964" .. L["Nothing is blocking PetCall."] .. "|r" end
     if why.waiting then return L["Your pet comes out in a moment."] end
@@ -463,7 +451,19 @@ function SetList.Because(why, pet)
     return L["Your pet comes out when you stand still."]
 end
 
-local ACTION_TEXT = { resume = L["Resume"], on = L["Turn on"], exception = L["Change"], set = L["Change"] }
+local ACTION_TEXT = { resume = L["Resume"], on = L["Turn on"], exception = L["Change"] }
+
+-- the countdown goes down by the second while the card can be seen; nothing else is redrawn
+-- it asks the timer each time: one that ran out while you were away has started again
+local function tickNow()
+    if not (nowCard and nowCard:IsVisible() and nowCard.counting) then
+        if nowCard and nowCard.ticker then nowCard.ticker:Cancel() nowCard.ticker = nil end
+        return
+    end
+    local left = ns.SwitchTimer:Remaining()
+    if not left then return ns.UI.StatusBar:Refresh() end
+    nowCard.state:SetText(nextText(left))
+end
 
 -- the pet that is out right now, large, at the foot of the sets panel
 function SetList:RefreshNow(why)
@@ -480,7 +480,16 @@ function SetList:RefreshNow(why)
         nowCard.border:Show()
         nowCard.name:SetText(info.customName or info.name)
         nowCard.name:SetTextColor(r, g, b)
-        nowCard.from:SetText(format(L["from %s"], set and set:DisplayName() or NONE))
+        -- a pet you chose yourself, or one the set did not draw, says so
+        local from
+        if pet == ns.Summon.manualPick then
+            from = L["your pick"]
+        elseif set and not set:Contains(pet) then
+            from = format(L["not in %s"], set:DisplayName())
+        else
+            from = format(L["from %s"], set and set:DisplayName() or NONE)
+        end
+        nowCard.from:SetText(from)
     else
         nowCard.icon:SetTexture("Interface\\Icons\\Tracking_WildPet")
         nowCard.icon:SetDesaturated(true)
@@ -495,6 +504,8 @@ function SetList:RefreshNow(why)
     local text, action = SetList.Because(why, info and pet)
     nowCard.state:SetText(text)
     nowCard.why, nowCard.actionKind = why, action
+    nowCard.counting = why.kind == "next"
+    if nowCard.counting and not nowCard.ticker then nowCard.ticker = ns:NewTicker(1, tickNow) end
     nowCard.action:SetShown(action ~= nil)
     if action then
         nowCard.action:SetText(ACTION_TEXT[action])
@@ -545,9 +556,6 @@ local function buildNowCard()
             ns:SetAutoSummon(true)
         elseif kind == "exception" then
             ns.UI.Behaviour:Show(why.exc.id)
-        elseif kind == "set" and not why.set.deleted then
-            ns.UI.Main:SelectSet(why.set.name)
-            ns.UI.Main:SelectTab("settings")
         end
     end)
     c.action:Hide()

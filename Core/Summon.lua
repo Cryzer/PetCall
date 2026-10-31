@@ -30,7 +30,6 @@ end
 function ns:PauseAuto()
     if paused or not ns:IsAutoSummon() then return end
     paused = true
-    ns.Gate:Note("paused")
     ns:Fire("AutoSummonChanged", true)
 end
 
@@ -105,7 +104,6 @@ end
 -- explicit summon: ends a pause, says once what it waits for or goes past, then asks Ready
 local function summonExplicit(petID)
     ns:ResumeAuto()
-    ns.Gate:Note("explicit")          -- what comes out now is yours, not a set's doing
     local ok, cause = ns.Gate:Check("summon", "explicit")
     if not ok then
         if cause.key == "sitting" then
@@ -158,14 +156,8 @@ end
 -- pet out the usual summon applies (a request would skip "Only after a loading screen").
 function Summon:OnImmediateSet(set)
     local cur = ns:GetCurrentPet()
-    if not cur then return end
-    if cur == self.manualPick then
-        ns.Gate:Note("set_kept", { set = set, reason = set:Contains(cur) and "fits" or "not_in_set", pick = true })
-        return
-    end
-    local reason = set.settings.alwaysNew and "always" or not set:Contains(cur) and "not_in_set"
-    ns.Gate:Note(reason and "set_replaced" or "set_kept", { set = set, reason = reason or "fits" })
-    if reason then ns.Ready:Request("switch", "auto") end
+    if not cur or cur == self.manualPick then return end
+    if set.settings.alwaysNew or not set:Contains(cur) then ns.Ready:Request("switch", "auto") end
 end
 
 -- Compatibility API (Bindings.xml and 1.x macros call these on the global)
