@@ -372,8 +372,8 @@ describe("UI smoke", function()
         assert.is_true(win.warn:IsShown())
         local before = ns.db.profile.exceptions.builtin.mounted
         win.warn.button:Click()
-        assert.equal("mounted", ns.UI.Behaviour:GetFocus())
         assert.is_true(ns.UI.Behaviour:IsShown())
+        assert.equal(0.16, ns.UI.Behaviour._rows.mounted.bg._color[4], "the page shows While mounted")
         assert.equal(before, ns.db.profile.exceptions.builtin.mounted)
     end)
     it("the AddOns panel has no behaviour settings", function()
@@ -414,6 +414,19 @@ describe("UI smoke", function()
             long:InitFrame(frame)
             assert.is_true(frame.pcText._wordWrap)
             assert.equal(rows[1].data.name, frame.pcText:GetText())
+            -- the list hands the frame to other rows: the paragraph goes with it
+            long:Resetter(frame)
+            assert.is_false(frame.pcText:IsShown())
+            assert.equal("", frame.pcText:GetText())
+            long:InitFrame(frame)
+            assert.is_true(frame.pcText:IsShown())
+            -- a list not laid out yet measures as the usual width
+            local unknown = long:GetExtent()
+            local oldPanel = SettingsPanel
+            SettingsPanel = { Container = { SettingsList = { GetWidth = function() return 50 end } } }
+            local tiny = long:GetExtent()
+            SettingsPanel = oldPanel
+            assert.equal(unknown, tiny)
         end)
         Universal.GetStringHeight, Universal.SetWidth = oldHeight, oldWidth
         if not ok2 then error(err2, 0) end
@@ -2144,9 +2157,21 @@ describe("UI smoke", function()
         assert.equal("Change", card.action:GetText())
         card.action:Click()
         assert.is_true(ns.UI.Behaviour:IsShown())
-        assert.equal("mounted", ns.UI.Behaviour:GetFocus())
+        assert.equal(0.16, ns.UI.Behaviour._rows.mounted.bg._color[4], "the page shows While mounted")
         local bar = ns.UI.Main:GetFrame().status
         assert.is_true(bar.left:GetText():find("Paused: While mounted", 1, true) ~= nil, bar.left:GetText())
+    end)
+
+    it("Because: an exception that puts the pet away fits a pet that is out anyway", function()
+        local exc = byId("mounted")
+        exc:SetChoice("away")
+        local why = { kind = "exception", exc = exc, label = exc:DisplayName() }
+        local text, action = ns.UI.SetList.Because(why, nil)
+        assert.equal("Because: exception While mounted puts the pet away.", plain(text))
+        assert.equal("exception", action)
+        text, action = ns.UI.SetList.Because(why, "a")
+        assert.equal("Because: exception While mounted keeps PetCall from bringing out or changing a pet.", plain(text))
+        assert.equal("exception", action)
     end)
 
     it("Out now says Because: only when the game holds something back", function()

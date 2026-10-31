@@ -429,8 +429,12 @@ function SetList.Because(why, pet)
     elseif kind == "off" then
         return "|cffffb040" .. L["Because: Auto-summon is off."] .. "|r", "on"
     elseif kind == "exception" then
-        local text = why.exc:GetChoice() == "away" and L["Because: exception %s puts the pet away."]
-            or L["Because: exception %s leaves the pet alone."]
+        local text = L["Because: exception %s leaves the pet alone."]
+        if why.exc:GetChoice() == "away" then
+            -- a pet out in spite of it (your own summon, or chosen while inside) stays
+            text = pet and L["Because: exception %s keeps PetCall from bringing out or changing a pet."]
+                or L["Because: exception %s puts the pet away."]
+        end
         return "|cffffb040" .. format(text, why.label) .. "|r", "exception"
     elseif kind == "set" then
         local text

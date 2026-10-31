@@ -181,6 +181,10 @@ function Menu:Build(owner, root)
     end
     root:CreateDivider()
     root:CreateButton(L["Open PetCall"], function() ns:OpenWindow() end)
+    root:CreateButton(L["How PetCall acts"], function()
+        ns.UI.Main:Show()
+        ns.UI.Behaviour:Show()
+    end)
     root:CreateButton(L["Settings"], function() ns:OpenSettings() end)
 end
 Menu.Build = ns.Profile.Wrap("pet menu", Menu.Build)   -- /pcall profile: opened by a click

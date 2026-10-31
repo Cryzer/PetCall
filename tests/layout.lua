@@ -247,6 +247,11 @@ local function install(U)
         elseif template:find("UIPanelButton") then
             f._h = 22
             f.Text = boundLabel(U, f)
+        elseif template:find("CheckButton") then
+            -- the label right of the box, as wide as its text unless given a width
+            f.text = newFontString(U, f, "GameFontHighlight")
+            f.text._points = { LEFT = { rel = f, relPoint = "RIGHT", x = 0, y = 1 } }
+            f.text._checkLabel = true
         end
         if template == "ButtonFrameTemplate" then
             -- the template's inset under the title, and the close button in the corner
@@ -407,6 +412,8 @@ function Layout.Check(U, root)
             end
         end
         local parent = rawget(f, "_parent")
+        -- a check box's label runs past the box: it has to fit what holds the box
+        if rawget(f, "_checkLabel") then parent = rawget(parent, "_parent") end
         local pr = parent and (placed[parent] or (parent == root and Layout.Rect(root)))
         -- scrolled rows run past their list; a window's ornaments (badge, help button) hang
         -- over its edge on purpose

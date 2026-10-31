@@ -45,24 +45,25 @@ describe("Pet menu", function()
         assert.same({ "# – L:4", "S:30", "T – Ý:4" }, labels)
     end)
 
-    it("the menu shows Auto-summon as paused", function()
-        local function recorder()
-            local r = { items = {} }
-            local function add(kind, text, a, b)
-                local item = recorder()
-                item.kind, item.text, item.a, item.b = kind, text, a, b
-                r.items[#r.items + 1] = item
-                return item
-            end
-            function r:CreateTitle(t) return add("title", t) end
-            function r:CreateDivider() return add("divider") end
-            function r:CreateButton(t, f) return add("button", t, f) end
-            function r:CreateCheckbox(t, get, set) return add("checkbox", t, get, set) end
-            function r:SetScrollMode() end
-            function r:SetOnEnter() end
-            function r:SetOnLeave() end
-            return r
+    local function recorder()
+        local r = { items = {} }
+        local function add(kind, text, a, b)
+            local item = recorder()
+            item.kind, item.text, item.a, item.b = kind, text, a, b
+            r.items[#r.items + 1] = item
+            return item
         end
+        function r:CreateTitle(t) return add("title", t) end
+        function r:CreateDivider() return add("divider") end
+        function r:CreateButton(t, f) return add("button", t, f) end
+        function r:CreateCheckbox(t, get, set) return add("checkbox", t, get, set) end
+        function r:SetScrollMode() end
+        function r:SetOnEnter() end
+        function r:SetOnLeave() end
+        return r
+    end
+
+    it("the menu shows Auto-summon as paused", function()
         local function autoItem()
             local root = recorder()
             Menu:Build(nil, root)
@@ -78,5 +79,20 @@ describe("Pet menu", function()
         ns:SetAutoSummon(false)
         assert.equal("Auto-summon", autoItem().text)
         assert.is_false(autoItem().a())
+    end)
+
+    it("How PetCall acts opens the window on that page", function()
+        local opened = {}
+        ns.UI.Main = { Show = function() opened[#opened + 1] = "window" end }
+        ns.UI.Behaviour = { Show = function() opened[#opened + 1] = "page" end }
+        local root = recorder()
+        Menu:Build(nil, root)
+        local item
+        for _, x in ipairs(root.items) do
+            if x.kind == "button" and x.text == "How PetCall acts" then item = x end
+        end
+        assert.is_not_nil(item)
+        item.a()
+        assert.same({ "window", "page" }, opened)
     end)
 end)

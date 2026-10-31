@@ -411,11 +411,17 @@ local function layout()
         page.itemsHelp:ClearAllPoints()
         page.itemsHelp:SetPoint("TOPLEFT", body, "TOPLEFT", 8, -y)
         y = y + textHeight(page.itemsHelp) + 6
+        -- a name longer than the page wraps under itself
         for _, item in ipairs(page.items) do
-            item:SetWidth(math.min(width - 16, tonumber(item:GetWidth()) or 0))
+            local label = item.check.text
+            label:SetWordWrap(true)
+            label:SetJustifyH("LEFT")
+            label:SetWidth(math.max(40, math.min(width - 16 - 28, ns.Widgets.TextWidth(label))))
+            local h = math.max(24, textHeight(label) + 6)
+            item:SetSize(28 + label:GetWidth(), h)
             item:ClearAllPoints()
             item:SetPoint("TOPLEFT", body, "TOPLEFT", 24, -y)
-            y = y + 26
+            y = y + h + 2
         end
     end
     y = y + SECTION_GAP - 8
@@ -508,7 +514,6 @@ end
 
 function B:IsShown() return page ~= nil and page:IsShown() end
 function B:GetFrame() return page end
-function B:GetFocus() return focus end
 
 ns:RegisterCallback(B, "SelectedSetChanged", function() B:Hide() end)
 ns:RegisterCallback(B, "WindowHidden", function() B:Hide() end)

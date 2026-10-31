@@ -16,6 +16,9 @@ function Screens.World(W)
     W.world.favorites.c = true
     W.world.sources[1] = "Drop: Hogger"
     W.world.sources[2] = "Pet Battle: Elwynn Forest"
+    -- Pet-like items longer than the game's longest names, in any language
+    W.world.itemName = function(id) return "Orb of the Sin'dorei, Gnomish Gravity Well and Unusually Long Translated Item Name " .. id end
+    W.world.questTitle = function(q) return "Stampeding Spirits of the Wandering Isle and Other Long Quest Titles, part " .. q end
 end
 
 local function pets(ns)

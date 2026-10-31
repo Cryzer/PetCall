@@ -604,6 +604,7 @@ L["Because: Auto-summon is paused until you change zone (you dismissed your pet)
 L["Because: Auto-summon is off."] = true
 L["Because: exception %s puts the pet away."] = true
 L["Because: exception %s leaves the pet alone."] = true
+L["Because: exception %s keeps PetCall from bringing out or changing a pet."] = true
 L["Because: %s started and the pet out is one of its pets."] = true
 L["Because: %s started and you picked the pet out yourself."] = true
 L["Because: %s started and always brings a new pet."] = true

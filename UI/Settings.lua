@@ -25,9 +25,12 @@ local measurer
 -- a paragraph that wraps inside the settings list: the list sizes the row from GetExtent
 local function textRow(text)
     local init = Settings.CreateElementInitializer("SettingsListElementTemplate", { name = text })
+    -- a list not laid out yet reports no width, or a sliver of one: use the usual width
     local function width()
         local list = SettingsPanel and SettingsPanel.Container and SettingsPanel.Container.SettingsList
-        return math.max(100, (tonumber(list and list:GetWidth()) or 600) - 2 * PAD)
+        local w = tonumber(list and list:GetWidth()) or 0
+        if w < 2 * PAD + 100 then w = 600 end
+        return w - 2 * PAD
     end
     function init:GetExtent()
         if not measurer then
@@ -52,6 +55,16 @@ local function textRow(text)
             frame.pcText = fs
         end
         fs:SetText(text)
+        fs:Show()
+    end
+    -- the list hands the frame on to other rows
+    local baseResetter = init.Resetter
+    function init:Resetter(frame)
+        if baseResetter then baseResetter(self, frame) end
+        if frame.pcText then
+            frame.pcText:SetText("")
+            frame.pcText:Hide()
+        end
     end
     return init
 end

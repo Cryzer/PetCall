@@ -242,7 +242,7 @@ function W.reset()
     }
     C_Item = {
         GetItemCount = function(id) return w.items[id] or 0 end,
-        GetItemInfo = function(id) return "Item" .. id end,
+        GetItemInfo = function(id) return w.itemName and w.itemName(id) or ("Item" .. id) end,
         IsEquippedItem = function(id) return w.equipped[id] == true end,
         RequestLoadItemDataByID = noop,
         GetItemQualityColor = function() return 1, 1, 1 end,
@@ -328,7 +328,7 @@ function W.reset()
             for _, q in ipairs(w.quests) do if q == id then return true end end
             return false
         end,
-        GetTitleForQuestID = function(q) return "Quest" .. q end,
+        GetTitleForQuestID = function(q) return w.questTitle and w.questTitle(q) or ("Quest" .. q) end,
     }
     C_AddOns = { GetAddOnMetadata = function(_, k) return k == "Version" and "2.0.0-test" or nil end }
     C_EncodingUtil = {
