@@ -178,7 +178,15 @@ local function newRow(exc)
         expanded = expanded ~= r.id and r.id or nil
         refreshNow()
     end)
-    r.editorHost, r.delete = page.editorHost, page.delete
+    -- own exceptions only, always at the right end of the row
+    r.delete = ns.Widgets.Button(r.ctl, DELETE, function()
+        StaticPopup_Show("PETCALL_CONFIRM", format(L["Delete \"%s\"? This cannot be undone."], r.exc:DisplayName()), nil,
+            { onAccept = function() r.exc:Delete() expanded = nil refreshNow() end })
+    end)
+    r.delete:GetFontString():SetTextColor(1, 0.35, 0.3)
+    r.delete:Hide()
+    r.deleteItem = { frame = r.delete, right = true }
+    r.editorHost = page.editorHost
     rows[id] = r
     return r
 end
@@ -233,13 +241,6 @@ local function buildExceptions()
     page.editorHost:Hide()
     -- the editor redraws itself after a change made in it: the page makes room again
     editor = ns.UI.ConditionEditor.New(page.editorHost, { whole = true, onHeight = function() refresh() end })
-    page.delete = ns.Widgets.Button(body, DELETE, function()
-        local r = expanded and rows[expanded]
-        if not r or r.exc.builtin then return end
-        StaticPopup_Show("PETCALL_CONFIRM", format(L["Delete \"%s\"? This cannot be undone."], r.exc:DisplayName()), nil,
-            { onAccept = function() r.exc:Delete() expanded = nil refreshNow() end })
-    end)
-    page.delete:Hide()
     page.add = ns.Widgets.Button(body, L["+ Add exception"], function()
         local exc = ns.Exceptions:Add({}, "away")
         expanded, focus = exc.id, exc.id
@@ -329,7 +330,6 @@ local function layout()
     -- the host hides only when nothing is open: hiding it closes the mount picker
     local open = expanded and rows[expanded]
     page.editorHost:SetShown(open and true or false)
-    page.delete:SetShown(open and not open.exc.builtin or false)
     if not open then page.editorHost.target = nil end
     for _, r in ipairs(order) do
         local f = r.frame
@@ -352,7 +352,8 @@ local function layout()
         r.ctl:ClearAllPoints()
         r.ctl:SetPoint("TOPLEFT", f, "TOPLEFT", labelCol, -4)
         r.ctl:SetWidth(cw)
-        local h = 4 + ns.Widgets.Flow(r.ctl, { r.choice, r.soloBox, r.toggle }, { width = cw })
+        r.delete:SetShown(not r.exc.builtin)
+        local h = 4 + ns.Widgets.Flow(r.ctl, { r.choice, r.soloBox, r.toggle, r.deleteItem }, { width = cw })
         h = math.max(h, left) + 4
         if r.warn:IsShown() then
             r.warn:SetWidth(width - BAR_W - 12)
@@ -377,11 +378,6 @@ local function layout()
             local eh = math.max(60, editor:GetHeight() + 4)
             host:SetHeight(eh)
             y = y + eh + 4
-            if not r.exc.builtin then
-                page.delete:ClearAllPoints()
-                page.delete:SetPoint("TOPLEFT", body, "TOPLEFT", 8, -y)
-                y = y + 22 + 4
-            end
         end
     end
     page.add:ClearAllPoints()
