@@ -47,9 +47,11 @@ end
 -- a dropdown as wide as its longest choice
 local function fitDropdown(dd, labels) ns.Widgets.FitDropdown(dd, labels, 120) end
 
+-- the game builds a menu once as soon as it is set up, before the tab has a set
 local function radios(root, items, get, setter)
-    for _, it in ipairs(items) do
-        root:CreateRadio(it[2], function() return set and get() == it[1] end, function() setter(it[1]) end)
+    if not set then return end
+    for _, it in ipairs(items()) do
+        root:CreateRadio(it[2], function() return get() == it[1] end, function() setter(it[1]) end)
     end
 end
 local function labels(items) local out = {} for i, it in ipairs(items) do out[i] = it[2] end return out end
@@ -287,18 +289,18 @@ ns.UI.Main:RegisterTab("settings", L["Set settings"], function(p)
     local starts = { { "keep", L["Keep the pet that is out"] }, { "fits", L["New pet, unless the one out fits"] },
         { "new", L["Always a new pet"] } }
     page.onActivate = ns.Widgets.Dropdown(b, 260, function(_, root)
-        radios(root, starts, function() return set:GetOnActivate() end, function(v) set:SetOnActivate(v) end)
+        radios(root, function() return starts end, function() return set:GetOnActivate() end, function(v) set:SetOnActivate(v) end)
     end)
     fitDropdown(page.onActivate, labels(starts))
     page.startsRow = addRow(b, { label = ns.Widgets.Label(b, L["When this set starts"]), items = { page.onActivate } })
     page.switch = ns.Widgets.Dropdown(b, 260, function(_, root)
-        radios(root, switchItems(), switchValue, function(v)
+        radios(root, switchItems, switchValue, function(v)
             if v == "like" then set:SetSwitch(nil) else set:SetSwitch(v.minutes, v.cities) end
         end)
     end)
     addRow(b, { label = ns.Widgets.Label(b, L["New pet every"]), items = { page.switch } })
     page.announce = ns.Widgets.Dropdown(b, 260, function(_, root)
-        radios(root, announceItems(), announceValue, function(v)
+        radios(root, announceItems, announceValue, function(v)
             if v == "like" then set:SetAnnounce(nil) else set:SetAnnounce(v == "on") end
         end)
     end)
