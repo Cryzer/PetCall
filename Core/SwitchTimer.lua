@@ -6,6 +6,8 @@ ns.SwitchTimer = SwitchTimer
 function SwitchTimer:OnInitialize()
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    self:RegisterEvent("PLAYER_FLAGS_CHANGED")
+    self:RegisterEvent("PLAYER_UPDATE_RESTING")
     -- the new profile may have a different (or no) timer
     ns:RegisterCallback(self, "ProfileChanged", function()
         SwitchTimer:Stop()
@@ -19,6 +21,8 @@ function SwitchTimer:OnInitialize()
     ns:RegisterCallback(self, "SetsChanged", function()
         local set = ns.Sets:GetCurrent()
         local minutes = set and set:GetSwitch() or 0
+        -- a due pet looks again (Only in cities may be off now)
+        if SwitchTimer.due and minutes * 60 == SwitchTimer.interval then return SwitchTimer:Fire() end
         if minutes * 60 == (SwitchTimer.timer and SwitchTimer.interval or 0) then return end
         if ns:GetCurrentPet() then SwitchTimer:Start() else SwitchTimer:Stop() end
     end)
@@ -28,7 +32,16 @@ function SwitchTimer:OnInitialize()
     end)
 end
 
+-- due: a new pet came due while you were away ("afk") or outside a city ("city"); it waits
+-- for you to come back or to reach one
+local function setDue(on)
+    if SwitchTimer.due == on then return end
+    SwitchTimer.due = on
+    ns:Fire("SwitchTimerChanged")
+end
+
 function SwitchTimer:Start(noRestart)
+    setDue(nil)
     if self.timer then
         if noRestart then return end
         self.timer:Cancel()
@@ -43,6 +56,7 @@ function SwitchTimer:Start(noRestart)
 end
 
 function SwitchTimer:Stop()
+    setDue(nil)
     if self.timer then self.timer:Cancel() self.timer = nil end
 end
 
@@ -56,14 +70,25 @@ function SwitchTimer:Fire()
     self.timer = nil
     -- away, the game may have sat you down without a word: a summon then only puts the pet away
     local afk = UnitIsAFK("player")
-    if not (issecretvalue and issecretvalue(afk)) and afk then return self:Start() end
+    if not (issecretvalue and issecretvalue(afk)) and afk then return setDue("afk") end
     local set = ns.Sets:GetCurrent()
     if set and select(2, set:GetSwitch()) then
         -- a hidden (secret) value cannot be tested: wait for the next round
         local resting = IsResting()
-        if (issecretvalue and issecretvalue(resting)) or not resting then return self:Start() end
+        if issecretvalue and issecretvalue(resting) then return self:Start() end
+        if not resting then return setDue("city") end
     end
+    setDue(nil)
     ns.Ready:Request("switch", "auto")
+end
+
+-- back from AFK, or in a city: a due pet looks again
+function SwitchTimer:PLAYER_FLAGS_CHANGED(_, unit)
+    if self.due and (not unit or unit == "player") then self:Fire() end
+end
+
+function SwitchTimer:PLAYER_UPDATE_RESTING()
+    if self.due then self:Fire() end
 end
 
 function SwitchTimer:PLAYER_ENTERING_WORLD()

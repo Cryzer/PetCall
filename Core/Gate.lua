@@ -54,7 +54,8 @@ function Gate:Check(action, source)
 end
 
 -- Why nothing happens, or what happens next, as one record: { kind = "game" | "off" | "paused" |
--- "exception" | "next" | "idle", label, exc, set, seconds, minutes, waiting (a request waits to run) }. pastGame: leave the game level out (it holds back
+-- "exception" | "next" | "idle", label, exc, set, seconds, due (instead of seconds: "afk" or
+-- "city", what the new pet waits for), minutes, waiting (a request waits to run) }. pastGame: leave the game level out (it holds back
 -- nothing while a pet is out and nothing waits). Allocates: call it from refreshes, not from
 -- event handlers.
 function Gate:Explain(pastGame)
@@ -74,8 +75,9 @@ function Gate:Explain(pastGame)
     end
     local set = ns.Sets:GetCurrent()
     local seconds = set and ns.SwitchTimer:Remaining()
-    if seconds then
-        return { kind = "next", set = set, seconds = seconds, minutes = (set:GetSwitch()), waiting = waiting }
+    local due = set and ns.SwitchTimer.due
+    if seconds or due then
+        return { kind = "next", set = set, seconds = seconds, due = due, minutes = (set:GetSwitch()), waiting = waiting }
     end
     return { kind = "idle", waiting = waiting }
 end

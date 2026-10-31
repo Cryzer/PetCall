@@ -101,10 +101,10 @@ describe("Layout", function()
         local before = left()
         U.W.advance(10)
         assert.is_true(math.abs(before - 10 - left()) <= 1, card.state:GetText())
-        -- away when it runs out, the timer starts another round: the card follows it
+        -- away when it runs out, the new pet waits for you
         U.W.world.afk = true
         U.W.advance(before - 10 + 5)
-        assert.is_true(math.abs(300 - 5 - left()) <= 1, card.state:GetText())
+        assert.equal("New pet when you're back.", card.state:GetText())
         assert.same({}, Layout.Check(U, card))
     end)
 

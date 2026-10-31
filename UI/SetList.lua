@@ -443,7 +443,8 @@ function SetList.Because(why, pet)
         end
         return "|cffffb040" .. format(text, why.label) .. "|r", "exception"
     elseif kind == "next" then
-        return nextText(why.seconds)
+        if why.seconds then return nextText(why.seconds) end
+        return why.due == "city" and L["New pet in the next city."] or L["New pet when you're back."]
     end
     if pet then return "|cff4cd964" .. L["Nothing is blocking PetCall."] .. "|r" end
     if why.waiting then return L["Your pet comes out in a moment."] end
@@ -454,7 +455,7 @@ end
 local ACTION_TEXT = { resume = L["Resume"], on = L["Turn on"], exception = L["Change"] }
 
 -- the countdown goes down by the second while the card can be seen; nothing else is redrawn
--- it asks the timer each time: one that ran out while you were away has started again
+-- it asks the timer each time: one that ran out while you were away or outside a city waits
 local function tickNow()
     if not (nowCard and nowCard:IsVisible() and nowCard.counting) then
         if nowCard and nowCard.ticker then nowCard.ticker:Cancel() nowCard.ticker = nil end
@@ -504,7 +505,7 @@ function SetList:RefreshNow(why)
     local text, action = SetList.Because(why, info and pet)
     nowCard.state:SetText(text)
     nowCard.why, nowCard.actionKind = why, action
-    nowCard.counting = why.kind == "next"
+    nowCard.counting = why.kind == "next" and why.seconds ~= nil
     if nowCard.counting and not nowCard.ticker then nowCard.ticker = ns:NewTicker(1, tickNow) end
     nowCard.action:SetShown(action ~= nil)
     if action then

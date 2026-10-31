@@ -121,6 +121,6 @@ ns:RegisterCallback(Bar, "WindowResized", fit)
 
 local refresh = ns.Debounce(0.1, function() Bar:Refresh() end)
 for _, cb in ipairs({ "ReadyChanged", "CurrentSetChanged", "SetsChanged", "PetsChanged", "AutoSummonChanged", "SummonedPetChanged", "WindowShown",
-    "ExceptionsChanged", "RecommendedUndoChanged" }) do
+    "ExceptionsChanged", "RecommendedUndoChanged", "SwitchTimerChanged" }) do
     ns:RegisterCallback(Bar, cb, refresh)
 end

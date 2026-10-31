@@ -358,9 +358,34 @@ describe("Summon", function()
         ns.SwitchTimer:Start()
         W.advance(301)
         assert.equal(0, resummons)
-        assert.is_not_nil(ns.SwitchTimer.timer)                     -- waiting for the next round
+        assert.is_nil(ns.SwitchTimer:Remaining(), "no new round outside a city")
+        assert.equal("city", ns.SwitchTimer.due)
+        -- a change to some other set setting leaves the due pet waiting
+        ns.Sets:Get("$Default"):SetPetWeight("a", 2)
+        assert.equal("city", ns.SwitchTimer.due)
+        W.advance(600)
+        assert.equal(0, resummons)
+        -- in a city: the new pet that was due comes at once
         W.world.resting = true
-        W.advance(300)
+        W.fire("PLAYER_UPDATE_RESTING")
+        assert.equal(1, resummons)
+        assert.is_nil(ns.SwitchTimer.due)
+        ns.Ready.Request = orig
+    end)
+    it("turning Only in cities off lets a due pet come", function()
+        local s = ns.Sets:Create("Quick")
+        s:SetPetWeight("a", 1)
+        s:SetSwitch(5, true)
+        W.advance(1)
+        W.world.summoned = "a"
+        local resummons = 0
+        local orig = ns.Ready.Request
+        ns.Ready.Request = function() resummons = resummons + 1 end
+        W.world.resting = false
+        ns.SwitchTimer:Start()
+        W.advance(301)
+        assert.equal(0, resummons)
+        s:SetSwitch(5, false)
         assert.equal(1, resummons)
         ns.Ready.Request = orig
     end)
@@ -377,10 +402,15 @@ describe("Summon", function()
         ns.SwitchTimer:Start()
         W.advance(301)
         assert.equal(0, resummons, "the game may have sat you down: a summon would only put the pet away")
-        assert.is_not_nil(ns.SwitchTimer.timer)
+        assert.is_nil(ns.SwitchTimer:Remaining(), "no new round while away")
+        assert.equal("afk", ns.SwitchTimer.due)
+        W.advance(600)
+        assert.equal(0, resummons)
+        -- back: the new pet that was due comes at once
         W.world.afk = false
-        W.advance(300)
+        W.fire("PLAYER_FLAGS_CHANGED", "player")
         assert.equal(1, resummons)
+        assert.is_nil(ns.SwitchTimer.due)
         ns.Ready.Request = orig
     end)
     it("a new map asks for a new pet when that is on", function()

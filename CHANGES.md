@@ -9,7 +9,7 @@
 - **Exceptions** keep the pet away in some places: Battlegrounds, Arenas, Dungeons, Raids, Scenarios and delves, While mounted, Stealth or invisibility and Outside cities. Each one is As usual, Leave the pet alone or Put the pet away. Add exception makes your own from the same conditions as sets.
 - **Also when solo** on Dungeons, Raids, and Scenarios and delves. Clear it and the exception fits only in a party or raid group.
 - **Because:** on the Out now card says why no pet comes out, with a button where one helps. With a pet out, the card counts down to the next new pet by the second, and says "your pick" for a pet you chose yourself.
-- **New pet every** can be 1 minute.
+- **New pet every** can be 1 minute. A new pet that comes due while you are AFK waits until you are back; with Only in cities, it comes as soon as you reach a city.
 - **Use recommended settings** shows your settings beside the recommended ones first. Undo puts yours back.
 - Battleground and Arena are separate place types. A new Hidden condition covers stealth, invisibility, camouflage and feign death.
 - A welcome screen after the update shows what moved. /pcall welcome opens it again.
